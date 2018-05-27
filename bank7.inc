@@ -60,7 +60,7 @@ loc_60044:
 		LDY		#5
 		JSR		_mmc1_prg
 		JSR		_ppu_reinit
-		JSR		_attract_display						; copyrights, logos then jump to title
+		JSR		_attract_display						; copyrights, logos and title with hi-scores
 
 ; =============== S U B	R O U T	I N E =======================================
 _MAIN_LOOP:
@@ -74,45 +74,49 @@ _MAIN_LOOP:
 		LDA		#$B1
 		STA		_rand_seed+3
 		LDA		#0
-		STA		_hud_msg_idx
+;		STA		_hud_msg_idx
 		STA		_lvl2_smart_bomb_flag					; init special livel folags
 		STA		_lvl4_cur_pass_char_idx
+		JSR		_hud_msg_set_request_ex					; actually init it for the first time 
 		LDA		#2
-		STA		_hud_msg_expose_time+1
+;		STA		_hud_msg_expose_time+1					; msg expose time init for some unknown reason
+														; any msg call reinit it for sure, seems no need here
 		STA		_player_damage_blink_timer
-		STA		byte_685
+		STA		_lvl4_pass_enter_timeout_hi				; for some reason only hi value is initialized
+														; low param is 0 at start, so we have 512 frames
+														; before the first pass char is entered and
+														; 200 for every other, maybe this is a plan?
 		LDA		_lvl_idx
 		JSR		_bios_msg_display
 		JSR		_ppu_reinit
 _GAME_START:
 		SEI
 		LDA		_PPU_STATUS
-		LDX		#0
+		LDX		#$FF
+		STX		_pad_block_mask
+		INX												; write 0
 		STX		_PPU_CTRL
 		STX		_PPU_MASK
 		STX		_ppu_ctrl_shadow
 		STX		_ppu_mask_shadow
 		STX		_APU_STATUS
+		STX		_nmi_is_over_flag
+		STX		_pause_flag
+		INX												; write 1
+		STX		_lvl4_minutes_timer						; set lvl4 timer to 01:15
+		INX												; write 2
+		STX		_game_delay_nmi_counter					; set the delay counter
+		INX												; write 3
+		STX		_nmi_hndl_idx							; set the nmi routine to game init
+		LDA		#$F
+		STA		_lvl4_seconds_timer						; set lvl4 timer to 01:15
+		STA		_lvl4_clock_delay						; lvl4 load delay timer (60/4 = 15)
 		LDA		#$E7
 		STA		_ppu_mask_shadow_mask
-		LDA		#3
-		STA		_nmi_hndl_idx							; set the nmi routine to game init
-		LDX		_lvl_idx								; set the lvl data bank
-		LDY		_lvl_prg_bank_list,X
-		JSR		_mmc1_prg
+;		LDX		_lvl_idx								; set the lvl data bank
+;		LDY		_lvl_prg_bank_list,X
+		JSR		_lvl_prg_init
 		JSR		_lvl_vars_init							; read level data from external banks
-		LDA		#0
-		STA		_nmi_is_over_flag
-		STA		_pause_flag
-		LDA		#2
-		STA		_game_delay_nmi_counter					; set the delay counter
-		LDA		#1										; set lvl4 timer to 01:15
-		STA		_lvl4_minutes_timer
-		LDA		#$F										; as well as load delay timer (60/4 = 15)
-		STA		_lvl4_seconds_timer
-		STA		_lvl4_clock_delay
-		LDA		#$FF
-		STA		_pad_block_mask
 .ingame_init_loop0:
 		LDA		_nmi_is_over_flag						; wait for next nmi, first will clear screen
 		BEQ		.ingame_init_loop0						; second will draw the level itself
@@ -137,7 +141,7 @@ _GAME_START:
 		STA		_pause_flag								; unpause again and start the actual gameplay
 		STA		_nmi_is_over_flag
 		LDY		_lvl_state_idx
-		LDA		_lvl_bg_pal_list_lo,Y					; setup the palettes
+		LDA		_lvl_bg_pal_list_lo,Y					; setup the palettes finally
 		STA		_ptr0
 		LDA		_lvl_bg_pal_list_hi,Y
 		STA		_ptr0+1
@@ -170,9 +174,9 @@ _MAIN_INGAME_LOOP:
 		BPL		_LEVEL_COMPLETE							; if < 0, then game over
 ; --------------------------------
 ; game over branch begins here
-		DEC		_continues								; decrease continues
 		LDY		#5
 		JSR		_mmc1_prg
+		DEC		_continues								; decrease continues
 		JSR		_ppu_reinit
 		LDA		#0
 		STA		_nmi_hndl_idx
@@ -182,6 +186,8 @@ _MAIN_INGAME_LOOP:
 		JMP		_MAIN_LOOP
 ; --------------------------------
 _LEVEL_COMPLETE:
+		LDY		#5
+		JSR		_mmc1_prg
 		INC		_lvl_idx
 		LDA		_lvl_idx								; test if the game is complete
 		CMP		#5
@@ -190,12 +196,10 @@ _LEVEL_COMPLETE:
 		STA		_nmi_hndl_idx
 		STA		_lvl_state_idx
 		JSR		_ppu_reinit								; prepare to enter the repair lab
-		LDY		#5
-		JSR		_mmc1_prg
 		LDA		_lvl_idx
 		CMP		#4										
 		BNE		.do_repair								; there is no repair after the level 4, except a secret one
-		JMP		_MAIN_LOOP								; and this were the main reason to score disappear at the level 5
+		JMP		_MAIN_LOOP
 ; --------------------------------
 .do_repair:
 		LDA		#6
@@ -204,8 +208,6 @@ _LEVEL_COMPLETE:
 		JMP		_MAIN_LOOP
 ; --------------------------------
 .game_complete:
-		LDY		#5
-		JSR		_mmc1_prg
 		JSR		_ppu_reinit
 		LDA		#0
 		STA		_nmi_hndl_idx
@@ -213,20 +215,6 @@ _LEVEL_COMPLETE:
 		JSR		_bios_msg_display
 		JSR		_ending_display
 		JMP		_MAIN_LOOP
-
-; =============== S U B	R O U T	I N E =======================================
-_lvl3_bonus_repair_lab:
-		LDA		#0
-		STA		_nmi_hndl_idx
-		LDA		#1
-		STA		_lvl_state_idx
-		JSR		_ppu_reinit
-		LDY		#5
-		JSR		_mmc1_prg
-		LDA		#6
-		JSR		_bios_msg_display
-		JSR		_repair_lab_display
-		JMP		_GAME_START
 
 ; =============== S U B	R O U T	I N E =======================================
 _player_percents_backup:
@@ -363,7 +351,7 @@ _lvl_vars_init:
 		STX		_player_explode_timer_tmp
 		STX		_player_sit_jump_flag
 		STX		_special_boss_flood_object_flag
-		STX		_lvl_rooms_walked_count_unused
+;		STX		_lvl_rooms_walked_count_unused
 		STX		_lvl2_tank_weapon_position_switch
 		STX		_lvl2_tank_weapon_disable_flag
 		LDA		#3
@@ -405,8 +393,8 @@ _lvl_vars_init:
 		STA		_lvl_scroll_tile_hit_flag
 		LDA		_lvl_initial_nt_list,Y
 		STA		_lvl_nt_value
-		LDY		#$F
-		LDA		#$F
+		LDY		#$F										; set black palette before init the level
+		LDA		#$F										; to hide first 4 frames of level initialization
 loc_603B6:
 		STA		_ingame_bg_pal_buf,Y
 		STA		_ingame_spr_pal_buf,Y
@@ -605,9 +593,9 @@ _nmi3:
 
 ; =============== S U B	R O U T	I N E =======================================
 _nmi4:
-		LDX		_lvl_idx
-		LDY		_lvl_prg_bank_list,X
-		JSR		_mmc1_prg
+;		LDX		_lvl_idx
+;		LDY		_lvl_prg_bank_list,X
+		JSR		_lvl_prg_init
 		JSR		_hud_init
 		JSR		_lvl_rooms_init_draw
 		INC		_nmi_hndl_idx
@@ -860,14 +848,14 @@ loc_60759:
 loc_60769:
 		LDA		_player_back_standing_flag
 		BEQ		loc_607AA
-		DEC		byte_684
+		DEC		_lvl4_pass_enter_timeout_lo
 		BNE		loc_607AA
-		DEC		byte_685
+		DEC		_lvl4_pass_enter_timeout_hi
 		BMI		loc_607AA
 		LDA		#2
-		STA		byte_685
+		STA		_lvl4_pass_enter_timeout_hi
 		LDA		#$64
-		STA		byte_684
+		STA		_lvl4_pass_enter_timeout_lo
 		INC		_lvl4_cur_pass_char_idx
 		LDY		_lvl4_cur_pass_char_idx
 		CPY		#$D
@@ -934,7 +922,7 @@ _lvl_right_scroll_handler:
 		LDA		_lvl_room_data_ptr+1
 		ADC		#2
 		STA		_lvl_room_data_ptr+1
-		INC		_lvl_rooms_walked_count_unused
+;		INC		_lvl_rooms_walked_count_unused
 loc_60811:
 		LDA		_lvl_room_data_ptr
 		PHA
@@ -945,14 +933,7 @@ loc_60811:
 loc_6081B:
 		LDA		(_lvl_room_data_ptr),Y
 		STA		_tmp_buf0,X
-
-		CLC
-		LDA		_lvl_room_data_ptr
-		ADC		#$20
-		STA		_lvl_room_data_ptr
-		LDA		_lvl_room_data_ptr+1
-		ADC		#0
-		STA		_lvl_room_data_ptr+1
+		ADD16	_lvl_room_data_ptr, $20
 		INX
 		CPX		#$15
 		BCC		loc_6081B
@@ -1009,7 +990,7 @@ _lvl_left_scroll_handler:
 		LDA		_lvl_room_data_ptr+1
 		SBC		#2
 		STA		_lvl_room_data_ptr+1
-		DEC		_lvl_rooms_walked_count_unused
+;		DEC		_lvl_rooms_walked_count_unused
 loc_6088B:
 		LDA		_lvl_room_data_ptr
 		PHA
@@ -1020,13 +1001,7 @@ loc_6088B:
 loc_60895:
 		LDA		(_lvl_room_data_ptr),Y
 		STA		_tmp_buf0,X
-		CLC
-		LDA		_lvl_room_data_ptr
-		ADC		#$20
-		STA		_lvl_room_data_ptr
-		LDA		_lvl_room_data_ptr+1
-		ADC		#0
-		STA		_lvl_room_data_ptr+1
+		ADD16	_lvl_room_data_ptr, $20
 		INX
 		CPX		#$15
 		BCC		loc_60895
@@ -1928,9 +1903,9 @@ loc_6118F:
 		JSR		_bg_pal_blink_handler
 .skip_ingame_handlers2:
 		JSR		_apu_play								; jump directly to bank 6, it is already set here
-		LDX		_lvl_idx								; restore back current level data bank
-		LDY		_lvl_prg_bank_list,X
-		JMP		_mmc1_prg
+;		LDX		_lvl_idx								; restore back current level data bank
+;		LDY		_lvl_prg_bank_list,X
+		JMP		_lvl_prg_init
 
 ; =============== S U B	R O U T	I N E =======================================
 _lvl_flood_boss_complete_test:
@@ -2257,6 +2232,7 @@ loc_61440:
 		BNE		.do_stand_delay							; do not raise this flag in any level except 5
 		LDA		#1
 		STA		_player_back_standing_flag				; level 5 pass entry flag
+locret_6149B:
 		RTS												; shorter to ret, than branch then ret in any cases
 .do_stand_delay:
 		DEC		_lvl_bonus_portal_delay					; any other level than 5 will count stand time
@@ -2268,12 +2244,19 @@ loc_61440:
 		PLA
 		LDA		_lvl_idx								; special check for level 4, do not switch level data
 		CMP		#3										; but go to the repair lab
-		BEQ		.j_lvl3_bonus_repair_lab
+		BNE		loc_6149B
+		LDY		#0
+		STY		_nmi_hndl_idx
+		INY		
+		STY		_lvl_state_idx
+		JSR		_ppu_reinit
+		LDY		#5
+		JSR		_mmc1_prg
+		LDA		#6
+		JSR		_bios_msg_display
+		JSR		_repair_lab_display
+loc_6149B:
 		JMP		_GAME_START
-.j_lvl3_bonus_repair_lab:
-		JMP		_lvl3_bonus_repair_lab
-locret_6149B:
-		RTS
 ; ------------------------
 .stand_ready_to_fire_up:
 		LDA		#$FC
@@ -2284,17 +2267,13 @@ locret_6149B:
 		ADC		#$2A									; stand fire up base sprite $2A +0 to 1 according to shot mode
 		STA		_obj_spr_idx._player					
 		LDA		#$FD
-		STA		_player_shot_pos_delta
-		LDA		_pad_last								; block hor movenets
-		AND		#$FC
-		STA		_pad_last
-		JMP		.misc_controls
+		BNE		loc_614D0								; set player delta and block hor movements common branch
 ; ------------------------
 .stand_ready_for_sit_down:
 		LDA		_pad_last
 		AND		#4
 		BEQ		loc_614DA								; test for down is pressed
-		LDA		#4
+;		LDA		#4										; here we have 4 in reg already
 		STA		_player_diagonal_fire_delta				; we got here if no jump or movement keys are pressed
 		LDA		_player_anim_phase_offset				; this allows to shot diagonally down
 		CMP		#$A
@@ -2302,6 +2281,7 @@ locret_6149B:
 		ADC		#$2C
 		STA		_obj_spr_idx._player					; base sprite $2C for diagonal down +0 to 1 anim phases
 		LDA		#$20
+loc_614D0:
 		STA		_player_shot_pos_delta
 		LDA		_pad_last								; block hor movements as well
 		AND		#$FC
@@ -2380,6 +2360,7 @@ loc_61570:
 		JSR		_player_hor_animation					; do animation timers
 locret_615A4:
 		RTS
+; ------------------------
 .common_right_move_test:
 		LDA		_pad_last
 		AND		#1
@@ -2431,9 +2412,9 @@ _player_x_pos_inc:
 		LDA		_obj_x_lo._player
 		ADC		#1
 		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		ADC		#0
-		STA		_obj_x_hi._player
+		BCC		.player_x_pos_inc
+		INC		_obj_x_hi._player
+.player_x_pos_inc:
 		RTS
 ; ------------------------
 _player_x_pos_dec:
@@ -2441,9 +2422,9 @@ _player_x_pos_dec:
 		LDA		_obj_x_lo._player
 		SBC		#1
 		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		SBC		#0
-		STA		_obj_x_hi._player
+		BCS		.player_x_pos_dec
+		DEC		_obj_x_hi._player
+.player_x_pos_dec:
 		RTS
 ; ------------------------
 _player_hor_animation:
@@ -3854,13 +3835,7 @@ loc_62077:
 		LDA		#1
 		STA		_obj_var5,X
 .advance_obj_ptr_and_break:
-		CLC
-		LDA		_lvl_obj_list_ptr
-		ADC		#4
-		STA		_lvl_obj_list_ptr
-		LDA		_lvl_obj_list_ptr+1
-		ADC		#0
-		STA		_lvl_obj_list_ptr+1
+		ADD16	_lvl_obj_list_ptr, 4
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -6298,9 +6273,9 @@ loc_63216:
 		LDA		#0
 		STA		_obj_flags._misc
 loc_63220:
-		LDX		_lvl_idx
-		LDY		_lvl_prg_bank_list,X
-		JMP		_mmc1_prg
+;		LDX		_lvl_idx
+;		LDY		_lvl_prg_bank_list,X
+		JMP		_lvl_prg_init
 
 ; =============== S U B	R O U T	I N E =======================================
 _obj_add_score:
@@ -6500,9 +6475,9 @@ loc_63380:
 		INX
 		BNE		loc_63380
 loc_6338F:
-		LDX		_lvl_idx
-		LDY		_lvl_prg_bank_list,X
-		JMP		_mmc1_prg
+;		LDX		_lvl_idx
+;		LDY		_lvl_prg_bank_list,X
+		JMP		_lvl_prg_init
 
 _obj_shuffle_tables:
 		.BYTE	 $C,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, $A, $B,  0,  0,  0	; player sprite priority, never blink
@@ -7016,15 +6991,13 @@ _ppu_nt_clear:
 		STA		_PPU_ADDR
 		LDA		#0
 		STA		_PPU_ADDR
-		LDX		#0
-		LDY		#0
-		LDA		#0
+		TAX
+		LDY		#8
 loc_63769:
 		STA		_PPU_DATA
 		DEX
 		BNE		loc_63769
-		INY
-		CPY		#8
+		DEY
 		BNE		loc_63769
 		RTS
 
@@ -7202,6 +7175,11 @@ _mmc1_chr1:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
+_lvl_prg_init:
+		LDX		_lvl_idx								; set the lvl data bank
+		LDY		_lvl_prg_bank_list,X
+
+; =============== S U B	R O U T	I N E =======================================
 _mmc1_prg:
 		LDA		#$80
 		STA		$FFFF
@@ -7216,6 +7194,9 @@ _mmc1_prg:
 		LSR
 		STA		$FFFF
 		RTS
+
+_lvl_prg_bank_list:
+		.BYTE	  0,  1,  2,  3,  4
 
 _hud_score_num_tile_upper_list:
 		.BYTE	$41,$42,$43,$44,$45,$46,$47,$48,$49,$4A
@@ -7296,8 +7277,6 @@ _projectiles_damage_list:
 		.BYTE	PROJ3_FAMAGE_VALUE
 _body_targets_list:
 		.BYTE	  2,  0,  1
-_lvl_prg_bank_list:
-		.BYTE	  0,  1,  2,  3,  4
 _end_of_level_enemy_appear_pos_x:
 		.BYTE	  9,  5, $E,  5,  5
 _end_of_level_enemy_table:
@@ -7345,7 +7324,10 @@ _def_score_tbl:
 _def_score_tbl_end:
 
 		ECHO "bank 7 free space", [SYS_STUB_ORG-.]
-		ECHO "zero ram free", [$100 - _end_of_zero_ram]
+		ECHO " zero ram free", [$100 - _end_of_zero_ram]
+		ECHO " 300 ram free", [$100 - _end_of_300_ram]
+		ECHO " 500 ram free", [$100 - _end_of_500_ram]
+		ECHO " 600-700 ram free", [$200 - _end_of_600_700_ram]
 
 		ORG	SYS_STUB_ORG, $00
 RESET:

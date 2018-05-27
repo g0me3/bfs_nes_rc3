@@ -2247,8 +2247,9 @@ _screen_display_ex:
 		LDY		#0
 		STY		_PPU_CTRL
 		STY		_PPU_MASK
-		BIT		_PPU_STATUS
-		BPL		_screen_display
+;loc_45884:
+;		BIT		_PPU_STATUS								; wait for nmi status raised
+;		BPL		loc_45884
 		BIT		_PPU_STATUS
 		LDA		#$F0									; Y already 0
 loc_45885:

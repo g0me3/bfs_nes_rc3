@@ -35,25 +35,25 @@ _obj_offscreen_flag_tmp:			.BYTE	0
 _obj_scr_x_pos_tmp:					.BYTE	0
 _obj_scr_y_pos_tmp:					.BYTE	0
 _obj_shuffle_mode:					.BYTE	0
-_obj_spr_width_tmp:					.BYTE	0
 _obj_spr_height_tmp					.BYTE	0
-_pad_last:							.BYTE	0
+_obj_spr_width_tmp:					.BYTE	0
+_pad_block_mask:					.BYTE	0
 _pad_data:							.BYTE	0
 _pad_edge:							.BYTE	0
-_pad_block_mask:					.BYTE	0
+_pad_last:							.BYTE	0
 _pal_update_redundant:				.BYTE	0
 _pause_flag:						.BYTE	0
 _player_anim_phase_offset:			.BYTE	0
 _player_damage_blink_timer:			.BYTE	0
 _player_diagonal_fire_delta:		.BYTE	0
-_player_spr_out_cnt:				.BYTE	0
-_player_spr_out_reload:				.BYTE	0
+_player_edge_fall_flag:				.BYTE	0
 _player_explode_timer_tmp:			.BYTE	0
 _player_fire_delay_reload:			.BYTE	0
 _player_hor_move_anim_timer:		.BYTE	0
-_player_edge_fall_flag:				.BYTE	0
 _player_scroll_stop_flag:			.BYTE	0
 _player_sit_jump_flag:				.BYTE	0
+_player_spr_out_cnt:				.BYTE	0
+_player_spr_out_reload:				.BYTE	0
 _player_wnd_scroll_counter:			.BYTE	0
 _player_wnd_tile_number:			.BYTE	0
 _player_y_meta16_tile_tmp:			.BYTE	0
@@ -127,14 +127,14 @@ _star_field_data2:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0
 		
-_chr0_bank_shadow:					.BYTE	0
-_chr1_bank_shadow:					.BYTE	0
 _arms_percent_backup:				.BYTE	0
 _body_percent_backup:				.BYTE	0
 _head_percent_backup:				.BYTE	0
 _legs_percent_backup:				.BYTE	0
 _repair_tanks_backup:				.BYTE	0
-_repair_tanks_number_tile_tmp:		.BYTE	0
+
+_chr0_bank_shadow:					.BYTE	0
+_chr1_bank_shadow:					.BYTE	0
 _delay_counter:						.BYTE	0,0
 _disp_extra_shift:					.BYTE	0
 _disp_spr0hit_use:					.BYTE	0
@@ -148,17 +148,15 @@ _log_msg_skip_forbid:				.BYTE	0
 _mul_argA:							.BYTE	0
 _mul_argB:							.BYTE	0
 _mul_result_low:					.BYTE	0
-_pad:								.BYTE	0
-_pad_prev0:							.BYTE	0
-_pad_prev1:							.BYTE	0
-_repair_body_index_request:			.BYTE	0
 _repair_body_index:					.BYTE	0
-_repair_percent_disp_buf_tmp:		.BYTE	0,0,0,0,0,0
+_repair_body_index_request:			.BYTE	0
 _repair_cursor_animate_in_progress:	.BYTE	0
 _repair_cursor_animate_tmp:			.BYTE	0
 _repair_cursor_pos_dest:			.BYTE	0,0
 _repair_cursor_spr_x_pos:			.BYTE	0
 _repair_cursor_spr_y_pos:			.BYTE	0
+_repair_percent_disp_buf_tmp:		.BYTE	0,0,0,0,0,0
+_repair_tanks_number_tile_tmp:		.BYTE	0
 _screen_idx:						.BYTE	0
 _special_controls_flag:				.BYTE	0
 _star_field_center_pos_x:			.BYTE	0
@@ -169,6 +167,8 @@ _title_menu_spr_num_tmp:			.BYTE	0
 _tmp_idx0:							.BYTE	0
 _tmp_idx1:							.BYTE	0
 _tmp_idx2:							.BYTE	0
+
+_end_of_300_ram	EQU	.-$300
 
 		ORG	$400
 
@@ -228,6 +228,8 @@ _lvl4_minutes_timer:.BYTE	0
 		TOBJ	_obj_var8
 		TOBJ	_obj_energy
 
+_end_of_500_ram	EQU	.-$500
+
 		ORG	$600
 
 _tmp_ptr:
@@ -240,7 +242,7 @@ _tmp_buf1:
 _tmp_buf2:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0
-_lvl_rooms_walked_count_unused:
+;_lvl_rooms_walked_count_unused:
 		.BYTE	0
 		.BYTE	0
 _hex2str_tile_delta:
@@ -322,9 +324,9 @@ byte_682:
 		.BYTE	0
 _lvl4_cur_pass_char_idx:
 		.BYTE	0
-byte_684:
+_lvl4_pass_enter_timeout_lo:
 		.BYTE	0
-byte_685:
+_lvl4_pass_enter_timeout_hi:
 		.BYTE	0
 _player_back_standing_flag:
 		.BYTE	0
@@ -350,31 +352,16 @@ _lvl2_tank_weapon_disable_flag:
 
 		TPOW	_percents
 
-_repair_tanks:
-		.BYTE	0
-_unused_32:
-		.BYTE	0
-		.BYTE	0
-_apu_enable:
-		.BYTE	0
-_unused_31:
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0,0,0,0,0,0
-		.BYTE	0,0,0,0
-_failure_duration_period:
-		.BYTE	0
-;_failure_mode:
-		.BYTE	0
-_unused_30:
-		.BYTE	0,0,0,0,0,0,0,0,0
+_repair_tanks:				.BYTE	0
+_apu_enable:				.BYTE	0
+_failure_duration_period:	.BYTE	0
 
-_continues:						.BYTE	0
+_continues:					.BYTE	0
 
-_hud_weap0_attr_overlay:		.BYTE	0,0
-_hud_weap1_attr_overlay:		.BYTE	0,0
-_hud_weapon_blink_timer:		.BYTE	0
-_game_delay_nmi_counter:		.BYTE	0
+_hud_weap0_attr_overlay:	.BYTE	0,0
+_hud_weap1_attr_overlay:	.BYTE	0,0
+_hud_weapon_blink_timer:	.BYTE	0
+_game_delay_nmi_counter:	.BYTE	0
 
 _log_msg_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -383,47 +370,26 @@ _log_msg_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 _ram_score_tbl:
-_hi0_score:
-		.BYTE	0,0,0,0,0
-_hi1_score:
-		.BYTE	0,0,0,0,0
-_hi2_score:
-		.BYTE	0,0,0,0,0
-_hi3_score:
-		.BYTE	0,0,0,0,0
-_hi4_score:
-		.BYTE	0,0,0,0,0
-_hi5_score:
-		.BYTE	0,0,0,0,0
-_res_ram_scores:
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0	; def hiscore text header
-_hi0_name:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0								; def hiscore text line
-_hi1_name:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0
-_hi2_name:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0
-_hi3_name:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0
-_hi4_name:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0
-_hi5_name:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
-		.BYTE	0											; EOF
+_hi0_score:			.BYTE	0,0,0,0,0
+_hi1_score:			.BYTE	0,0,0,0,0
+_hi2_score:			.BYTE	0,0,0,0,0
+_hi3_score:			.BYTE	0,0,0,0,0
+_hi4_score:			.BYTE	0,0,0,0,0
+_hi5_score:			.BYTE	0,0,0,0,0
+_res_ram_scores:	.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0	; def hiscore text header
+_hi0_name:			.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0			; def hiscore text line
+_hi1_name:			.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+_hi2_name:			.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+_hi3_name:			.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+_hi4_name:			.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+_hi5_name:			.BYTE	0,0,0,0,0,0,0,0,0,0,0						; EOF
 
-_score_cmp_buf:
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-_hi_score_line_idx:
-		.BYTE	0
-_hi_score_pos_count:
-		.BYTE	0
-_hi_dec_tmp_buf:
-		.BYTE	0,0,0,0,0
+_score_cmp_buf:		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+_hi_score_line_idx:	.BYTE	0
+_hi_score_pos_count:.BYTE	0
+_hi_dec_tmp_buf:	.BYTE	0,0,0,0,0
+
+_end_of_600_700_ram	EQU	.-$600
 
 	ORG $2000
 
