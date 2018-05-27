@@ -123,7 +123,7 @@ _intro_display:
 		STA		_event_reload_idx
 		LDA		#$FF
 		STA		byte_3B1
-		JSR		_spr_buf_clear
+;		JSR		_spr_buf_clear
 		JSR		_log_clear_buf
 		LDA		#4
 		STA		_screen_idx
@@ -154,60 +154,62 @@ _ending_display:
 		LDA		#7
 		STA		_screen_idx
 		JSR		_screen_display
-		JSR		_spr_buf_clear
-		LDA		#$7F
-		STA		_spr_buf+4
-		STA		_spr_buf+8
-		STA		_spr_buf+$C
-		STA		_spr_buf+$10
-		STA		_spr_buf+$14
-		LDA		#$87
-		STA		_spr_buf+$18
-		STA		_spr_buf+$1C
-		STA		_spr_buf+$20
-		STA		_spr_buf+$24
-		LDA		#2
-		STA		_spr_buf+6
-		STA		_spr_buf+$A
-		STA		_spr_buf+$E
-		STA		_spr_buf+$12
-		STA		_spr_buf+$16
-		STA		_spr_buf+$1A
-		STA		_spr_buf+$1E
-		STA		_spr_buf+$22
-		STA		_spr_buf+$26
-		LDX		#$F7
-		STX		_spr_buf+5
-		LDA		#$80
-		STA		_spr_buf+7
-		STA		_spr_buf+$1B
-		LDA		#$43
-		STA		_spr_buf+9
-		LDA		#$88
-		STA		_spr_buf+$B
-		STA		_spr_buf+$1F
-		INX
-		STX		_spr_buf+$D
-		LDA		#$90
-		STA		_spr_buf+$F
-		STA		_spr_buf+$23
-		INX
-		STX		_spr_buf+$11
-		LDA		#$98
-		STA		_spr_buf+$13
-		STA		_spr_buf+$27
-		INX
-		STX		_spr_buf+$15
-		LDA		#$A0
-		STA		_spr_buf+$17
-		LDX		#$FB
-		STX		_spr_buf+$19
-		INX
-		STX		_spr_buf+$1D
-		INX
-		STX		_spr_buf+$21
-		INX
-		STX		_spr_buf+$25
+; --
+;		JSR		_spr_buf_clear
+;		LDA		#$7F
+;		STA		_spr_buf+4
+;		STA		_spr_buf+8
+;		STA		_spr_buf+$C
+;		STA		_spr_buf+$10
+;		STA		_spr_buf+$14
+;		LDA		#$87
+;		STA		_spr_buf+$18
+;		STA		_spr_buf+$1C
+;		STA		_spr_buf+$20
+;		STA		_spr_buf+$24
+;		LDA		#2
+;		STA		_spr_buf+6
+;		STA		_spr_buf+$A
+;		STA		_spr_buf+$E
+;		STA		_spr_buf+$12
+;		STA		_spr_buf+$16
+;		STA		_spr_buf+$1A
+;		STA		_spr_buf+$1E
+;		STA		_spr_buf+$22
+;		STA		_spr_buf+$26
+;		LDX		#$F7
+;		STX		_spr_buf+5
+;		LDA		#$80
+;		STA		_spr_buf+7
+;		STA		_spr_buf+$1B
+;		LDA		#$43
+;		STA		_spr_buf+9
+;		LDA		#$88
+;		STA		_spr_buf+$B
+;		STA		_spr_buf+$1F
+;		INX
+;		STX		_spr_buf+$D
+;		LDA		#$90
+;		STA		_spr_buf+$F
+;		STA		_spr_buf+$23
+;		INX
+;		STX		_spr_buf+$11
+;		LDA		#$98
+;		STA		_spr_buf+$13
+;		STA		_spr_buf+$27
+;		INX
+;		STX		_spr_buf+$15
+;		LDA		#$A0
+;		STA		_spr_buf+$17
+;		LDX		#$FB
+;		STX		_spr_buf+$19
+;		INX
+;		STX		_spr_buf+$1D
+;		INX
+;		STX		_spr_buf+$21
+;		INX
+;		STX		_spr_buf+$25
+; --
 		LDA		#$1F
 		JSR		_far_apu_mus_load_prg5_safe
 		LDA		#$81
@@ -290,7 +292,7 @@ loc_4429E:
 		LDA		_cur_lvl_idx
 		STA		_pl_bckp_lvl_idx
 loc_442AB:
-		JSR		_spr_buf_clear
+;		JSR		_spr_buf_clear
 		JSR		_log_clear_buf
 		LDA		#4
 		STA		_screen_idx
@@ -319,14 +321,14 @@ _txt_game_over:
 		.BYTE	_G,_A,_M,_E,_,_,_O,_V,_E,_R
 
 ; =============== S U B	R O U T	I N E =======================================
-_spr_buf_clear:
-		LDX		#0
-		LDA		#$F0
-loc_44309:
-		STA		_spr_buf,X
-		INX
-		BNE		loc_44309
-		RTS
+;_spr_buf_clear:
+;		LDX		#0
+;		LDA		#$F0
+;loc_44309:
+;		STA		_spr_buf,X
+;		INX
+;		BNE		loc_44309
+;		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
 _event_exec:
@@ -376,79 +378,79 @@ _title_screen_change:
 		LDA		_delays_list_hi,X
 		STA		_delay_counter
 loc_443B5:
-		JSR		_spr_buf_clear
+;		JSR		_spr_buf_clear
 		LDA		_screen_idx
 		JSR		_screen_display
 		LDA		_screen_idx
-		CMP		#0
-		BNE		.probe_logo_overlay_display
-		LDA		#$68
-		PHA
-		LDX		#0										; "PRESENTS" sprite overlay for "OCEAN" logo
-loc_443CA:
-		TXA
-		ASL
-		ASL
-		TAY
-		PLA
-		STA		_spr_buf+3,Y
-		CLC
-		ADC		#8
-		PHA
-		LDA		#0
-		STA		_spr_buf+2,Y
-		LDA		#$80
-		STA		_spr_buf,Y
-		LDA		_spr_presents,X
-		STA		_spr_buf+1,Y
-		INX
-		CPX		#8
-		BNE		loc_443CA
-		PLA
-.probe_logo_overlay_display:
-		LDA		_screen_idx
-		CMP		#1
-		BNE		loc_44445
-		BIT		_PPU_STATUS
-		LDA		#$22									; write tile patch "PR" for "PRODUCTION"
-		STA		_PPU_ADDR
-		LDA		#$C
-		STA		_PPU_ADDR
-		LDA		#$92
-		STA		_PPU_DATA
-		LDA		#$93
-		STA		_PPU_DATA
-		LDA		#$84									; sprite overlay for PROBE logo, "A" letter
-		STA		_spr_buf+$C3
-		LDA		#$34
-		STA		_spr_buf+$C0
-		LDA		#1
-		STA		_spr_buf+$C1
-		LDA		#0
-		STA		_spr_buf+$C2
-		LDA		#$70
-		PHA
-		LDX		#0										; write "ODUCTION" sprites overlay
-loc_44423:
-		TXA
-		ASL
-		ASL
-		TAY
-		PLA
-		STA		_spr_buf+3,Y
-		CLC
-		ADC		#8
-		PHA
-		LDA		#0
-		STA		_spr_buf+2,Y
-		LDA		#$7F
-		STA		_spr_buf,Y
-		LDA		_spr_oduction,X
-		STA		_spr_buf+1,Y
-		INX
-		CPX		#8
-		BNE		loc_44423
-		PLA
+;		CMP		#0
+;		BNE		.probe_logo_overlay_display
+;		LDA		#$68
+;		PHA
+;		LDX		#0										; "PRESENTS" sprite overlay for "OCEAN" logo
+;loc_443CA:
+;		TXA
+;		ASL
+;		ASL
+;		TAY
+;		PLA
+;		STA		_spr_buf+3,Y
+;		CLC
+;		ADC		#8
+;		PHA
+;		LDA		#0
+;		STA		_spr_buf+2,Y
+;		LDA		#$80
+;		STA		_spr_buf,Y
+;		LDA		_spr_presents,X
+;		STA		_spr_buf+1,Y
+;		INX
+;		CPX		#8
+;		BNE		loc_443CA
+;		PLA
+;.probe_logo_overlay_display:
+;		LDA		_screen_idx
+;		CMP		#1
+;		BNE		loc_44445
+;		BIT		_PPU_STATUS
+;		LDA		#$22									; write tile patch "PR" for "PRODUCTION"
+;		STA		_PPU_ADDR
+;		LDA		#$C
+;		STA		_PPU_ADDR
+;		LDA		#$92
+;		STA		_PPU_DATA
+;		LDA		#$93
+;		STA		_PPU_DATA
+;		LDA		#$84									; sprite overlay for PROBE logo, "A" letter
+;		STA		_spr_buf+$C3
+;		LDA		#$34
+;		STA		_spr_buf+$C0
+;		LDA		#1
+;		STA		_spr_buf+$C1
+;		LDA		#0
+;		STA		_spr_buf+$C2
+;		LDA		#$70
+;		PHA
+;		LDX		#0										; write "ODUCTION" sprites overlay
+;loc_44423:
+;		TXA
+;		ASL
+;		ASL
+;		TAY
+;		PLA
+;		STA		_spr_buf+3,Y
+;		CLC
+;		ADC		#8
+;		PHA
+;		LDA		#0
+;		STA		_spr_buf+2,Y
+;		LDA		#$7F
+;		STA		_spr_buf,Y
+;		LDA		_spr_oduction,X
+;		STA		_spr_buf+1,Y
+;		INX
+;		CPX		#8
+;		BNE		loc_44423
+;		PLA
 loc_44445:
 		LDA		_screen_idx
 		CMP		#3
@@ -496,8 +498,8 @@ loc_444AD:
 		JSR		_delay
 		JSR		_read_pad
 		LDY		_title_menu_idx
-		LDX		byte_44651,Y							; but why we just can't have already precalc table for it? lol
-		LDA		byte_44655,Y
+		LDX		_title_menu_spr_ofs_list,Y
+		LDA		_title_menu_spr_num_list,Y
 		STA		_tmp3C3+2
 		LDA		_generic_nmi_over_counter
 		AND		#$1F
@@ -521,7 +523,7 @@ loc_444EA:
 		STA		_pad_prev
 		LDA		_generic_nmi_over_counter
 		AND		#$1F
-		BNE		loc_44540
+		BNE		.title_menu_update
 loc_444FC:
 		LDA		_pad
 		AND		#4
@@ -535,57 +537,53 @@ loc_44510:
 		LDA		_title_menu_idx
 		CLC
 		ADC		#1
-		AND		#3
-		STA		_title_menu_idx
-		JSR		_reload_delay_counter_2
-		LDA		#0
-		STA		_generic_nmi_over_counter
-		JMP		loc_44540
+		JMP		loc_445260
 loc_44526:
 		LDA		_pad
 		AND		#$10
-		BEQ		loc_44540
+		BEQ		.title_menu_update
 		LDA		_title_menu_idx
 		SEC
 		SBC		#1
+loc_445260:
 		AND		#3
 		STA		_title_menu_idx
 		JSR		_reload_delay_counter_2
 		LDA		#0
 		STA		_generic_nmi_over_counter
-loc_44540:
-		LDA		byte_44659,Y
+.title_menu_update:
+		LDA		_title_menu_pos_list,Y					; get the selected menu item
 loc_44543:
-		STA		_spr_buf,X
+		STA		_spr_buf,X								; force it to the screen
 		INX
 		INX
 		INX
 		INX
-		DEC		_tmp3C3+2
+		DEC		_tmp3C3+2								; previously saved size of menu item in sprites
 		BNE		loc_44543
 		LDA		_apu_sound_enable
-		BEQ		loc_44561
-		LDA		#$4F
-		STA		_spr_buf+$A9
+		BEQ		.menu_sound_off							; if SOUND is on
+		LDA		#$4F									; draw "N " sprite
+		STA		[_spr_buf+_m2onoff]
 		LDA		#1
-		STA		_spr_buf+$AD
-		JMP		loc_44569
-loc_44561:
-		LDA		#$3F
-		STA		_spr_buf+$A9
-		STA		_spr_buf+$AD
+		STA		[_spr_buf+_m2onoff+4]
+		BNE		loc_44569
+.menu_sound_off:
+		LDA		#$3F									; else, draw "FF"
+		STA		[_spr_buf+_m2onoff]
+		STA		[_spr_buf+_m2onoff+4]
 loc_44569:
 		LDA		_apu_music_enable
-		BEQ		loc_4457B
+		BEQ		.menu_music_off
 		LDA		#$4F
-		STA		_spr_buf+$C9
+		STA		[_spr_buf+_m3onoff]
 		LDA		#1
-		STA		_spr_buf+$CD
+		STA		[_spr_buf+_m3onoff+4]
 		JMP		loc_44583
-loc_4457B:
+.menu_music_off:
 		LDA		#$3F
-		STA		_spr_buf+$C9
-		STA		_spr_buf+$CD
+		STA		[_spr_buf+_m3onoff]
+		STA		[_spr_buf+_m3onoff+4]
 loc_44583:
 		LDA		_title_menu_idx
 		BNE		loc_4459F
@@ -666,16 +664,42 @@ loc_44623:
 		JSR		_mmc1_chr0
 		JMP		_event_exec
 
-byte_44651:
-		.BYTE	$54,$70,$90,$B0
-byte_44655:
-		.BYTE	  5,  8,  8,  8
-byte_44659:
-		.BYTE	$8F,$9F,$AF,$BF
-_spr_presents:
-		.BYTE	_P,_R,_E,_S,_E,_N,_T,_S
-_spr_oduction:
-		.BYTE	_O,_D,_U,_C,_T,_I,_O,_N
+; offset of the menu item sprites from the beginning of the sprite buffer
+;
+_title_menu_spr_ofs_list:
+		.BYTE	[_spr2_title_menu0 - _spr2_title]
+		.BYTE	[_spr2_title_menu1 - _spr2_title]
+		.BYTE	[_spr2_title_menu2 - _spr2_title]
+		.BYTE	[_spr2_title_menu3 - _spr2_title]
+
+; a number of sprites in given menu item string
+;
+_title_menu_spr_num_list:
+		.BYTE	[[_spr2_title_menu1 - _spr2_title_menu0] >> 2]
+		.BYTE	[[_spr2_title_menu2 - _spr2_title_menu1] >> 2]
+		.BYTE	[[_spr2_title_menu3 - _spr2_title_menu2] >> 2]
+		.BYTE	[[_spr2_title_end - _spr2_title_menu3] >> 2]
+
+; fixed constants of the Y position of the menu items on the screen
+;
+_m0p	EQU	$8F
+_m1p	EQU	$9F
+_m2p	EQU	$AF
+_m3p	EQU	$BF
+
+_title_menu_pos_list:
+		.BYTE	_m0p,_m1p,_m2p,_m3p
+
+; sprite ram offset of the first modified on/off tile of the menu items 2 and 3
+; 6 sprites * 4 + 1 (SOUND_O/MUSIC_O)
+;
+_m2onoff	EQU	[[_spr2_title_menu2 - _spr2_title] + 25]
+_m3onoff	EQU	[[_spr2_title_menu3 - _spr2_title] + 25]
+		
+;_spr_presents:
+;		.BYTE	_P,_R,_E,_S,_E,_N,_T,_S
+;_spr_oduction:
+;		.BYTE	_O,_D,_U,_C,_T,_I,_O,_N
 
 ; =============== S U B	R O U T	I N E =======================================
 _reload_delay_counter_2:
@@ -1261,7 +1285,7 @@ loc_45C27:
 _event5_repair:
 		LDX		#1
 		JSR		_delay
-		LDA		_tmp3C3									; draw cursor
+		LDA		_tmp3C3									; update cursor position
 		STA		_spr_buf+4
 		CLC
 		ADC		#8
@@ -1269,13 +1293,13 @@ _event5_repair:
 		LDA		byte_3B8
 		STA		_spr_buf+7
 		STA		_spr_buf+$B
-		LDA		#$F6
-		STA		_spr_buf+5
-		LDA		#$F7
-		STA		_spr_buf+9
-		LDA		#0
-		STA		_spr_buf+6
-		STA		_spr_buf+$A
+;		LDA		#$F6
+;		STA		_spr_buf+5
+;		LDA		#$F7
+;		STA		_spr_buf+9
+;		LDA		#0
+;		STA		_spr_buf+6
+;		STA		_spr_buf+$A
 		LDA		#0
 		STA		_str_ptr
 		STA		_str_ptr+1
@@ -1288,21 +1312,21 @@ _event5_repair:
 		LDX		#<[_repair_cur_percent_disp_buf_tmp]
 		LDY		#>[_repair_cur_percent_disp_buf_tmp]
 		JSR		_hex2str
-		LDA		#$9A									; draw repair tank
-		STA		_spr_buf+$F0
-		LDA		#$F8
-		STA		_spr_buf+$F1
-		LDA		#0
-		STA		_spr_buf+$F2
-		LDA		#$17
-		STA		_spr_buf+$F3
-		STA		_spr_buf+$F7
-		LDA		#$A2
-		STA		_spr_buf+$F4
-		LDA		#$F9
-		STA		_spr_buf+$F5
-		LDA		#0
-		STA		_spr_buf+$F6
+;		LDA		#$9A									; draw repair tank
+;		STA		_spr_buf+$F0
+;		LDA		#$F8
+;		STA		_spr_buf+$F1
+;		LDA		#0
+;		STA		_spr_buf+$F2
+;		LDA		#$17
+;		STA		_spr_buf+$F3
+;		STA		_spr_buf+$F7
+;		LDA		#$A2
+;		STA		_spr_buf+$F4
+;		LDA		#$F9
+;		STA		_spr_buf+$F5
+;		LDA		#0
+;		STA		_spr_buf+$F6
 		JSR		_read_pad
 		LDA		_pad
 		AND		#8
@@ -2881,9 +2905,8 @@ _screen_display:
 		BIT		_PPU_STATUS
 		LDA		#$20
 		STA		_PPU_ADDR
-		LDA		#0
-		STA		_PPU_ADDR
-		TAY
+		TYA
+		STA		_PPU_ADDR								; Y already 0
 loc_45855:
 		STA		_PPU_DATA
 		STA		_PPU_DATA
@@ -2894,9 +2917,8 @@ loc_45855:
 		BIT		_PPU_STATUS
 		LDA		#$24
 		STA		_PPU_ADDR
-		LDA		#0
+		TYA
 		STA		_PPU_ADDR
-		TAY
 loc_45872:
 		STA		_PPU_DATA
 		STA		_PPU_DATA
@@ -2904,31 +2926,32 @@ loc_45872:
 		STA		_PPU_DATA
 		INY
 		BNE		loc_45872
-		LDY		#0
-		LDA		#$F0
+		LDA		#$F0									; Y already 0
 loc_45885:
 		STA		_spr_buf,Y
 		INY
 		BNE		loc_45885
+		LDA		_disp_spr_data_size_list,X
+		STA		_disp_spr_send_tmp
 		LDA		_disp_chr0_list,X
 		STA		_chr1_bank_shadow
 		LDA		_disp_chr1_list,X
 		STA		_chr0_bank_shadow
-		LDA		_special_controls_flag_flags_list,X
+		LDA		_special_controls_flags_list,X
 		STA		_special_controls_flag
 		LDA		_disp_extra_shifts_list,X
 		STA		_disp_extra_shift
 		LDA		_disp_spr0hit_use_flags,X
-		BEQ		loc_458C2
+;		BEQ		loc_458C2
 		STA		_disp_spr0hit_use
-		LDA		_disp_spr0hit_x,X
-		STA		_spr_buf+3
-		LDA		_disp_spr0hit_y,X
-		STA		_spr_buf
-		LDA		_disp_spr0hit_tile,X
-		STA		_spr_buf+1
-		LDA		#$FF
-		STA		_spr_buf+2
+;		LDA		_disp_spr0hit_x,X
+;		STA		_spr_buf+3
+;		LDA		_disp_spr0hit_y,X
+;		STA		_spr_buf
+;		LDA		_disp_spr0hit_tile,X
+;		STA		_spr_buf+1
+;		LDA		#$FF
+;		STA		_spr_buf+2
 loc_458C2:
 		TXA
 		ASL
@@ -2950,53 +2973,49 @@ loc_458C2:
 		STA		_tptr1+1
 		LDA		_disp_atr_lib,X
 		STA		_tptr2+1
-		LDA		#$24
-		STA		_PPU_ADDR
-		STY		_PPU_ADDR
-		TYA
-loc_458F7:
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		INY
-		BNE		loc_458F7
+;		LDA		#$24									; two times in row lol
+;		STA		_PPU_ADDR
+;		TYA
+;		STA		_PPU_ADDR
+;loc_458F7:
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		INY
+;		BNE		loc_458F7
 		LDA		#$20
 		STA		_PPU_ADDR
-		STY		_PPU_ADDR
+		STY		_PPU_ADDR								; Y still 0!
+; --------------------------------
 .disp_tlm_send:
-		LDY		#0
 		LDA		(_tptr0),Y
 		BPL		loc_4592B
 		CMP		#$FF
 		BEQ		.disp_atr_send
 		AND		#$7F
 		TAX
-		JSR		_ptr5_inc
+		INCY	_tptr0
 loc_4591E:
 		LDA		(_tptr0),Y
 		STA		_PPU_DATA
-		JSR		_ptr5_inc
+		INCY	_tptr0
 		DEX
 		BNE		loc_4591E
 		BEQ		.disp_tlm_send
 loc_4592B:
 		TAX
-		JSR		_ptr5_inc
+		INCY	_tptr0
 		LDA		(_tptr0),Y
 loc_45931:
 		STA		_PPU_DATA
 		DEX
 		BNE		loc_45931
-		JSR		_ptr5_inc
+		INCY	_tptr0
 		JMP		.disp_tlm_send
-_ptr5_inc:
-		INC		_tptr0
-		BNE		locret_45943
-		INC		_tptr0+1
-locret_45943:
-		RTS
+; --------------------------------
 .disp_atr_send:
+		LDY		#0										; Y not 0 anymore!
 		LDA		#$23
 		STA		_PPU_ADDR
 		LDX		#$C0
@@ -3013,89 +3032,98 @@ loc_45959:
 		STA		_pal_buf,Y
 		DEY
 		BPL		loc_45959
-		LDA		_str_ptr
+		LDY		_disp_spr_send_tmp
 		BNE		.disp_spr_send
-		LDA		_str_ptr+1
-		BNE		.disp_spr_send
-		JMP		locret_459F1
-.disp_spr_send:
-		LDA		#$C
-		STA		_tptr0
-		LDA		#$FF
-		STA		_tptr0+1
-		LDA		#0
-		STA		_disp_spr_send_tmp
-loc_45979:
-		LDX		#0
-loc_4597B:
-		LDY		#0
-		LDA		(_str_ptr),Y
-		BEQ		loc_459D4
-		STA		_tmpE4
-		CMP		#$FF
-		BNE		loc_45992
-		LDA		_disp_spr_send_tmp
-		EOR		#$80
-		STA		_disp_spr_send_tmp
-		JMP		loc_459D4
-loc_45992:
-		LDA		_tmpE4
-		AND		#$3F
-		LDY		_tptr0
-		TXA
-		PHA
-		LDX		_screen_idx
-		LDA		_tmpE4
-		AND		#$3F
-		CLC
-		ADC		_disp_spr_tile_delta,X
-		BIT		_disp_spr_send_tmp
-		BPL		loc_459AC
-		ADC		#$34
-loc_459AC:
-		STA		_spr_buf+1,Y
-		PLA
-		TAX
-		ASL
-		ASL
-		ASL
-		STA		_spr_buf+3,Y
-		LDA		_tptr0+1
-		CLC
-		ADC		_disp_extra_shift
-		STA		_spr_buf,Y
-		LDA		_tmpE4
-		LSR
-		LSR
-		LSR
-		LSR
-		LSR
-		LSR
-		STA		_spr_buf+2,Y
-		LDA		_tptr0
-		CLC
-		ADC		#4
-		STA		_tptr0
-		BCS		locret_459F1
-loc_459D4:
-		LDA		_str_ptr
-		CLC
-		ADC		#1
-		STA		_str_ptr
-		LDA		_str_ptr+1
-		ADC		#0
-		STA		_str_ptr+1
-		INX
-		CPX		#$20
-		BCC		loc_4597B
-		LDA		_tptr0+1
-		CLC
-		ADC		#8
-		STA		_tptr0+1
-		CMP		#$C8
-		BCC		loc_45979
-locret_459F1:
 		RTS
+; --------------------------------
+.disp_spr_send:
+		LDA		(_str_ptr),Y
+		STA		_spr_buf,Y
+		DEY
+		BNE		.disp_spr_send
+		LDA		(_str_ptr),Y
+		STA		_spr_buf,Y
+		RTS
+; --
+; old autogenerating sprite function
+;		LDA		#$C
+;		STA		_tptr0
+;		LDA		#$FF
+;		STA		_tptr0+1
+;		LDA		#0
+;		STA		_disp_spr_send_tmp
+;loc_45979:
+;		LDX		#0
+;loc_4597B:
+;		LDY		#0
+;		LDA		(_str_ptr),Y
+;		BEQ		loc_459D4
+;		STA		_tmpE4
+;		CMP		#$FF
+;		BNE		loc_45992
+;		LDA		_disp_spr_send_tmp
+;		EOR		#$80
+;		STA		_disp_spr_send_tmp
+;		JMP		loc_459D4
+;loc_45992:
+;		LDA		_tmpE4
+;		AND		#$3F
+;		LDY		_tptr0
+;		TXA
+;		PHA
+;		LDX		_screen_idx
+;		LDA		_tmpE4
+;		AND		#$3F
+;		CLC
+;		ADC		_disp_spr_tile_delta,X
+;		BIT		_disp_spr_send_tmp
+;		BPL		loc_459AC
+;		ADC		#$34
+;loc_459AC:
+;		STA		_spr_buf+1,Y
+;		PLA
+;		TAX
+;		ASL
+;		ASL
+;		ASL
+;		STA		_spr_buf+3,Y
+;		LDA		_tptr0+1
+;		CLC
+;		ADC		_disp_extra_shift
+;		STA		_spr_buf,Y
+;		LDA		_tmpE4
+;		LSR
+;		LSR
+;		LSR
+;		LSR
+;		LSR
+;		LSR
+;		STA		_spr_buf+2,Y
+;		LDA		_tptr0
+;		CLC
+;		ADC		#4
+;		STA		_tptr0
+;		BCS		locret_459F1
+;loc_459D4:
+;		LDA		_str_ptr
+;		CLC
+;		ADC		#1
+;		STA		_str_ptr
+;		LDA		_str_ptr+1
+;		ADC		#0
+;		STA		_str_ptr+1
+;		INX
+;		CPX		#$20
+;		BCC		loc_4597B
+;		LDA		_tptr0+1
+;		CLC
+;		ADC		#8
+;		STA		_tptr0+1
+;		CMP		#$C8
+;		BCC		loc_45979
+;locret_459F1:
+;		RTS
+; --
 
 
 _disp_tlm_lib:
@@ -3119,14 +3147,14 @@ _disp_atr_lib:
 		.WORD _atr7_ending
 		.WORD _atr8_repair
 _disp_spr_lib:
-		.WORD 0
-		.WORD 0
+		.WORD 0 ; _spr0_ocean
+		.WORD _spr1_probe
 		.WORD _spr2_title
 		.WORD 0
 		.WORD 0
 		.WORD 0
 		.WORD 0
-		.WORD 0
+		.WORD _spr7_ending
 		.WORD _spr8_repair
 _disp_pal_lib:
 		.WORD _pal0_ocean
@@ -3138,29 +3166,41 @@ _disp_pal_lib:
 		.WORD _pal3456_frame
 		.WORD _pal7_ending
 		.WORD _pal8_repair
-_disp_spr_tile_delta:
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,$BE
+
 _disp_chr1_list:
 		.BYTE	$18,$18,$19,$1C,$1C,$1C,$1D,$1E,$16
 _disp_chr0_list:
 		.BYTE	$1C,$1C,$1B,$18,$18,$18,$18,$1E,$16
+_special_controls_flags_list:
+		.BYTE	  0,  0,$FF,  0,  0,  0,  0,  0,  0
 _disp_spr0hit_use_flags:
 		.BYTE	  0,  0,$FF,  0,  0,  0,  0,$FF,$FF
-_disp_spr0hit_x:
-		.BYTE	  0,  0,$BD,  0,  0,  0,  0,$F8,$30
-_disp_spr0hit_y:
-		.BYTE	  0,  0,$65,  0,  0,  0,  0,$7C,$66
-_disp_spr0hit_tile:
-		.BYTE	  0,  0,$FF,  0,  0,  0,  0,$30,$30
-_special_controls_flag_flags_list:
-		.BYTE	  0,  0,$FF,  0,  0,  0,  0,  0,  0
 _disp_extra_shifts_list:
 		.BYTE	  0,  0,$10,  0,  0,  0,  0,$10,$10
+_disp_spr_data_size_list:
+		.BYTE	  0 ; [_spr0_ocean_end - _spr0_ocean - 1]
+		.BYTE	[_spr1_probe_end - _spr1_probe - 1]
+		.BYTE	[_spr2_title_end - _spr2_title - 1]
+		.BYTE	  0
+		.BYTE	  0
+		.BYTE	  0
+		.BYTE	  0
+		.BYTE	[_spr7_ending_end - _spr7_ending - 1]
+		.BYTE	[_spr8_repair_end - _spr8_repair - 1]
+
+;_disp_spr_tile_delta:
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,$BE
+;_disp_spr0hit_x:
+;		.BYTE	  0,  0,$BD,  0,  0,  0,  0,$F8,$30
+;_disp_spr0hit_y:
+;		.BYTE	  0,  0,$65,  0,  0,  0,  0,$7C,$66
+;_disp_spr0hit_tile:
+;		.BYTE	  0,  0,$FF,  0,  0,  0,  0,$30,$30
 
 ; displays tilemaps
 ;
 _pal0_ocean:
-		.BYTE	 $F,  0,$10,$20, $F,  1,$11,$21, $F,  2,$12,$10, $F,  3,$13,$23
+		.BYTE	 $F,  0,$10,$20, $F,  1,$11,$21, $F,  2,$12,$10, $F,$16,$26, $F
 		.BYTE	 $F,$16,$26, $F, $F,  5,$15,$25, $F,  6,$16,$26, $F,  7,$17,$27
 _pal1_probe:
 		.BYTE	 $F,$16,$26, $F, $F, $F, $F, $F, $F, $F, $F, $F, $F,$12,$22,$32
@@ -3238,7 +3278,7 @@ _atr1_probe:
 		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
 		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
 		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
-		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,  0
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0
 _atr8_repair:
@@ -3269,62 +3309,138 @@ _tlm7_ending:
 _tlm8_repair:
 		INCBIN	"tlm\tlm8.pak"
 
+;_spr0_ocean:
+;		.BYTE	$80,$10,$00,$68,$80,$12,$00,$70,$80,$05,$00,$78,$80,$13,$00,$80
+;		.BYTE	$80,$05,$00,$88,$80,$0E,$00,$90,$80,$14,$00,$98,$80,$13,$00,$A0
+;_spr0_ocean_end:
+
+_spr1_probe:		
+;		.BYTE	$7F,$0F,$00,$70,$7F,$04,$00,$78,$7F,$15,$00,$80,$7F,$03,$00,$88
+;		.BYTE	$7F,$14,$00,$90,$7F,$09,$00,$98,$7F,$0F,$00,$A0,$7F,$0E,$00,$A8
+		.BYTE	$34,$01,$00,$84
+_spr1_probe_end:
+
 _spr2_title:
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$41,$43,$45,$47,$49,$4B,  0,$4D,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, $F,$11,$13,$15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$17,$19,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$1B,$1D,$1F,$21,$23,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	$FF,  0,  0,  0,$A5,$A7,$81,$A3,$A7,$FF,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$25,$27,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	$FF,  0,  0,  0,$85,$9D,$9B,$A7,$91,$9B,$A9,$89,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,$A5,$9D,$A9,$9B,$87,  0,$9D,$8B,$8B,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,$99,$A9,$A5,$91,$85,  0,$9D,$8B,$8B,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	$65,$FF,$FF,$BD,$4F,$01,$01,$A8,$4F,$03,$01,$B0,$4F,$05,$01,$B8
+		.BYTE	$4F,$07,$01,$C0,$4F,$09,$01,$C8,$4F,$0B,$01,$D0,$4F,$0D,$01,$E0
+		.BYTE	$5F,$0F,$00,$70,$5F,$11,$00,$78,$5F,$13,$00,$80,$5F,$15,$00,$88
+		.BYTE	$6F,$17,$00,$A0,$6F,$19,$00,$A8,$7F,$1B,$00,$A8,$7F,$1D,$00,$B0
+		.BYTE	$7F,$1F,$00,$B8,$7F,$21,$00,$C0,$7F,$23,$00,$C8,$8F,$25,$00,$C0
+		.BYTE	$8F,$27,$00,$C8
+_spr2_title_menu0:
+		.BYTE	_m0p,$59,$02,$20
+		.BYTE	_m0p,$5B,$02,$28
+		.BYTE	_m0p,$35,$02,$30
+		.BYTE	_m0p,$57,$02,$38
+		.BYTE	_m0p,$5B,$02,$40
+_spr2_title_menu1:
+		.BYTE	_m1p,$39,$02,$20
+		.BYTE	_m1p,$51,$02,$28
+		.BYTE	_m1p,$4F,$02,$30
+		.BYTE	_m1p,$5B,$02,$38
+		.BYTE	_m1p,$45,$02,$40
+		.BYTE	_m1p,$4F,$02,$48
+		.BYTE	_m1p,$5D,$02,$50
+		.BYTE	_m1p,$3D,$02,$58 ; on/off owerwritten
+_spr2_title_menu2:
+		.BYTE	_m2p,$59,$02,$20
+		.BYTE	_m2p,$51,$02,$28
+		.BYTE	_m2p,$5D,$02,$30
+		.BYTE	_m2p,$4F,$02,$38
+		.BYTE	_m2p,$3B,$02,$40
+		.BYTE	_m2p,$51,$02,$50
+		.BYTE	_m2p,$4F,$02,$58
+		.BYTE	_m2p,$01,$02,$60 ; on/off --//--
+_spr2_title_menu3:
+		.BYTE	_m3p,$4D,$02,$20
+		.BYTE	_m3p,$5D,$02,$28
+		.BYTE	_m3p,$59,$02,$30
+		.BYTE	_m3p,$45,$02,$38
+		.BYTE	_m3p,$39,$02,$40
+		.BYTE	_m3p,$51,$02,$50
+		.BYTE	_m3p,$4F,$02,$58
+		.BYTE	_m3p,$01,$02,$60 ; on/off --//--
+_spr2_title_end:
+
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$41,$43,$45,$47,$49,$4B,  0,$4D,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, $F,$11,$13,$15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$17,$19,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$1B,$1D,$1F,$21,$23,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	$FF,  0,  0,  0,$A5,$A7,$81,$A3,$A7,$FF,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$25,$27,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	$FF,  0,  0,  0,$85,$9D,$9B,$A7,$91,$9B,$A9,$89,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,$A5,$9D,$A9,$9B,$87,  0,$9D,$8B,$8B,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,$99,$A9,$A5,$91,$85,  0,$9D,$8B,$8B,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+
+_spr7_ending:
+		.BYTE	$7D,$30,$FF,$00,$7F,$F7,$02,$80,$7F,$43,$02,$88,$7F,$F8,$02,$90
+		.BYTE	$7F,$F9,$02,$98,$7F,$FA,$02,$A0,$87,$FB,$02,$80,$87,$FC,$02,$88
+		.BYTE	$87,$FD,$02,$90,$87,$FE,$02,$98
+_spr7_ending_end:
+
 _spr8_repair:
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$81,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$82,$83,  0,$44,$45,  0,  0,$86,$87,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$88,$89,  0,  0,  0,  0,  0, $A,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8B,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8C,$8D,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8E,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8F,$90,$91,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$92,$93,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$94,$95,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$96,$97,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$98,  0,  0,  0,  0,  0,$99,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$9A,  0,  0,  0,  0,  0,$9B,$9C,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$9D,$9E,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$9F,$A0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$A1,$A2,$A3,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$A4,$A5,$A6,$A7,$A8,$A9,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$AA,$AB,$AC,$AD,$AE,$AF,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$B0,  0,$B1,$B2,$B3,$B4,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$B5,$B6,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$B7,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	$66,$30,$FF,$30,$40,$F6,$00,$A8,$48,$F7,$00,$A8,$1F,$BF,$02,$A8
+		.BYTE	$27,$C0,$02,$80,$27,$C1,$02,$88,$27,$C2,$01,$98,$27,$C3,$01,$A0
+		.BYTE	$27,$C4,$02,$B8,$27,$C5,$02,$C0,$2F,$C6,$02,$80,$2F,$C7,$02,$88
+		.BYTE	$2F,$C8,$00,$B8,$37,$C9,$02,$80,$3F,$CA,$02,$C0,$3F,$CB,$02,$C8
+		.BYTE	$47,$CC,$02,$C8,$4F,$CD,$02,$C8,$4F,$CE,$02,$D0,$4F,$CF,$02,$D8
+		.BYTE	$57,$D0,$02,$D0,$57,$D1,$02,$D8,$5F,$D2,$02,$D0,$5F,$D3,$02,$D8
+		.BYTE	$67,$D4,$02,$D0,$67,$D5,$02,$D8,$6F,$D6,$02,$80,$6F,$D7,$02,$B0
+		.BYTE	$77,$D8,$02,$80,$77,$D9,$02,$B0,$77,$DA,$02,$B8,$7F,$DB,$02,$B0
+		.BYTE	$7F,$DC,$02,$B8,$87,$DD,$02,$90,$87,$DE,$02,$98,$8F,$DF,$02,$C8
+		.BYTE	$8F,$E0,$02,$D0,$8F,$E1,$02,$D8,$97,$E2,$02,$B0,$97,$E3,$02,$B8
+		.BYTE	$97,$E4,$02,$C0,$97,$E5,$02,$C8,$97,$E6,$02,$D0,$97,$E7,$02,$D8
+		.BYTE	$9F,$E8,$02,$B0,$9F,$E9,$02,$B8,$9F,$EA,$02,$C0,$9F,$EB,$02,$C8
+		.BYTE	$9F,$EC,$02,$D0,$9F,$ED,$02,$D8,$A7,$EE,$02,$B0,$A7,$EF,$02,$C0
+		.BYTE	$A7,$F0,$02,$C8,$A7,$F1,$02,$D0,$A7,$F2,$02,$D8,$AF,$F3,$02,$B0
+		.BYTE	$AF,$F4,$02,$B8,$B7,$F5,$02,$B8,$9A,$F8,$00,$17,$A2,$F9,$00,$17
+_spr8_repair_end:
+
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$81,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$82,$83,  0,$44,$45,  0,  0,$86,$87,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$88,$89,  0,  0,  0,  0,  0, $A,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8B,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8C,$8D,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8E,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8F,$90,$91,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$92,$93,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$94,$95,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$96,$97,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$98,  0,  0,  0,  0,  0,$99,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$9A,  0,  0,  0,  0,  0,$9B,$9C,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$9D,$9E,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$9F,$A0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$A1,$A2,$A3,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$A4,$A5,$A6,$A7,$A8,$A9,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$AA,$AB,$AC,$AD,$AE,$AF,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$B0,  0,$B1,$B2,$B3,$B4,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$B5,$B6,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$B7,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 
 _ovl_repair_head:
 		.BYTE	  3,  4,  5,  0
@@ -3514,7 +3630,7 @@ _bios_msg_display_ex:
 		STA		_event_reload_idx
 		LDA		#$FF
 		STA		byte_3B1
-		JSR		_spr_buf_clear
+;		JSR		_spr_buf_clear
 		JSR		_log_clear_buf
 		LDA		#4
 		STA		_screen_idx

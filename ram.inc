@@ -180,6 +180,7 @@ _dpad:
 		.BYTE	0
 byte_3BF:
 		.BYTE	0
+byte_3C0:
 		.BYTE	0
 _repair_cursor_animate_tmp:
 		.BYTE	0

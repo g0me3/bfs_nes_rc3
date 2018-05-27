@@ -218,12 +218,6 @@ _level_complete:
 		JSR		_ppu_reinit								; prepare to enter the repair lab
 		LDY		#5
 		JSR		_mmc1_prg
-		LDA		_cur_lvl_idx
-		CMP		#4
-		BNE		.player_backup							; there is no repair after the level 4, except a secret one
-		JMP		_MAIN_LOOP								; and this is the main reason for score disappear at the level 5
-; --------------------------------
-.player_backup:
 		LDX		_player_number							; backup player data and go to repair lab
 		LDA		_cur_score_hex
 		STA		_pl_bckp_score_hex_lo,X
@@ -237,6 +231,15 @@ _level_complete:
 		STA		_pl_bckp_arms_percent,X
 		LDA		_cur_legs_percent
 		STA		_pl_bckp_legs_percent,X
+		LDA		_cur_lvl_idx
+; --
+; fix
+		CMP		#4										
+		BNE		.skip_repair							; there is no repair after the level 4, except a secret one
+		JMP		_MAIN_LOOP								; and this were the main reason to score disappear at the level 5
+; --
+; --------------------------------
+.skip_repair:
 		LDA		#6
 		JSR		_bios_msg_display
 		JSR		_repair_lab_display

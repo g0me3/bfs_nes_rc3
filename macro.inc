@@ -79,6 +79,15 @@ _NXT	EQU	$FF
 		.BYTE 0
 	ENDM
 
+; == OPCODE ==
+
+	MAC	INCY
+		INY
+		BNE		.1
+		INC		{1}+1
+.1:
+	ENDM
+	
 ; == STUB ==
 
 	MAC	SAFE_STUB0
