@@ -682,10 +682,10 @@ _title_menu_spr_num_list:
 
 ; fixed constants of the Y position of the menu items on the screen
 ;
-_m0p	EQU	$8F
-_m1p	EQU	$9F
-_m2p	EQU	$AF
-_m3p	EQU	$BF
+_m0p	EQU	$87
+_m1p	EQU	$97
+_m2p	EQU	$A7
+_m3p	EQU	$B7
 
 _title_menu_pos_list:
 		.BYTE	_m0p,_m1p,_m2p,_m3p
@@ -3140,7 +3140,7 @@ _disp_atr_lib:
 		.WORD _atr0_ocean
 		.WORD _atr1_probe
 		.WORD _atr2_title
-		.WORD _atr3_hiscore
+		.WORD _atr4_frame
 		.WORD _atr4_frame
 		.WORD _atr5_lewis
 		.WORD _atr6_robocop
@@ -3148,7 +3148,7 @@ _disp_atr_lib:
 		.WORD _atr8_repair
 _disp_spr_lib:
 		.WORD 0 ; _spr0_ocean
-		.WORD _spr1_probe
+		.WORD 0 ; _spr1_probe
 		.WORD _spr2_title
 		.WORD 0
 		.WORD 0
@@ -3179,7 +3179,7 @@ _disp_extra_shifts_list:
 		.BYTE	  0,  0,$10,  0,  0,  0,  0,$10,$10
 _disp_spr_data_size_list:
 		.BYTE	  0 ; [_spr0_ocean_end - _spr0_ocean - 1]
-		.BYTE	[_spr1_probe_end - _spr1_probe - 1]
+		.BYTE	  0 ; [_spr1_probe_end - _spr1_probe - 1]
 		.BYTE	[_spr2_title_end - _spr2_title - 1]
 		.BYTE	  0
 		.BYTE	  0
@@ -3207,7 +3207,7 @@ _pal1_probe:
 		.BYTE	 $F,$16,$26, $F, $F,$21,$22,$32, $F,$21,$22,$32, $F,$21,$22,$32
 _pal2_title:
 		.BYTE	 $F,$27,$26,$30, $F,$11,$21,$30, $F,$27,$38,$30, $F,$27,$36,$30
-		.BYTE	 $F,$27,$36,$30, $F,$27,$38,$30, $F,$16,$26, $F, $F,$21,$10,$20
+		.BYTE	 $F,$27,$36,$30, $F,$27,$38,$30, $F,$16,$26, $F, $F,$11,$21,$30
 _pal3456_frame:
 		.BYTE	 $F,$17,$27,$30, $F,  0,$10,$20, $F,$12,$22,$30, $F, $A,$2A, $F
 		.BYTE	 $F,  7,$17,$20, $F,  0,$10,$20, $F,$12,$22,$30, $F,$21,$10,$20
@@ -3260,13 +3260,6 @@ _atr7_ending:
 		.BYTE	$AA,$AA,$AA,$AA,$55,$55,$55,$55
 		.BYTE	$AA,$AA,$AA,$AA,$55,$FF,$FF,$FF
 		.BYTE	  0,  0,  0,  0,$FF,$FF,$FF,$FF
-_atr3_hiscore:
-		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
-		.BYTE	$AF,$AB,$AF,$AB,$AE,$AF,$AE,$AF
-		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB
-		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB
-		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB
-		.BYTE	$AE,$AF,$AF,$AF,$AF,$AF,$AF,$AB
 _atr4_frame:
 		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
 		.BYTE	$AF,$AB,$AF,$AB,$AE,$AF,$AE,$AF
@@ -3293,7 +3286,7 @@ _atr8_repair:
 _tlm0_ocean:
 		INCBIN	"tlm\tlm0.pak"
 _tlm1_probe:
-		INCBIN	"tlm\tlm1.pak"
+		INCBIN	"tlm\tlm1_a.pak"
 _tlm2_title:
 		INCBIN	"tlm\tlm2.pak"
 _tlm3_hiscore:
@@ -3314,11 +3307,11 @@ _tlm8_repair:
 ;		.BYTE	$80,$05,$00,$88,$80,$0E,$00,$90,$80,$14,$00,$98,$80,$13,$00,$A0
 ;_spr0_ocean_end:
 
-_spr1_probe:		
+;_spr1_probe:		
 ;		.BYTE	$7F,$0F,$00,$70,$7F,$04,$00,$78,$7F,$15,$00,$80,$7F,$03,$00,$88
 ;		.BYTE	$7F,$14,$00,$90,$7F,$09,$00,$98,$7F,$0F,$00,$A0,$7F,$0E,$00,$A8
-		.BYTE	$34,$01,$00,$84
-_spr1_probe_end:
+;		.BYTE	$34,$01,$00,$84
+;_spr1_probe_end:
 
 _spr2_title:
 		.BYTE	$65,$FF,$FF,$BD,$4F,$01,$01,$A8,$4F,$03,$01,$B0,$4F,$05,$01,$B8
@@ -3326,7 +3319,8 @@ _spr2_title:
 		.BYTE	$5F,$0F,$00,$70,$5F,$11,$00,$78,$5F,$13,$00,$80,$5F,$15,$00,$88
 		.BYTE	$6F,$17,$00,$A0,$6F,$19,$00,$A8,$7F,$1B,$00,$A8,$7F,$1D,$00,$B0
 		.BYTE	$7F,$1F,$00,$B8,$7F,$21,$00,$C0,$7F,$23,$00,$C8,$8F,$25,$00,$C0
-		.BYTE	$8F,$27,$00,$C8
+		.BYTE	$8F,$27,$00,$C8,$C7,$29,$03,$90,$C7,$2B,$03,$98,$C7,$2D,$03,$A0
+		.BYTE	$C7,$2F,$03,$A8,$C7,$31,$03,$B0,$C7,$33,$03,$B8
 _spr2_title_menu0:
 		.BYTE	_m0p,$59,$02,$20
 		.BYTE	_m0p,$5B,$02,$28
@@ -3339,27 +3333,27 @@ _spr2_title_menu1:
 		.BYTE	_m1p,$4F,$02,$30
 		.BYTE	_m1p,$5B,$02,$38
 		.BYTE	_m1p,$45,$02,$40
-		.BYTE	_m1p,$4F,$02,$48
+		.BYTE	_m1p,$4F,$02,$48 ; on/off
 		.BYTE	_m1p,$5D,$02,$50
-		.BYTE	_m1p,$3D,$02,$58 ; on/off owerwritten
+		.BYTE	_m1p,$3D,$02,$58
 _spr2_title_menu2:
 		.BYTE	_m2p,$59,$02,$20
 		.BYTE	_m2p,$51,$02,$28
 		.BYTE	_m2p,$5D,$02,$30
 		.BYTE	_m2p,$4F,$02,$38
 		.BYTE	_m2p,$3B,$02,$40
-		.BYTE	_m2p,$51,$02,$50
+		.BYTE	_m2p,$51,$02,$50 ; on/off
 		.BYTE	_m2p,$4F,$02,$58
-		.BYTE	_m2p,$01,$02,$60 ; on/off --//--
+		.BYTE	_m2p,$01,$02,$60
 _spr2_title_menu3:
 		.BYTE	_m3p,$4D,$02,$20
 		.BYTE	_m3p,$5D,$02,$28
 		.BYTE	_m3p,$59,$02,$30
 		.BYTE	_m3p,$45,$02,$38
 		.BYTE	_m3p,$39,$02,$40
-		.BYTE	_m3p,$51,$02,$50
+		.BYTE	_m3p,$51,$02,$50 ; on/off
 		.BYTE	_m3p,$4F,$02,$58
-		.BYTE	_m3p,$01,$02,$60 ; on/off --//--
+		.BYTE	_m3p,$01,$02,$60
 _spr2_title_end:
 
 ;		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
