@@ -219,9 +219,9 @@ _level_complete:
 		JSR		_mmc1_prg
 		LDA		_cur_lvl_idx
 		CMP		#4
-		BNE		_player_backup							; there is no repair after the level 4, except a secret one
-		JMP		_MAIN_LOOP
-_player_backup:
+		BNE		.player_backup							; there is no repair after the level 4, except a secret one
+		JMP		_MAIN_LOOP								; and this is the main reason for score disappear at the level 5
+.player_backup:
 		LDX		_player_number							; backup player data and go to repair lab
 		LDA		_cur_score_hex
 		STA		_pl_bckp_score_hex_lo,X
@@ -7418,6 +7418,7 @@ _mmc1_prg:
 		LSR
 		STA		$FFFF
 		RTS
+		
 _hud_score_num_tile_upper_list:
 		.BYTE	$41,$42,$43,$44,$45,$46,$47,$48,$49,$4A
 _hud_score_num_tile_lower_list:

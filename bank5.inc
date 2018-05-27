@@ -510,10 +510,11 @@ loc_444AD:
 		JSR		_delay
 ;		JSR		_far_apu_play_prg5_safe
 		JSR		_read_pad
-		LDY		_title_menu_idx
-		LDX		byte_44651,Y
-		LDA		_star_field_params1,X
-		TAX
+		LDY		_title_menu_idx							
+;		LDX		byte_44651,Y							; here we table calc the sprite offset pos in buffer
+;		LDA		_A_mul_4_table,X					; selected menu item to make it blink idx * 4 previously
+;		TAX
+		LDX		byte_44651,Y							; but why we just can't have already precalc table for it? lol
 		LDA		byte_44655,Y
 		STA		_tmp3C3+2
 		LDA		_generic_nmi_over_counter
@@ -527,7 +528,7 @@ loc_444DA:
 		BEQ		loc_444EA
 		LDA		_pad
 		BEQ		loc_444E6
-		JMP		_wait_for_midscreen_change
+		JMP		.wait_for_midscreen_change
 loc_444E6:
 		LDA		#0
 		STA		_logo_skip_forbid_flag
@@ -627,7 +628,7 @@ loc_4459F:
 		LDA		#0
 		STA		_new_game_start_flag
 		STA		byte_3B4
-		JMP		_wait_for_midscreen_change
+		JMP		.wait_for_midscreen_change
 loc_445BD:
 		LDA		#1
 		STA		_new_game_start_flag
@@ -651,13 +652,13 @@ loc_445C3:
 loc_445E7:
 		LDA		_title_menu_idx
 		CMP		#3
-		BNE		_wait_for_midscreen_change
+		BNE		.wait_for_midscreen_change
 		LDA		_pad
 		CMP		byte_3D3
-		BEQ		_wait_for_midscreen_change
+		BEQ		.wait_for_midscreen_change
 		STA		byte_3D3
 		AND		#9
-		BEQ		_wait_for_midscreen_change
+		BEQ		.wait_for_midscreen_change
 		JSR		_reload_delay_counter_2
 		LDA		_apu_music_enable
 		CLC
@@ -667,28 +668,29 @@ loc_445E7:
 		BEQ		loc_44615
 		LDA		#$1D
 		JSR		_far_apu_mus_load_prg5_safe
-		JMP		_wait_for_midscreen_change
+		JMP		.wait_for_midscreen_change
 loc_44615:
 		LDA		#0
 		JSR		_far_apu_mus_load_prg5_safe
-_wait_for_midscreen_change:
+.wait_for_midscreen_change:
 		BIT		_PPU_STATUS
 		BMI		loc_44623
-		BVC		_wait_for_midscreen_change
-		LDX		#$13
+		BVC		.wait_for_midscreen_change
+		LDX		#$13									; delay 96 clocks
 loc_44623:
 		DEX
 		BNE		loc_44623
-		LDA		#$1A
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
+		LDA		#$1A									; mm1_chr0 call - 48 clocks
+;		STA		$BFFF									; direct set - 30 clocks to change bank
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+		JSR		_mmc1_chr0
 		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -703,8 +705,10 @@ _reload_delay_counter_2:
 		PLA
 		TAX
 		RTS
+;byte_44651:
+;		.BYTE	$15,$1C,$24,$2C
 byte_44651:
-		.BYTE	$15,$1C,$24,$2C
+		.BYTE	$54,$70,$90,$B0
 byte_44655:
 		.BYTE	  5,  8,  8,  8
 byte_44659:
@@ -865,8 +869,8 @@ _event4_ending:
 		CMP		#3
 		BCC		loc_44858
 		CMP		#$D
-		BCS		loc_448BE
-		JMP		loc_44914
+		BCS		_title_screen_display
+		JMP		_hi_score_entry_event
 loc_44858:
 		JSR		_read_pad
 		LDA		_pad
@@ -885,6 +889,7 @@ loc_4487B:
 		BIT		_PPU_STATUS
 		BMI		loc_448B8
 		BVC		loc_4487B
+		NOP												; delay 66 clocks
 		NOP
 		NOP
 		NOP
@@ -908,30 +913,35 @@ loc_4487B:
 		NOP
 		NOP
 		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		LDA		#$1F
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+		LDA		#$1F									; direct delay 30 clocks
+;		STA		$BFFF									; with call - 48 clocks
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+		JSR		_mmc1_chr0
 loc_448B8:
 ;		JSR		_far_apu_play_prg5_safe
 		JMP		_event_exec
-loc_448BE:
+
+; =============== S U B	R O U T	I N E =======================================
+; used to redisplay the title screen after the game over or ending sequences
+; as well after the hi-score entry screen
+;
+_title_screen_display:
 		LDA		#0
 		STA		_PPU_CTRL
 		STA		_PPU_MASK
@@ -963,15 +973,15 @@ loc_448BE:
 		STA		_pad_prev
 		STA		byte_3D3
 		JMP		_event_exec
-loc_44911:
-		JMP		loc_448BE
-loc_44914:
+
+; =============== S U B	R O U T	I N E =======================================
+_hi_score_entry_event:
 		LDA		byte_3D4
 		BNE		loc_44965
 		JSR		_sort_hiscore_test
 		LDA		_hi_score_line_idx
 		CMP		#6
-		BCS		loc_44911
+		BCS		_title_screen_display
 		ASL
 		TAX
 		LDA		_hi_score_ppu_ofs_list+1,X
@@ -1008,7 +1018,7 @@ loc_44987:
 		AND		#$1F
 		BEQ		loc_44992
 		CMP		#$14
-		BNE		loc_44A0F
+		BNE		.j_event_exec3
 loc_44992:
 		LDA		_pad
 		AND		#$20
@@ -1065,10 +1075,11 @@ loc_449EE:
 loc_44A05:
 		LDA		_pad
 		AND		#9
-		BEQ		loc_44A0F
-		JMP		loc_448BE
-loc_44A0F:
+		BEQ		.j_event_exec3
+		JMP		_title_screen_display
+.j_event_exec3:
 		JMP		_event_exec
+		
 _hi_score_ram_ofs_list:
 		.BYTE	$75,$84,$93,$A2,$B1,$C0
 
@@ -1165,6 +1176,7 @@ loc_44AF1:
 		BIT		_PPU_STATUS
 		BMI		loc_44B2B
 		BVC		loc_44AF1
+		NOP												; 60 clocks delay
 		NOP
 		NOP
 		NOP
@@ -1185,26 +1197,26 @@ loc_44AF1:
 		NOP
 		NOP
 		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		LDA		#$17
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+;		NOP
+		LDA		#$17									; 30 clocks direct set to change bank
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+		JSR		_mmc1_chr0								; 48 clocks call
 loc_44B2B:
 		JSR		_repair_cursor_input
 		JSR		_repair_cursor_animate
@@ -1218,23 +1230,23 @@ _event6_game_over:
 		JSR		_delay
 ;		JSR		_far_apu_play_prg5_safe
 		JSR		_star_field_animate
-		JSR		_read_pad
+		JSR		_read_pad								; read pad
 		LDA		_pad
-		BEQ		loc_44B5A
-		LDA		_pad_prev
-		BEQ		loc_44B62
-		JMP		loc_44B6F
+		BEQ		loc_44B5A								; if nothing is pressed, do times
+		LDA		_pad_prev								; check if _pad_prev is zero, so we has released any buttons before	
+		BEQ		.game_over_set_max_timers				; then jump to max timers set!
+		JMP		.game_over_timers_increase
 loc_44B5A:
 		LDA		#0
 		STA		_pad_prev
-		JMP		loc_44B6F
-loc_44B62:
-		LDA		#2
-		STA		_delay_counter+1
-		LDA		#$30
-		STA		_delay_counter
-		JMP		loc_44B80
-loc_44B6F:
+		BEQ		.game_over_timers_increase
+.game_over_set_max_timers:
+		LDA		#2										; here we set timers to max value and jump to test it and so skip!
+		STA		_delay_counter+1						; why don't you just jupm to skip here?! maybe because it's mean some
+		LDA		#$30									; kind of reinitialization of the same timers used by the title screen
+		STA		_delay_counter							
+		BNE		.game_over_timers_test
+.game_over_timers_increase:
 		LDA		_delay_counter
 		CLC
 		ADC		#1
@@ -1242,13 +1254,13 @@ loc_44B6F:
 		LDA		_delay_counter+1
 		ADC		#0
 		STA		_delay_counter+1
-loc_44B80:
+.game_over_timers_test:
 		LDA		_delay_counter+1
 		CMP		#2
-		BNE		loc_44BA3
+		BNE		.j_event_exec2
 		LDA		_delay_counter
 		CMP		#$30
-		BCC		loc_44BA3
+		BCC		.j_event_exec2
 		LDA		#4
 		STA		_delay_counter+1
 		STA		_event_reload_idx
@@ -1256,8 +1268,8 @@ loc_44B80:
 		STA		byte_3D4
 		LDA		#3
 		STA		_screen_idx
-		JMP		loc_44914
-loc_44BA3:
+		JMP		_hi_score_entry_event
+.j_event_exec2:
 		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -1445,25 +1457,27 @@ _nmi0:
 		STA		_PPU_OAM_DMA
 		JSR		_ppu_pal_send
 		LDA		_chr0_bank_shadow
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
-		LSR
-		STA		$BFFF
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+;		LSR
+;		STA		$BFFF
+		JSR		_mmc1_chr0
 		LDA		_chr1_bank_shadow
-		STA		$DFFF
-		LSR
-		STA		$DFFF
-		LSR
-		STA		$DFFF
-		LSR
-		STA		$DFFF
-		LSR
-		STA		$DFFF
+;		STA		$DFFF
+;		LSR
+;		STA		$DFFF
+;		LSR
+;		STA		$DFFF
+;		LSR
+;		STA		$DFFF
+;		LSR
+;		STA		$DFFF
+		JSR		_mmc1_chr1
 		LDA		_event_reload_idx
 		CMP		#3
 		BEQ		_log_msg_dequeue
@@ -2243,11 +2257,11 @@ _nmi0_common:
 		BNE		.j_nmi0_finish
 		LDA		_screen_idx
 		CMP		#3
-		BEQ		.nmi0_hiscore_entry_input
+		BEQ		.nmi0_hiscore_entry_ppu_update
 .j_nmi0_finish:
 		JMP		.nmi0_finish
 ; --------------------------------
-.nmi0_hiscore_entry_input:
+.nmi0_hiscore_entry_ppu_update:
 		LDA		#0										; calc the hiscore table data offset
 		CLC												; ofs = hi_score_line_idx * 15
 		LDX		_hi_score_line_idx
@@ -2517,7 +2531,7 @@ _star_field_animate:
 		AND		#$7F
 		STA		_mul_argA
 		JSR		_A_mul_B_mul_2
-		LDY		_star_field_params1,X
+		LDY		_A_mul_4_table,X
 		BIT		_star_filed_sign_tmp
 		BMI		loc_45502
 		ADC		_star_field_center_pos_x
@@ -2539,7 +2553,7 @@ loc_4550E:
 		AND		#$7F
 		STA		_mul_argA
 		JSR		_A_mul_B_mul_2
-		LDY		_star_field_params1,X
+		LDY		_A_mul_4_table,X
 		BIT		_star_filed_sign_tmp
 		BMI		loc_45530
 		ADC		_star_field_center_pos_y
@@ -2560,7 +2574,7 @@ loc_45535:
 		STA		_star_field_data1,X
 		INC		_star_field_data2,X
 		LDA		_stars_tiles_idx_list,Y
-		LDY		_star_field_params1,X
+		LDY		_A_mul_4_table,X
 		CLC
 		ADC		#$8B
 		STA		_spr_buf+1,Y
@@ -2622,7 +2636,7 @@ loc_455BF:
 		ROL
 		RTS
 		
-_star_field_params1:
+_A_mul_4_table:
 		.BYTE	  0,  4,  8, $C,$10,$14,$18,$1C,$20,$24,$28,$2C,$30,$34,$38,$3C
 		.BYTE	$40,$44,$48,$4C,$50,$54,$58,$5C,$60,$64,$68,$6C,$70,$74,$78,$7C
 		.BYTE	$80,$84,$88,$8C,$90,$94,$98,$9C,$A0,$A4,$A8,$AC,$B0,$B4,$B8,$BC
