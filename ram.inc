@@ -1,131 +1,79 @@
 	ORG $0000
 
-_pads:
-		.BYTE	0,0,0
-_cur_lvl_idx:
-		.BYTE	0
-_unused4:
-		.BYTE	0,0
-_irq_regs_backup:
-		.BYTE	0,0,0
-_nmi_is_over_flag:
-		.BYTE	0
-_nmi_hndl_idx:
-		.BYTE	0
-_unused_33:
-		.BYTE	0
-_lvl_obj_list_ptr:
-		.BYTE	0,0
-_tmp_ptr:
-		.BYTE	0,0
-_ppu_ctrl_shadow:
-		.BYTE	0
-_ppu_mask_shadow:
-		.BYTE	0
-_lvl_scroll_value:
-		.BYTE	0
-_lvl_scroll_tile_hit_flag:
-		.BYTE	0
-_lvl_nt_value:
-		.BYTE	0
-_player_wnd_scroll_counter:
-		.BYTE	0
-_player_wnd_tile_number:
-		.BYTE	0
-_player_sit_jump_flag:
-		.BYTE	0
-_hud_update_ppu_data_counter:
-		.BYTE	0
-_hud_msg_type_pos:
-		.BYTE	0
-_pal_update_redundant:
-		.BYTE	0
-_cur_lvl_state_idx:
-		.BYTE	0
-_weapon0_idx:
-		.BYTE	0
-_weapon1_idx:
-		.BYTE	0
-_tmp1E:
-		.BYTE	0,0
-_logo_skip_forbid_flag:
-		.BYTE	0
-_unused_34:
-		.BYTE	0
-_obj_manager_tmp_cnt:
-		.BYTE	0
-_obj_scr_x_pos_tmp:
-		.BYTE	0
-_obj_scr_y_pos_tmp:
-		.BYTE	0
-_obj_spr_data_ptr_tmp:
-		.BYTE	0,0
-_unused_35:
-		.BYTE	0
-_obj_offscreen_flag_tmp:
-		.BYTE	0
-_lvl_cur_spr_chr_bank_up:
-		.BYTE	0
-_lvl_cur_spr_chr_bank_down:
-		.BYTE	0
-_lvl_cur_bg_chr_bank:
-		.BYTE	0
-_lvl_phase_bg_chr_banks_list:
-		.BYTE	0,0,0
-_lvl_bg_chr_treshold:
-		.BYTE	0,0
-_obj_global_y_delta:
-		.BYTE	0
-_lvl_stop_sctoll_room_idx:
-		.BYTE	0
-_pause_flag:
-		.BYTE	0
-_player_y_meta16_tile_tmp:
-		.BYTE	0
-_player_explode_spr_remove_reload:
-		.BYTE	0
-_player_scroll_stop_override_tmp:
-		.BYTE	0
-_rand_seed:
-		.BYTE	0,0,0,0
-_player_damage_blink_timer:
-		.BYTE	0
-_player_explode_timer_tmp:
-		.BYTE	0
-_obj_shuffle_mode:
-		.BYTE	0
-_player_fire_delay_reload:
-		.BYTE	0
-_player_explode_spr_remove_cnt:
-		.BYTE	0
-_player_jump_or_fall_flag:
-		.BYTE	0
-_lvl_door_enrty_delay:
-		.BYTE	0
-_ingame_sync_counter:
-		.BYTE	0
-_lvl1_player_pal_acid_lockup:
-		.BYTE	0
-_pad_tmp:
-		.BYTE	0
-_unused_8:
-		.BYTE	0
-_hud_msg_idx:
-		.BYTE	0
-_snd_idx:
-		.BYTE	0
-_last_enemy_hit:
-		.BYTE	0
-_player_diagonal_fire_delta:
-		.BYTE	0
-_player_hor_move_anim_timer:
-		.BYTE	0
-_enemy_bullet_y_pos_global_arg:
-		.BYTE	0
-_player_cur_bullet_shot_state:
-		.BYTE	0
-_unused_36:
-		.BYTE	0,0,0
+_apu_tmp0:							.BYTE	0,0
+_cur_lvl_idx:						.BYTE	0
+_cur_lvl_state_idx:					.BYTE	0
+_enemy_bullet_y_pos_global_arg:		.BYTE	0
+_hud_msg_idx:						.BYTE	0
+_hud_msg_type_pos:					.BYTE	0
+_hud_update_ppu_data_counter:		.BYTE	0
+_ingame_sync_counter:				.BYTE	0
+_intro_txt_ppu_ofs_tmp:				.BYTE	0,0
+_irq_regs_backup:					.BYTE	0,0,0
+_last_enemy_hit:					.BYTE	0
+_logo_skip_forbid_flag:				.BYTE	0
+_lvl1_player_pal_acid_lockup:		.BYTE	0
+_lvl_bg_chr_treshold:				.BYTE	0,0
+_lvl_collision_data0_ptr:			.BYTE	0,0
+_lvl_collision_data1_ptr:			.BYTE	0,0
+_lvl_collision_data2_ptr:			.BYTE	0,0
+_lvl_cur_bg_chr_bank:				.BYTE	0
+_lvl_cur_spr_chr_bank_down:			.BYTE	0
+_lvl_cur_spr_chr_bank_up:			.BYTE	0
+_lvl_door_enrty_delay:				.BYTE	0
+_lvl_nt_value:						.BYTE	0
+_lvl_obj_list_ptr:					.BYTE	0,0
+_lvl_phase_bg_chr_banks_list:		.BYTE	0,0,0
+_lvl_room_data_ptr:					.BYTE	0,0
+_lvl_scroll_tile_hit_flag:			.BYTE	0
+_lvl_scroll_value:					.BYTE	0
+_lvl_stop_sctoll_room_idx:			.BYTE	0
+_nmi_hndl_idx:						.BYTE	0
+_nmi_is_over_flag:					.BYTE	0
+_obj_global_y_delta:				.BYTE	0
+_obj_manager_tmp_cnt:				.BYTE	0
+_obj_offscreen_flag_tmp:			.BYTE	0
+_obj_scr_x_pos_tmp:					.BYTE	0
+_obj_scr_y_pos_tmp:					.BYTE	0
+_obj_shuffle_mode:					.BYTE	0
+_obj_spr_data_ptr_tmp:				.BYTE	0,0
+_pad_tmp:							.BYTE	0
+_pads:								.BYTE	0,0,0
+_pal_update_redundant:				.BYTE	0
+_pause_flag:						.BYTE	0
+_player_cur_bullet_shot_state:		.BYTE	0
+_player_damage_blink_timer:			.BYTE	0
+_player_diagonal_fire_delta:		.BYTE	0
+_player_explode_spr_remove_cnt:		.BYTE	0
+_player_explode_spr_remove_reload:	.BYTE	0
+_player_explode_timer_tmp:			.BYTE	0
+_player_fire_delay_reload:			.BYTE	0
+_player_hor_move_anim_timer:		.BYTE	0
+_player_jump_or_fall_flag:			.BYTE	0
+_player_scroll_stop_override_tmp:	.BYTE	0
+_player_sit_jump_flag:				.BYTE	0
+_player_wnd_scroll_counter:			.BYTE	0
+_player_wnd_tile_number:			.BYTE	0
+_player_y_meta16_tile_tmp:			.BYTE	0
+_ppu_ctrl_shadow:					.BYTE	0
+_ppu_mask_shadow:					.BYTE	0
+_ptr0:								.BYTE	0,0
+_ptr1:								.BYTE	0,0
+_ptr2:								.BYTE	0,0
+_rand_seed:							.BYTE	0,0,0,0
+_snd_idx:							.BYTE	0
+_str_ptr:							.BYTE	0,0
+_tmpE4:								.BYTE	0
+_tmpE5:								.BYTE	0
+_tmpE6:								.BYTE	0
+_tmpE7:								.BYTE	0
+_tmpE8:								.BYTE	0
+_tmpE9:								.BYTE	0
+_tptr0:								.BYTE	0,0
+_tptr1:								.BYTE	0,0
+_txt_ptr:							.BYTE	0,0
+_weapon0_idx:						.BYTE	0
+_weapon1_idx:						.BYTE	0
 
 		TOBJ	_obj_flags
 		TOBJ	_obj_spr_idx
@@ -135,7 +83,8 @@ _unused_36:
 		TOBJ	_obj_lvl_y
 		TOBJ	_obj_hcoll
 		TOBJ	_obj_vcoll
-		
+
+; --------------------------------
 ; 0x00-0x20 - enemies (0x1A max is used)
 ; 0x21 - fuel tank
 ; 0x22 - smart bomb
@@ -144,100 +93,29 @@ _unused_36:
 ; 0x25 - fire power upgrade
 ; 0x26 - powerup
 ; 0x27 - missile upgrade
-
+;
 		TOBJ	_obj_hndl_idx
 		TOBJ	_obj_unk
 
-_unused?:
-		.BYTE	0,0,0,0,0,0,0,0
-_lvl_room_data_ptr:
-		.BYTE	0,0
-_lvl_collision_data0_ptr:
-		.BYTE	0,0
-_lvl_collision_data1_ptr:
-		.BYTE	0,0
-_lvl_collision_data2_ptr:
-		.BYTE	0,0
-_tmpE2:
-		.BYTE	0,0
-_tmpE4:
+_end_of_zero_ram	EQU	.
+
+		ORG	$100
+
+_unused_stack_ram:
 		.BYTE	0
-_tmpE5:
-		.BYTE	0
-_tmpE6:
-		.BYTE	0
-_tmpE7:
-		.BYTE	0
-_tmpE8:
-		.BYTE	0
-_tmpE9:
-		.BYTE	0
-_ptr0:
-		.BYTE	0,0
-_ptr1:
-		.BYTE	0,0
-_ptr2:
-		.BYTE	0,0
-_unused_37:
-		.BYTE	0,0,0,0
-_text_data_tmp_ptr:
-		.BYTE	0,0
-_intro_txt_ppu_ofs_tmp:
-		.BYTE	0,0
-_unused_38:
-		.BYTE	0,0,0,0,0,0
-_apu_tmp0:
-		.BYTE	0,0
-_unused_39:
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0
-_unused1B3:
-		.BYTE	0
-_unused_40:
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0
 
 		ORG	$200
 
 _spr_buf:
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.BYTE	0
+
+		ORG	$300
 		
 _pal_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-;_nmi_ppu_ctrl_override_redundant:
 		.BYTE	0
-;_ppu_scroll_x_override_redundant:
 		.BYTE	0
-;_nmi0_scroll_reload_counter_redundant:
 		.BYTE	0
 _star_field_rand_seed:
 		.BYTE	0,0,0,0,0
@@ -354,10 +232,9 @@ _cur_legs_percent_backup:
 		.BYTE	0
 _cur_repair_tanks_backup:
 		.BYTE	0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0
 
+		ORG	$400
+		
 byte_1400:
 		.BYTE	0,0,0,0,0
 byte_1405:
@@ -439,7 +316,7 @@ byte_14C8:
 
 		ORG	$600
 		
-_tmp_ptr0:
+_tmp_ptr:
 		.BYTE	0,0
 _tmp_buf0:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -657,6 +534,7 @@ _log_msg_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
 _hi0_score:
 		.BYTE	0,0,0,0,0
 _hi0_name:
@@ -681,6 +559,7 @@ _hi5_score:
 		.BYTE	0,0,0,0,0
 _hi5_name:
 		.BYTE	0,0,0,0,0,0,0,0,0,0
+		
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0
 _score_cmp_buf:

@@ -2,29 +2,16 @@
 		ORG $8000, $00
 
 ; =============== S U B	R O U T	I N E =======================================
-_exec_sub:
-		ASL
-		TAX
-		LDA		_subs_lib,X
-		STA		_tmp_buf0
-		LDA		_subs_lib+1,X
-		STA		_tmp_buf0+1
-		LDA		#$78
+; game actual startup, show copyrights screen, do dumb delay, then goes to the
+; actual game event with logos and title screen, weird stuff, made in big rush
+;
+_sub0_intro_title:
+		LDA		#$78									; just in case, TODO put it where it belong 
 		STA		_star_field_center_pos_x
 		LDA		#$70
 		STA		_star_field_center_pos_y
-		JMP		(_tmp_buf0)
-
-_subs_lib:
-		.WORD _sub0_intro_title
-		.WORD _sub1_repair_lab
-		.WORD _sub2_game_over
-		.WORD _sub3_ending
-
-; =============== S U B	R O U T	I N E =======================================
-_sub0_intro_title:
 		LDA		#9
-		JSR		_asci_bios_msg_display
+		JSR		_asci_bios_msg_display					; draw window frame with default empty message
 		LDY		#0
 		STY		_PPU_CTRL
 		STY		_PPU_MASK
@@ -36,87 +23,81 @@ _sub0_intro_title:
 		STA		_intro_txt_ppu_ofs_tmp
 		STA		_PPU_ADDR
 		LDA		_asci_copyrights_ofs,X
-		STA		_text_data_tmp_ptr
+		STA		_txt_ptr
 		LDA		_asci_copyrights_ofs+1,X
-		STA		_text_data_tmp_ptr+1
+		STA		_txt_ptr+1					; display copyrights
 loc_44059:
-		LDA		(_text_data_tmp_ptr),Y
+		LDA		(_txt_ptr),Y
 		CMP		#$FE
-		BEQ		loc_44076
+		BEQ		.do_next_line							; $FE - return symbol
 		CMP		#$FA
-		BEQ		loc_440A0
+		BEQ		.do_music_and_delay
 		CMP		#$C0
 		BCS		loc_4406A
 		SEC
 		SBC		#$40
 loc_4406A:
 		STA		_PPU_DATA
-		INC		_text_data_tmp_ptr
+loc_4406A0:
+		INC		_txt_ptr
 		BNE		loc_44059
-		INC		_text_data_tmp_ptr+1
+		INC		_txt_ptr+1
 		JMP		loc_44059
-loc_44076:
-		LDA		_intro_txt_ppu_ofs_tmp
+.do_next_line:
+		LDA		_intro_txt_ppu_ofs_tmp					; set ppu offset to the next line
 		CLC
 		ADC		#$20
 		STA		_intro_txt_ppu_ofs_tmp
 		LDA		_intro_txt_ppu_ofs_tmp+1
 		ADC		#0
 		STA		_intro_txt_ppu_ofs_tmp+1
-		LDA		_text_data_tmp_ptr
-		CLC
-		ADC		#1
-		STA		_text_data_tmp_ptr
-		LDA		_text_data_tmp_ptr+1
-		ADC		#0
-		STA		_text_data_tmp_ptr+1
-		BIT		_PPU_STATUS
-		LDA		_intro_txt_ppu_ofs_tmp+1
+		BIT		_PPU_STATUS								; reset ppu offset state just in case
+		LDA		_intro_txt_ppu_ofs_tmp+1				; reload new offset
 		STA		_PPU_ADDR
 		LDA		_intro_txt_ppu_ofs_tmp
 		STA		_PPU_ADDR
-		JMP		loc_44059
-loc_440A0:
+		JMP		loc_4406A0
+.do_music_and_delay:
 		LDA		#$81
-		STA		_PPU_CTRL
+		STA		_PPU_CTRL								; enable NMI back, select scroll high nt bit
 		LDA		#$1D
-		JSR		_apu_mus_start
+		JSR		_apu_mus_start							; init title sound
 		LDA		#1
-		STA		_event_reload_idx
+		STA		_event_reload_idx						; set dummy reload nmi
 		LDX		#$FF
-loc_440B1:
-		LDA		_event_idx
-		BEQ		loc_440B1
+.copyright_screen_dealy:
+		LDA		_event_idx								; wait for nmi, don't call events, just sync
+		BEQ		.copyright_screen_dealy
 		LDA		#0
-		STA		_event_idx
+		STA		_event_idx								; clear back
 		TXA
 		PHA
 		LDX		#3
 		LDY		#0
-loc_440C1:
+loc_440C1:												; dumb delay
 		DEY
 		BNE		loc_440C1
 		DEX
 		BNE		loc_440C1
-		JSR		_far_apu_play
+		JSR		_far_apu_play							; do play sync 
 		PLA
 		TAX
 		DEX
-		BNE		loc_440B1
+		BNE		.copyright_screen_dealy
 		LDA		#0
 		STA		_event_idx
 		STA		_delay_counter
 		STA		_delay_counter+1
 		STA		_screen_idx
 		LDA		#2
-		STA		_event_reload_idx
+		STA		_event_reload_idx						; set actual title event session index
 		LDA		#$FF
 		STA		byte_3B1
 ;		LDA		#8										; not actually used
 ;		STA		_ppu_scroll_x_override_redundant
 		LDA		#$80
-		STA		_PPU_CTRL
-		JMP		_event_exec
+		STA		_PPU_CTRL								; do actual event, not it's NMI-based
+		JMP		_event_exec			
 
 ; =============== S U B	R O U T	I N E =======================================
 _hiscore_display:
@@ -147,6 +128,10 @@ _hiscore_display:
 
 ; =============== S U B	R O U T	I N E =======================================
 _sub3_ending:
+		LDA		#$78									; just in case, TODO put it where it belong 
+		STA		_star_field_center_pos_x
+		LDA		#$70
+		STA		_star_field_center_pos_y
 		LDA		#0
 		STA		_event_idx
 		STA		_PPU_CTRL
@@ -267,6 +252,10 @@ _sub1_repair_lab:
 
 ; =============== S U B	R O U T	I N E =======================================
 _sub2_game_over:
+		LDA		#$78									; just in case, TODO put it where it belong 
+		STA		_star_field_center_pos_x
+		LDA		#$70
+		STA		_star_field_center_pos_y
 		LDA		#0
 		STA		_event_idx
 		STA		byte_3B4
@@ -396,9 +385,10 @@ _event_exec:
 		LDA		#0
 		STA		_event_idx
 		JMP		(_obj_hcoll._enemy+1)
+		
 _events_lib:
-		.WORD _event0
-		.WORD _event1
+		.WORD _event_exec
+		.WORD _event_exec
 		.WORD _event2_title
 		.WORD _event3_hiscore
 		.WORD _event4_ending
@@ -406,13 +396,6 @@ _events_lib:
 		.WORD _event6_game_over
 		.WORD _event7_asci_msg_print
 
-; =============== S U B	R O U T	I N E =======================================
-_event0:
-		JMP		_event_exec
-
-; =============== S U B	R O U T	I N E =======================================
-_event1:
-		JMP		_event_exec
 _spr_presents:
 		.BYTE	$10, $12,  5, $13,  5, $E, $14, $13
 _spr_oduction:
@@ -799,12 +782,12 @@ loc_44684:
 		ASL
 		TAX
 		LDA		_lvl0_intro_log_lib,X
-		STA		_text_data_tmp_ptr
+		STA		_txt_ptr
 		INX
 		LDA		_lvl0_intro_log_lib,X
-		STA		_text_data_tmp_ptr+1
+		STA		_txt_ptr+1
 		LDY		byte_3B5
-		LDA		(_text_data_tmp_ptr),Y
+		LDA		(_txt_ptr),Y
 		CMP		#$FF
 		BEQ		loc_446CA
 		CMP		#$FE
@@ -820,7 +803,7 @@ loc_446A8:
 		CMP		#$FA
 		BEQ		locret_44683
 		LDX		byte_3D7
-		LDA		(_text_data_tmp_ptr),Y
+		LDA		(_txt_ptr),Y
 		STA		_log_msg_buf+$54,X
 		INC		byte_3B5
 		INC		byte_3D7
@@ -1375,7 +1358,7 @@ loc_44BAA:
 loc_44BCA:
 		JSR		_far_apu_play
 		LDY		byte_3B5
-		LDA		(_text_data_tmp_ptr),Y
+		LDA		(_txt_ptr),Y
 		CMP		#$FD
 		BNE		loc_44BE1
 		LDA		#$FF
@@ -1400,7 +1383,7 @@ loc_44BF9:
 		JMP		_asci_msg_buf_clear
 loc_44BFC:
 		LDX		byte_3D7
-		LDA		(_text_data_tmp_ptr),Y
+		LDA		(_txt_ptr),Y
 		SEC
 		SBC		#$40
 		STA		_log_msg_buf+$54,X
@@ -3008,9 +2991,9 @@ loc_45A21:
 		STA		_hi_score_pos_count
 		STA		_hi_score_line_idx
 		LDA		#<[_hi0_score]
-		STA		_tmpE2
+		STA		_tptr1
 		LDA		#>[_hi0_score]
-		STA		_tmpE2+1
+		STA		_tptr1+1
 loc_45A3B:
 		LDY		#0
 		LDA		_hi_score_pos_count
@@ -3018,7 +3001,7 @@ loc_45A3B:
 		BCS		locret_45A7A
 loc_45A44:
 		LDA		_score_cmp_buf,Y
-		CMP		(_tmpE2),Y
+		CMP		(_tptr1),Y
 		BCC		loc_45A52
 		BNE		_hiscore_swap
 		INY
@@ -3028,21 +3011,21 @@ loc_45A52:
 		INC		_hi_score_line_idx
 loc_45A55:
 		INC		_hi_score_pos_count
-		LDA		_tmpE2
+		LDA		_tptr1
 		CLC
 		ADC		#$F
-		STA		_tmpE2
-		LDA		_tmpE2+1
+		STA		_tptr1
+		LDA		_tptr1+1
 		ADC		#0
-		STA		_tmpE2+1
+		STA		_tptr1+1
 		BNE		loc_45A3B
 _hiscore_swap:
 		LDY		#$E
 loc_45A69:
-		LDA		(_tmpE2),Y
+		LDA		(_tptr1),Y
 		TAX
 		LDA		_score_cmp_buf,Y
-		STA		(_tmpE2),Y
+		STA		(_tptr1),Y
 		TXA
 		STA		_score_cmp_buf,Y
 		DEY
@@ -3757,9 +3740,9 @@ _asci_bios_msg_display:
 		ASL
 		TAX
 		LDA		_asci_msg_lib,X
-		STA		_text_data_tmp_ptr
+		STA		_txt_ptr
 		LDA		_asci_msg_lib+1,X
-		STA		_text_data_tmp_ptr+1
+		STA		_txt_ptr+1
 		LDA		#0
 		STA		_event_idx
 		STA		byte_3B5
