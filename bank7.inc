@@ -6211,7 +6211,7 @@ loc_6318A:												; pickup other random body part to damage
 		SEC
 		LDA		_percents,X
 ; --
-;		SBC		_tptr1									; DEBUG invulnerability
+		SBC		_tptr1									; DEBUG invulnerability
 ; --
 		BCS		loc_631A1
 		LDA		#0										; clamp to 0
