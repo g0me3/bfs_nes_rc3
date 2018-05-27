@@ -36,8 +36,10 @@ _obj_scr_x_pos_tmp:					.BYTE	0
 _obj_scr_y_pos_tmp:					.BYTE	0
 _obj_shuffle_mode:					.BYTE	0
 _obj_spr_data_ptr_tmp:				.BYTE	0,0
-_pad_tmp:							.BYTE	0
 _pads:								.BYTE	0,0,0
+_pad_last:							.BYTE	0
+_pad_data:							.BYTE	0
+_pad_edge:							.BYTE	0
 _pal_update_redundant:				.BYTE	0
 _pause_flag:						.BYTE	0
 _player_bullet_shot_state:			.BYTE	0
@@ -142,7 +144,7 @@ _event_idx:							.BYTE	0
 _event_reload_idx:					.BYTE	0
 _generic_nmi_over_counter:			.BYTE	0
 _hi_score_entry_display_lock:		.BYTE	0
-_log_msg_skip_forbid:				.BYTE	0
+_log_msg_deny_input:				.BYTE	0
 _mul_argA:							.BYTE	0
 _mul_argB:							.BYTE	0
 _mul_result_low:					.BYTE	0
@@ -245,8 +247,7 @@ _hex2dec_tile_delta:
 _score_hex:
 		.BYTE	0,0
 _overal_armor_sum:
-		.BYTE	0
-		.BYTE	0
+		.BYTE	0,0
 _lvl2_jetpack_fuel_tanks:
 		.BYTE	0
 _lvl2_jetpack_fuel_count:
@@ -298,7 +299,7 @@ _weapon1_ammo:
 		.BYTE	0
 byte_663:
 		.BYTE	0
-_lvl_bonus_portal_detected:
+_lvl_hidden_portal_detected:
 		.BYTE	0
 _ingame_bg_pal_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

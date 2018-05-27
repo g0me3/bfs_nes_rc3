@@ -156,6 +156,7 @@ _MAIN_INGAME_LOOP:
 		STA		_nmi_hndl_idx
 		STA		_lvl_state_idx
 		JSR		_game_over_display
+		JSR		_player_percents_restore				; restore percents at last checkpoint (start game, repair lab, bonus)
 		JMP		_MAIN_LOOP
 ; --------------------------------
 _LEVEL_COMPLETE:
@@ -205,13 +206,64 @@ _lvl3_bonus_repair_lab:
 		JMP		_GAME_START
 
 ; =============== S U B	R O U T	I N E =======================================
-_get_player_overall_armor:
-		CLC
+_player_percents_backup:
+		LDA		_percents.head
+		STA		_head_percent_backup
+		LDA		_percents.body
+		STA		_body_percent_backup
+		LDA		_percents.arms
+		STA		_arms_percent_backup
+		LDA		_percents.legs
+		STA		_legs_percent_backup
+		RTS
+		
+; =============== S U B	R O U T	I N E =======================================
+_player_percents_restore:
+		LDA		_head_percent_backup
+		STA		_percents.head
+		LDA		_body_percent_backup
+		STA		_percents.body
+		LDA		_arms_percent_backup
+		STA		_percents.arms
+		LDA		_legs_percent_backup
+		STA		_percents.legs
+
+; =============== S U B	R O U T	I N E =======================================
+_player_overall_armor_calc:
+		LDA		#0
+		STA		_overal_armor_sum+1
+		LDA		_percents.head
+		ORA		_percents.body
+		ORA		_percents.arms
+		ORA		_percents.legs
+		BEQ		.death
+		CMP		#4
+		BCS		.full_calc
+		LDA		#1
+.death:
+		STA		_overal_armor_sum
+		RTS
+.full_calc:
+		CLC												; sum body + head
 		LDA		_percents.head
 		ADC		_percents.body
+		BCC		.no_car0
+		INC		_overal_armor_sum+1
+.no_car0:
 		ADC		_percents.arms
+		BCC		.no_car1
+		INC		_overal_armor_sum+1
+.no_car1:
 		ADC		_percents.legs
+		BCC		.no_car2
+		INC		_overal_armor_sum+1
+.no_car2:
 		STA		_overal_armor_sum
+		ROR		_overal_armor_sum+1						; / 2
+		ROR		_overal_armor_sum
+;		ROR		_overal_armor_sum+1
+;		ROR		_overal_armor_sum
+		LDA		_overal_armor_sum						; return value
 		RTS
 		
 ; =============== S U B	R O U T	I N E =======================================
@@ -223,7 +275,7 @@ _player_vars_init:
 		STA		_weapon0_idx
 		STA		_weapon1_idx
 		STA		_weapon_type
-		LDA		#$19
+		LDA		#DEF_PERCENT_VALUE
 		STA		_percents.head
 		STA		_percents.body
 		STA		_percents.arms
@@ -232,7 +284,8 @@ _player_vars_init:
 		STA		_repair_tanks
 		LDA		#3
 		STA		_continues
-		JSR		_get_player_overall_armor
+		JSR		_player_overall_armor_calc
+		JSR		_player_percents_backup
 		JSR		_ppu_pal_clear
 		RTS
 
@@ -248,7 +301,7 @@ _failure_test_handler:
 		AND		#3
 		TAX
 		LDA		_percents,X
-		CMP		#$18
+		CMP		#FAILURE_TRESHOLD
 		BCS		.no_failure
 		LDA		_rand_seed
 		CMP		#$14
@@ -1285,7 +1338,8 @@ _hud_all_energy_ppu_data_update:
 		STA		_hex2dec_tile_delta
 		LDA		#0
 		STA		_str_ptr+1
-		JSR		_get_player_overall_armor
+;		JSR		_player_overall_armor_calc				; should change only when damage taken
+		LDA		_overal_armor_sum						; so, probably don't need to recal it here, check
 		STA		_str_ptr
 		LDX		#<[_tmp_buf2]
 		LDY		#>[_tmp_buf2]
@@ -1868,7 +1922,7 @@ loc_611C4:
 loc_611CB:
 		LDA		_lvl_spr_chr_bank_down
 		JSR		_mmc1_chr1
-		JSR		_obj_hidden_passage_test_and_bonus_animate
+		JSR		_obj_hidden_portal_test_and_bonus_animate
 		LDY		#6
 		JSR		_mmc1_prg
 		LDA		_pause_flag
@@ -1886,7 +1940,7 @@ loc_611CB:
 		JSR		_bg_pal_blink_handler
 loc_611FD:
 		JSR		_apu_play								; jump directly to bank 6, it is already set here
-		LDX		_lvl_idx							; restore back current level data bank
+		LDX		_lvl_idx								; restore back current level data bank
 		LDY		_lvl_prg_bank_list,X
 		JSR		_mmc1_prg
 		RTS
@@ -1934,7 +1988,7 @@ loc_6123F:
 ; =============== S U B	R O U T	I N E =======================================
 _read_pads:
 		LDA		_pads
-		STA		_pads+2
+		STA		_pads+2									; old input
 		LDY		#1
 		STY		_PAD0_REG
 		DEY
@@ -1943,16 +1997,23 @@ _read_pads:
 loc_6125A:
 		PHA
 		LDA		_PAD0_REG
-		STA		_pad_tmp
+		STA		_pad_data
 		LSR
-		ORA		_pad_tmp
+		ORA		_pad_data
 		LSR
 		PLA
 		ROL
 		DEY
 		BNE		loc_6125A
-		STA		_pads
+		STA		_pads									; old input
+		LDY		_pad_last								; new input
+		STY		_pad_data
+		STA		_pad_last
+		EOR		_pad_data
+		AND		_pad_last
+		STA		_pad_edge
 		RTS
+
 
 ; =============== S U B	R O U T	I N E =======================================
 _lvl_generic_input_control:
@@ -2228,7 +2289,7 @@ loc_61464:
 		LDA		_pads
 		AND		#8
 		BEQ		loc_614B8
-		LDA		_lvl_bonus_portal_detected
+		LDA		_lvl_hidden_portal_detected
 		BEQ		loc_6149C
 		LDA		#$25
 		STA		_obj_spr_idx._player
@@ -2346,11 +2407,11 @@ loc_6153A:
 		LDA		#$21
 		STA		_snd_idx
 loc_61552:
-		LDA		_player_explode_spr_remove_reload
+		LDA		_player_explode_spr_remove_reload		; tmp var to indicate acid damage flag
 		BEQ		loc_61560
 		LDA		#3
 		STA		_body_target_idx
-		LDA		#2
+		LDA		#ACID_DAMAGE_VALUE
 		JSR		_player_damage_apply
 loc_61560:
 		LDA		_player_sit_jump_flag
@@ -3869,7 +3930,7 @@ loc_62009:
 		LDA		_tptr1+1
 		CLC
 		ADC		#$40
-		STA		_obj_y,X							; write object Y pos
+		STA		_obj_y,X								; write object Y pos
 		LDA		_obj_pal_lib,Y							; palette and sprite indexes are in the global object table
 		STA		_obj_pal_idx,X
 		LDA		_obj_spr_lib,Y
@@ -3879,7 +3940,7 @@ loc_62009:
 		LDA		_obj_init_flags_lib,Y					; as well as sprites
 		STA		_obj_flags,X
 .obj_pos_x_calc:
-		LDA		_lvl_idx							; level object appears on the right side in all levels
+		LDA		_lvl_idx								; level object appears on the right side in all levels
 		CMP		#3										; except fourth, wich is reversed, then from the right side
 		BNE		.obj_gen_pos_x_calc
 		SEC
@@ -4134,7 +4195,7 @@ loc_621C4:
 		JSR		_enemy_projectile_collision_test
 		LDA		#3
 		STA		_body_target_idx
-		LDA		#1
+		LDA		#BACK_DAMAGE_VALUE
 		JSR		_player_damage_apply
 		LDA		_tmpE5
 		STA		_obj_spr_idx,X
@@ -5093,7 +5154,7 @@ loc_628A8:
 		JSR		_enemy_projectile_collision_test
 		LDA		#1
 		STA		_body_target_idx
-		LDA		#7
+		LDA		#NINJA_DAMAGE_VALUE
 		JSR		_player_damage_apply
 		LDA		#$5F
 		STA		_obj_spr_idx,X
@@ -5942,9 +6003,9 @@ loc_62F01:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_obj_hidden_passage_test_and_bonus_animate:
+_obj_hidden_portal_test_and_bonus_animate:
 		LDA		#0
-		STA		_lvl_bonus_portal_detected
+		STA		_lvl_hidden_portal_detected
 		LDY		_lvl_state_idx
 		SEC
 		LDA		_obj_x_lo._player
@@ -5959,7 +6020,7 @@ _obj_hidden_passage_test_and_bonus_animate:
 		AND		#$F0
 		CMP		_lvl_hidden_passage_y_list,Y
 		BNE		loc_62F2E
-		INC		_lvl_bonus_portal_detected
+		INC		_lvl_hidden_portal_detected
 loc_62F2E:
 		LDA		_obj_hndl_idx._bonus
 		CMP		#$23
@@ -6098,10 +6159,11 @@ loc_62FFB:												; never occurs in the game!
 loc_63009:
 		CLC
 		LDA		_percents,X
-		ADC		#3
+		ADC		#DEF_PERCENT_POWERUP					; tweakable
 		STA		_percents,X
 		DEX
 		BPL		loc_63009
+		JSR		_player_overall_armor_calc				; since we don't recalc it every time
 		LDA		#4
 .powerup_item_snd:
 		JSR		_hud_msg_set_request_ex
@@ -6257,7 +6319,7 @@ loc_63144:
 		LDY		_enemy_bullet_body_target_select_arg
 		LDA		_body_targets_list,Y
 		STA		_body_target_idx
-		LDA		_player_damage_list,Y
+		LDA		_projectiles_damage_list,Y
 		JSR		_player_damage_apply
 		LDY		#0
 loc_63155:
@@ -6269,63 +6331,63 @@ locret_6315A:
 
 ; =============== S U B	R O U T	I N E =======================================
 _player_damage_apply:
-		STA		_tptr1
-		STX		_tptr1+1
+		STA		_tptr1									; tmp damage value
+		STX		_tptr1+1								; backup X register
 		LDA		#3
-		STA		_player_damage_blink_timer
-		LDA		_hud_msg_idx
+		STA		_player_damage_blink_timer				; pal blink
+		LDA		_hud_msg_idx							
 		CMP		#9
-		BEQ		_exit
-		LDA		_obj_shuffle_mode
-		AND		#2
-		BNE		_exit
-		LDX		_body_target_idx
-		LDA		_percents,X
-		CMP		#$A
-		BCS		loc_63197
-		CMP		#7
+		BEQ		_exit									; do not damage if already dead
+		LDA		_obj_shuffle_mode						; also check for shuffle mode as well
+		AND		#2										; to be sure we still exploding lol
+		BNE		_exit									
+		LDX		_body_target_idx						; get the target body part index
+		LDA		_percents,X								; check for critical value
+		CMP		#UPPER_DAMAGE_ALERT
+		BCS		.write_damage							; if not so critical, just decrease
+		CMP		#LOWER_DAMAGE_ALERT
 		BCC		loc_63188
-		TXA
-		CLC
+		TXA												; current power betwen 10 and 7 percents
+		CLC												; display warning damage message for particular part
 		ADC		#$F
 		JSR		_hud_msg_set_request
 loc_63188:
-		LDA		_rand_seed
-loc_6318A:
-		AND		#3
+		LDA		_rand_seed								; if damage already less than critical, select
+loc_6318A:												; pickup other random body part to damage
+		AND		#3										; with non-zero percentage
 		TAX
 		LDA		_percents,X
-		BNE		loc_63197
+		BNE		.write_damage
 		INX
 		TXA
-		JMP		loc_6318A
-loc_63197:
+		JMP		loc_6318A								; roll until non-zero, may cause hang if using cheats!
+.write_damage:
 		SEC
 		LDA		_percents,X
 ; --
 ; debug invulnerability
 ;
-		SBC		_tptr1
+;		SBC		_tptr1
 ; --
 		BCS		loc_631A1
-		LDA		#0
+		LDA		#0										; clamp to 0
 loc_631A1:
 		STA		_percents,X
-		JSR		_get_player_overall_armor
-		BNE		loc_631C4
-		STA		_player_explode_timer_tmp
+		JSR		_player_overall_armor_calc				; recalc overall percentage
+		BNE		.still_alive							; test if drop to zero
+		STA		_player_explode_timer_tmp				; init explode timer (zero-1 - 255 frames)
 		LDA		#2
-		STA		_obj_shuffle_mode
+		STA		_obj_shuffle_mode						; special shuffle mode with explosion proirity
 		LDA		#9
-		JSR		_hud_msg_set_request_ex
-		BEQ		_exit
-loc_631C4:
-		CMP		#$19
-		BCS		_exit
+		JSR		_hud_msg_set_request_ex					; final message.
+		BEQ		_exit									; DEATH
+.still_alive:
+		CMP		#MIN_PERCENT_VALUE
+		BCS		_exit									; final warning test
 		LDA		#5
-		JSR		_hud_msg_set_request
+		JSR		_hud_msg_set_request					; less than default value means common alert
 _exit:
-		LDX		_tptr1+1
+		LDX		_tptr1+1								; restore X back
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -7402,8 +7464,11 @@ _scores_table:
 		.BYTE	  0,  0,  0,  0,  0,$14,$14,$14,  0
 byte_63C22:
 		.BYTE	$1E,$32,$3C,$32,$64,$C8,  0,  0,  3,  3,  3, $F, $F,$32,  0,  0
-_player_damage_list:
-		.BYTE	  1,  2,  3, $A
+_projectiles_damage_list:
+		.BYTE	PROJ0_FAMAGE_VALUE
+		.BYTE	PROJ1_FAMAGE_VALUE
+		.BYTE	PROJ2_FAMAGE_VALUE
+		.BYTE	PROJ3_FAMAGE_VALUE
 _body_targets_list:
 		.BYTE	  2,  0,  1
 _lvl_prg_bank_list:

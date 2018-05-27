@@ -55,29 +55,6 @@ _attract_display:
 		STA		_PPU_CTRL								; do actual event, not it's NMI-based
 		JMP		_event_exec
 
-_res_copyrights:
-		.BYTE	$21,$2B
-		STRING	_R,_O,_B,_O,_C,_O,_P,_TM,_,_3
-		.BYTE	$21,$66
-		STRING	_T,_M,_,_A,_N,_D,_,_C,_O,_P,_Y,_R,_I,_G,_H,_T,_,_1,_9,_9,_2
-		.BYTE	$21,$83
-		STRING	_O,_R,_I,_O,_N,_,_P,_I,_C,_T,_U,_R,_E,_S,_,_C,_O,_R,_P,_O,_R,_A,_T,_I,_O,_N
-		.BYTE	$21,$A7
-		STRING	_A,_L,_L,_,_R,_I,_G,_H,_T,_S,_,_R,_E,_S,_E,_R,_V,_E,_D
-		.BYTE	$21,$C2
-		STRING	_T,_M,_,_D,_E,_S,_I,_G,_N,_A,_T,_E,_S,_,_A,_,_T,_R,_A,_D,_E,_M,_A,_R,_K,_,_O,_F
-		.BYTE	$21,$E3
-		STRING	_O,_R,_I,_O,_N,_,_P,_I,_C,_T,_U,_R,_E,_S,_,_C,_O,_R,_P,_O,_R,_A,_T,_I,_O,_N
-		.BYTE	$22,$29
-		STRING	_C,_O,_P,_Y,_R,_I,_G,_H,_T,_,_1,_9,_9,_2
-		.BYTE	$22,$46
-		STRING	_O,_C,_E,_A,_N,_,_O,_F,_,_A,_M,_E,_R,_I,_C,_A,_CO,_I,_N,_C,_DT
-		.BYTE	$22,$66
-		STRING	_L,_I,_C,_E,_N,_S,_E,_D,_,_B,_Y,_,_N,_I,_N,_T,_E,_N,_D,_O,_DT
-		.BYTE	$22,$86
-		STRING	_C,_A,_H,_4,_E,_3,_,_B,_F,_S,_,_G,_M,_B,_H,_,_2,_O,_1,_6
-		.BYTE	$FF
-
 ; =============== S U B	R O U T	I N E =======================================
 ; start a new game, display the initial intro sequence before the common
 ; level briefing messages
@@ -142,14 +119,15 @@ _repair_lab_display:
 		LDA		#2
 		STA		_repair_body_index
 		STA		_repair_body_index_request
-		LDA		_percents.head
-		STA		_head_percent_backup
-		LDA		_percents.body
-		STA		_body_percent_backup
-		LDA		_percents.arms
-		STA		_arms_percent_backup
-		LDA		_percents.legs
-		STA		_legs_percent_backup
+;		LDA		_percents.head
+;		STA		_head_percent_backup
+;		LDA		_percents.body
+;		STA		_body_percent_backup
+;		LDA		_percents.arms
+;		STA		_arms_percent_backup
+;		LDA		_percents.legs
+;		STA		_legs_percent_backup
+		JSR		_player_percents_backup					; save current to be able to repeat repair
 		LDA		_repair_tanks
 		STA		_repair_tanks_backup
 		LDA		#$1E
@@ -183,12 +161,14 @@ _game_over_display:
 		STA		_pad_prev1
 		LDA		#6
 		STA		_event_reload_idx
+		LDA		_lvl_idx								; test is level > 1
+		BNE		loc_442AB0
+		STA		_continues								; if =0, disable continues
+		BEQ		loc_442AB
+loc_442AB0:
 		LDA		_continues								; test for player continues
-		BEQ		loc_4429E
+		BEQ		loc_442AB
 		LDA		#1
-		BNE		loc_442AB
-loc_4429E:
-		LDA		#0
 loc_442AB:
 		STA		_title_menu_idx							; or to START and disable continues
 		JSR		_log_clear_buf
@@ -201,11 +181,6 @@ loc_442AB:
 		LDA		#$81
 		STA		_PPU_CTRL
 		JMP		_event_exec
-
-_res_game_over:
-		.BYTE	$21,$CB
-		STRING	_G,_A,_M,_E,_,_,_O,_V,_E,_R
-		.BYTE	$FF
 
 ; =============== S U B	R O U T	I N E =======================================
 _event_exec:
@@ -605,28 +580,6 @@ loc_446FF:
 		STA		_tmp_idx2
 		STA		_delay_counter
 		JMP		_event_exec
-
-_lvl0_intro_log_lib:
-		.WORD _lvl0_intro_log0
-		.WORD _lvl0_intro_log1
-		.WORD _lvl0_intro_log2
-
-_lvl0_intro_log0:
-		.BYTE	_C,_O,_M,_M,_A,_N,_D,_DT,_C,_O,_M,_SCL
-		.BYTE	_L,_O,_A,_D,_,_B,_I,_O,_S,_SCL
-		.BYTE	_M,_E,_M,_O,_R,_Y,_,_S,_E,_T,_SCL
-		.BYTE	_S,_Y,_S,_T,_E,_M,_,_S,_T,_A,_T,_U,_S,_SCL
-		.BYTE	_O,_K,_DT,_SCL,_DLY,_CLR
-		.BYTE	_C,_R,_I,_M,_E,_,_I,_N,_,_P,_R,_O,_G,_R,_E,_S,_S,_DT,_SCL
-		.BYTE	_P,_E,_N,_A,_L,_,_C,_O,_D,_E,_,_1,_3,_9,_DT,_1,_SCL
-		.BYTE	_I,_N,_,_P,_U,_R,_S,_U,_I,_T,_SCL,_DLY,_CLR,_NXT
-_lvl0_intro_log1:
-		.BYTE	_V,_O,_I,_C,_E,_,_A,_N,_A,_L,_Y,_S,_I,_S,_SCL
-		.BYTE	_O,_F,_F,_I,_C,_E,_R,_,_L,_E,_W,_I,_S,_CO,_A,_N,_N,_E,_SCL,_DLY,_SCL
-		.BYTE	_C,_U,_R,_R,_E,_N,_T,_,_P,_O,_S,_I,_T,_I,_O,_N,_DT,_SCL
-		.BYTE	_E,_S,_P,_O,_S,_I,_T,_O,_,_A,_N,_D,_,_C,_H,_A,_L,_M,_E,_R,_S,_,_B,_L,_V,_D,_DT,_SCL,_DLY,_CLR,_NXT
-_lvl0_intro_log2:
-		.BYTE	_I,_,_A,_M,_,_O,_N,_,_M,_Y,_,_W,_A,_Y,_,_L,_E,_W,_I,_S,_DT,_DT,_DT,_SCL,_DLY,_END
 
 ; =============== S U B	R O U T	I N E =======================================
 _event4_ending:
@@ -1042,9 +995,14 @@ loc_44AC1:
 		LDX		_repair_body_index_request
 		LDY		_repair_update_flag_list,X
 		LDA		_percents,Y
-		CLC
-		ADC		#$A
+		CMP		#MAX_PERCENT_VALUE
 		BCS		loc_44AF1
+		CLC
+		ADC		#DEF_PERCENT_REPAIR
+		CMP		#MAX_PERCENT_VALUE
+		BCC		loc_44AF10
+		LDA		#MAX_PERCENT_VALUE						; clamp to max
+loc_44AF10:
 		STA		_percents,Y
 		DEC		_repair_tanks
 loc_44AF1:
@@ -1305,7 +1263,7 @@ loc_44B5A:
 _event7_log_msg:
 		LDX		#3
 		JSR		_delay
-		LDA		_log_msg_skip_forbid
+		LDA		_log_msg_deny_input
 		BNE		loc_44BCA
 		JSR		_read_pad
 		LDA		_pad
@@ -1322,7 +1280,7 @@ loc_44BCA:
 		CMP		#$FD
 		BNE		loc_44BE1								; special $FD cmd, force forbid input skip
 		LDA		#$FF									; used only in repair lab confirm message
-		STA		_log_msg_skip_forbid
+		STA		_log_msg_deny_input
 		INC		_tmp_idx1
 		JMP		_event_exec
 loc_44BE1:
@@ -1388,6 +1346,7 @@ loc_44C65:
 		AND		#1
 		BEQ		loc_44CA9
 		INC		_tmp_idx1
+		JSR		_player_percents_backup					; save new parameters
 		JMP		_event_exec
 loc_44CA9:
 		LDA		_pad
@@ -1395,14 +1354,15 @@ loc_44CA9:
 		BNE		loc_44CB3
 		JMP		_event_exec
 loc_44CB3:
-		LDA		_head_percent_backup
-		STA		_percents.head
-		LDA		_body_percent_backup
-		STA		_percents.body
-		LDA		_arms_percent_backup
-		STA		_percents.arms
-		LDA		_legs_percent_backup
-		STA		_percents.legs
+;		LDA		_head_percent_backup
+;		STA		_percents.head
+;		LDA		_body_percent_backup
+;		STA		_percents.body
+;		LDA		_arms_percent_backup
+;		STA		_percents.arms
+;		LDA		_legs_percent_backup
+;		STA		_percents.legs
+		JSR		_player_percents_restore
 		LDA		_repair_tanks_backup
 		STA		_repair_tanks
 		JMP		_repair_lab_display
@@ -2804,8 +2764,8 @@ _disp_spr0hit_use_flags:
 _disp_extra_shifts_list:
 		.BYTE	  0,  0,$10,  0,  0,  0,  0,$10,$10
 _disp_spr_data_size_list:
-		.BYTE	  0 ; [_spr0_ocean_end - _spr0_ocean - 1]
-		.BYTE	  0 ; [_spr1_probe_end - _spr1_probe - 1]
+		.BYTE	  0
+		.BYTE	  0
 		.BYTE	[_spr2_title_end - _spr2_title - 1]
 		.BYTE	  0
 		.BYTE	  0
@@ -2939,7 +2899,7 @@ _spr2_title_menu1:
 		.BYTE	_m1p,$4F,$02,$30
 		.BYTE	_m1p,$5B,$02,$38
 		.BYTE	_m1p,$45,$02,$40
-		.BYTE	_m1p,$4F,$02,$48 ; on/off
+		.BYTE	_m1p,$4F,$02,$48
 		.BYTE	_m1p,$5D,$02,$50
 		.BYTE	_m1p,$3D,$02,$58
 _spr2_title_menu2:
@@ -3149,7 +3109,7 @@ _repair_small_frame_txt3:
 ;
 _bios_msg_display:
 		LDY		#0
-		STY		_log_msg_skip_forbid
+		STY		_log_msg_deny_input
 
 ; =============== S U B	R O U T	I N E =======================================
 _bios_msg_display_ex:
@@ -3187,6 +3147,56 @@ _res_bios_hdr:
 		.BYTE	$21,$63
 		STRING	_V,_E,_R,_S,_I,_O,_N,_,_3,_DT,_O
 		.BYTE	$FF
+
+_res_game_over:
+		.BYTE	$21,$CB
+		STRING	_G,_A,_M,_E,_,_,_O,_V,_E,_R
+		.BYTE	$FF
+
+_res_copyrights:
+		.BYTE	$21,$2B
+		STRING	_R,_O,_B,_O,_C,_O,_P,_TM,_,_3
+		.BYTE	$21,$66
+		STRING	_T,_M,_,_A,_N,_D,_,_C,_O,_P,_Y,_R,_I,_G,_H,_T,_,_1,_9,_9,_2
+		.BYTE	$21,$83
+		STRING	_O,_R,_I,_O,_N,_,_P,_I,_C,_T,_U,_R,_E,_S,_,_C,_O,_R,_P,_O,_R,_A,_T,_I,_O,_N
+		.BYTE	$21,$A7
+		STRING	_A,_L,_L,_,_R,_I,_G,_H,_T,_S,_,_R,_E,_S,_E,_R,_V,_E,_D
+		.BYTE	$21,$C2
+		STRING	_T,_M,_,_D,_E,_S,_I,_G,_N,_A,_T,_E,_S,_,_A,_,_T,_R,_A,_D,_E,_M,_A,_R,_K,_,_O,_F
+		.BYTE	$21,$E3
+		STRING	_O,_R,_I,_O,_N,_,_P,_I,_C,_T,_U,_R,_E,_S,_,_C,_O,_R,_P,_O,_R,_A,_T,_I,_O,_N
+		.BYTE	$22,$29
+		STRING	_C,_O,_P,_Y,_R,_I,_G,_H,_T,_,_1,_9,_9,_2
+		.BYTE	$22,$46
+		STRING	_O,_C,_E,_A,_N,_,_O,_F,_,_A,_M,_E,_R,_I,_C,_A,_CO,_I,_N,_C,_DT
+		.BYTE	$22,$66
+		STRING	_L,_I,_C,_E,_N,_S,_E,_D,_,_B,_Y,_,_N,_I,_N,_T,_E,_N,_D,_O,_DT
+		.BYTE	$22,$86
+		STRING	_C,_A,_H,_4,_E,_3,_,_B,_F,_S,_,_G,_M,_B,_H,_,_2,_O,_1,_6
+		.BYTE	$FF
+
+_lvl0_intro_log_lib:
+		.WORD _lvl0_intro_log0
+		.WORD _lvl0_intro_log1
+		.WORD _lvl0_intro_log2
+
+_lvl0_intro_log0:
+		.BYTE	_C,_O,_M,_M,_A,_N,_D,_DT,_C,_O,_M,_SCL
+		.BYTE	_L,_O,_A,_D,_,_B,_I,_O,_S,_SCL
+		.BYTE	_M,_E,_M,_O,_R,_Y,_,_S,_E,_T,_SCL
+		.BYTE	_S,_Y,_S,_T,_E,_M,_,_S,_T,_A,_T,_U,_S,_SCL
+		.BYTE	_O,_K,_DT,_SCL,_DLY,_CLR
+		.BYTE	_C,_R,_I,_M,_E,_,_I,_N,_,_P,_R,_O,_G,_R,_E,_S,_S,_DT,_SCL
+		.BYTE	_P,_E,_N,_A,_L,_,_C,_O,_D,_E,_,_1,_3,_9,_DT,_1,_SCL
+		.BYTE	_I,_N,_,_P,_U,_R,_S,_U,_I,_T,_SCL,_DLY,_CLR,_NXT
+_lvl0_intro_log1:
+		.BYTE	_V,_O,_I,_C,_E,_,_A,_N,_A,_L,_Y,_S,_I,_S,_SCL
+		.BYTE	_O,_F,_F,_I,_C,_E,_R,_,_L,_E,_W,_I,_S,_CO,_A,_N,_N,_E,_SCL,_DLY,_SCL
+		.BYTE	_C,_U,_R,_R,_E,_N,_T,_,_P,_O,_S,_I,_T,_I,_O,_N,_DT,_SCL
+		.BYTE	_E,_S,_P,_O,_S,_I,_T,_O,_,_A,_N,_D,_,_C,_H,_A,_L,_M,_E,_R,_S,_,_B,_L,_V,_D,_DT,_SCL,_DLY,_CLR,_NXT
+_lvl0_intro_log2:
+		.BYTE	_I,_,_A,_M,_,_O,_N,_,_M,_Y,_,_W,_A,_Y,_,_L,_E,_W,_I,_S,_DT,_DT,_DT,_SCL,_DLY,_END
 
 _msg_lib:
 		.WORD _msg0_lvl0_briefing
