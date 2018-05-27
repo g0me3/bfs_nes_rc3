@@ -1,6 +1,6 @@
 @echo off
 
-start "" "..\..\..\tools\TextPad 5\TextPad.exe" bank0.inc bank1.inc bank2.inc bank3.inc bank4.inc bank5.inc bank6.inc bank7.inc ram.inc notes.txt
+start "" "..\..\..\tools\TextPad 5\TextPad.exe" bank0.inc bank1.inc bank2.inc bank3.inc bank4.inc bank5.inc bank6.inc bank7.inc ram.inc sound.inc sprites.inc macro.inc notes.txt
 
 pause 0
 

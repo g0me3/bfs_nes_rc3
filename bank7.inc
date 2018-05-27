@@ -120,10 +120,10 @@ _main_ingame_loop3:
 		LDA		#2
 		STA		byte_6F5
 		LDA		#1
-		STA		_star_field_data1
+		STA		_tmp502
 		LDA		#$F
-		STA		_star_field_data0+$27
-		STA		_star_field_data0+$26
+		STA		_tmp501
+		STA		_tmp500
 _main_ingame_loop2:
 		LDA		_nmi_is_over_flag
 		BEQ		_main_ingame_loop2
@@ -1317,13 +1317,13 @@ _hud_msg1A_out_of_time:
 
 ; =============== S U B	R O U T	I N E =======================================
 _hud_lvl4_timer_ppu_data_update:
-		DEC		_star_field_data0+$26
+		DEC		_tmp500
 		BNE		loc_60C31
 		LDA		#$F
-		STA		_star_field_data0+$26
-		DEC		_star_field_data0+$27
+		STA		_tmp500
+		DEC		_tmp501
 		BNE		loc_60C31
-		LDA		_star_field_data1
+		LDA		_tmp502
 		BNE		loc_60C29
 		LDA		#$1A
 		JSR		_hud_msg_set_request
@@ -1332,12 +1332,12 @@ _hud_lvl4_timer_ppu_data_update:
 		RTS
 loc_60C29:
 		LDA		#$3B
-		STA		_star_field_data0+$27
-		DEC		_star_field_data1
+		STA		_tmp501
+		DEC		_tmp502
 loc_60C31:
 		LDA		#$36
 		STA		_hex2dec_tile_delta
-		LDA		_star_field_data0+$27
+		LDA		_tmp501
 		STA		_str_ptr
 		LDA		#0
 		STA		_str_ptr+1
@@ -1346,7 +1346,7 @@ loc_60C31:
 		JSR		_hex2str
 		LDA		#$F6
 		STA		_tmp_buf2+$12
-		LDA		_star_field_data1
+		LDA		_tmp502
 		STA		_str_ptr
 		LDA		#0
 		STA		_str_ptr+1
@@ -1403,9 +1403,9 @@ loc_60CB5:
 		CPX		#4
 		BEQ		_j_hud_lvl4_timer_ppu_data_update
 		LDX		_last_enemy_hit
-		LDA		_tmp3C3,X
+		LDA		_obj_var9,X
 		BNE		loc_60CCB
-		LDA		_tmp3C3,Y
+		LDA		_obj_var9,Y
 loc_60CCB:
 		STA		_str_ptr
 		LDX		#<[_tmp_buf2+$F]
@@ -1445,12 +1445,12 @@ loc_60CF5:
 		JSR		_hud_msg_set_request
 		LDA		#4
 		STA		_snd_idx
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		CMP		#$E
 		BCC		locret_60D49
 		CMP		#$F
 		BCS		loc_60D30
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		CMP		#$50
 		BCC		locret_60D49
 loc_60D30:
@@ -1942,9 +1942,9 @@ loc_6118F:
 		JMP		loc_611B8
 loc_611A0:
 		JSR		_lvl_obj_collision_test
-		JSR		_obj_misc_collision_handler
+		JSR		_obj_misc_collision_test
 		JSR		_lvl_generic_input_control
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		AND		#$F0
 		STA		_player_y_meta16_tile_tmp
 		JSR		_lvl_scroll_handlers
@@ -1970,7 +1970,7 @@ loc_611CB:
 		BNE		loc_611FD
 		JSR		_hud_update_ppu_data
 		JSR		_obj_enemy_ai_manager
-		JSR		_obj_proj_position_adjust
+		JSR		_obj_position_adjust
 		JSR		_player_bullets_animate
 		JSR		_enemy_bullet_animate
 		JSR		_obj_obj_collision_tests
@@ -2051,7 +2051,7 @@ loc_6125A:
 
 ; =============== S U B	R O U T	I N E =======================================
 _lvl_generic_input_control:
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		CMP		#$F0
 		BCS		loc_6127C
 		CMP		#$E0
@@ -2085,7 +2085,7 @@ loc_612A6:
 		LDA		_player_scroll_stop_override_tmp
 		CMP		#2
 		BNE		loc_612CA
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		CMP		_lvl_stop_sctoll_room_idx
 		BEQ		loc_612C6
 		LDX		_player_wnd_scroll_counter
@@ -2109,7 +2109,7 @@ loc_612CA:
 		LDY		_cur_lvl_idx
 		CPY		#1
 		BNE		loc_612F4
-		LDY		_obj_lvl_y._player
+		LDY		_obj_y._player
 		CPY		#$DC
 		BCS		loc_612F4
 		CPY		#$BC
@@ -2178,33 +2178,33 @@ loc_61352:
 		CLC
 		ADC		#$23
 		STA		_obj_spr_idx._player
-		LDA		_star_field_data1+$18
+		LDA		_obj_var1
 		BPL		loc_6135F
 		JMP		loc_61514
 loc_6135F:
 		LDA		_cur_lvl_idx
 		CMP		#1
 		BNE		loc_61388
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		CMP		#$D2
 		BCS		loc_61388
 		CMP		#$BC
 		BCC		loc_61388
 		LDA		#$BC
-		STA		_obj_lvl_y._player
+		STA		_obj_y._player
 		LDA		_obj_hcoll._player
 		ORA		#1
 		STA		_obj_hcoll._player
 		STA		_obj_vcoll._player
 		LDA		#0
-		STA		_star_field_data1+$18
-		STA		_star_field_data1+$25
+		STA		_obj_var1
+		STA		_obj_var2
 		STA		_player_sit_jump_flag
 		JMP		loc_613CD
 loc_61388:
 		LDA		#0
 		STA		_player_explode_spr_remove_reload
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		AND		#$F0
 		STA		_tptr1
 		LDA		_player_y_meta16_tile_tmp
@@ -2218,16 +2218,16 @@ loc_6139B:
 		BNE		loc_613A6
 		JMP		loc_61514
 loc_613A6:
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		AND		#$F0
-		STA		_obj_lvl_y._player
+		STA		_obj_y._player
 		LDA		#0
-		STA		_star_field_data1+$18
-		STA		_star_field_data1+$25
+		STA		_obj_var1
+		STA		_obj_var2
 		LDA		#2
 		STA		_player_sit_jump_flag
 		LDA		#8
-		STA		_star_field_data2+$24
+		STA		_obj_var6
 		LDA		#$C
 		STA		_snd_idx
 		JMP		loc_61402
@@ -2249,7 +2249,7 @@ loc_613D6:
 		LDA		_pads
 		AND		#4
 		BNE		loc_613F2
-		DEC		_star_field_data2+$24
+		DEC		_obj_var6
 		BNE		loc_61402
 		LDA		_player_sit_jump_flag
 		AND		#$FD
@@ -2259,16 +2259,16 @@ loc_613F2:
 		LDA		_player_sit_jump_flag
 		ORA		#2
 		STA		_player_sit_jump_flag
-		LDA		_star_field_data2+$24
+		LDA		_obj_var6
 		CMP		#9
 		BCS		loc_61402
-		INC		_star_field_data2+$24
+		INC		_obj_var6
 loc_61402:
 		LDA		_player_cur_bullet_shot_state
 		CMP		#$A
 		PHP
 		STY		_tptr1
-		LDA		_star_field_data2+$24
+		LDA		_obj_var6
 		LSR
 		LSR
 		PLP
@@ -2286,7 +2286,7 @@ loc_6141F:
 		BNE		loc_61445
 loc_61427:
 		LDA		#8
-		STA		_star_field_data1+$25
+		STA		_obj_var2
 		LDA		_player_sit_jump_flag
 		ORA		#1
 		STA		_player_sit_jump_flag
@@ -2392,13 +2392,13 @@ loc_614DA:
 		AND		#$80
 		BEQ		loc_61514
 		LDA		#8
-		STA		_star_field_data1+$25
+		STA		_obj_var2
 		LDA		#$FB
-		STA		_star_field_data1+$18
+		STA		_obj_var1
 		LDA		#5
-		STA		_star_field_data2+$A
+		STA		_obj_var3
 		LDA		#4
-		STA		_star_field_data2+$17
+		STA		_obj_var4
 		LDA		_player_sit_jump_flag
 		ORA		#1
 		STA		_player_sit_jump_flag
@@ -2475,12 +2475,12 @@ loc_61577:
 		BEQ		locret_615A4
 		DEC		_player_wnd_scroll_counter
 		SEC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		SBC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		SBC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		CLC
 		LDA		_player_hor_move_anim_timer
 		ADC		_player_hor_move_anim_increment
@@ -2504,10 +2504,10 @@ loc_615A5:
 		LDA		_player_scroll_stop_override_tmp
 		CMP		#1
 		BEQ		loc_615D1
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		CMP		_lvl_stop_sctoll_room_idx
 		BCC		loc_615E7
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		CMP		#$74
 		BCC		loc_615E7
 loc_615D1:
@@ -2516,21 +2516,21 @@ loc_615D1:
 		BCS		locret_6160C
 		INC		_player_wnd_scroll_counter
 		CLC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		ADC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		ADC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		RTS
 loc_615E7:
 		CLC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		ADC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		ADC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		LDA		_player_wnd_scroll_counter
 		CMP		#$74
 		BEQ		loc_615FD
@@ -2559,9 +2559,9 @@ loc_6160D:
 		BNE		locret_61661
 		LDA		_player_wnd_scroll_counter
 		BEQ		locret_61661
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		BNE		loc_61632
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		CMP		#$74
 		BCS		loc_61632
 		DEC		_player_wnd_scroll_counter
@@ -2583,12 +2583,12 @@ loc_6163D:
 		STA		_lvl_nt_value
 loc_6164C:
 		SEC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		SBC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		SBC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		CLC
 		LDA		_player_hor_move_anim_timer
 		ADC		_player_hor_move_anim_increment
@@ -2609,10 +2609,10 @@ loc_61662:
 		LDA		_player_hor_move_anim_timer
 		ADC		_player_hor_move_anim_increment
 		STA		_player_hor_move_anim_timer
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		CMP		#1
 		BCC		loc_6169E
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		CMP		#$74
 		BCC		loc_6169E
 		LDA		_player_wnd_scroll_counter
@@ -2620,21 +2620,21 @@ loc_61662:
 		BCS		locret_616C3
 		INC		_player_wnd_scroll_counter
 		CLC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		ADC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		ADC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		RTS
 loc_6169E:
 		CLC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		ADC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		ADC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		LDA		_player_wnd_scroll_counter
 		CMP		#$74
 		BEQ		loc_616B4
@@ -2652,7 +2652,7 @@ loc_616B4:
 locret_616C3:
 		RTS
 _player_explosion_anim:
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		CMP		#$BC
 		BCC		loc_616CE
 		LDA		#$AA
@@ -2671,16 +2671,16 @@ loc_616DA:
 		AND		#$F
 		CLC
 		ADC		#4
-		ADC		_obj_lvl_x_lo._player
-		STA		_obj_lvl_x_lo,X
-		LDA		_obj_lvl_x_hi._player
+		ADC		_obj_x_lo._player
+		STA		_obj_x_lo,X
+		LDA		_obj_x_hi._player
 		ADC		#0
-		STA		_obj_lvl_x_hi,X
+		STA		_obj_x_hi,X
 		CLC
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		ADC		_player_explode_timer_tmp
 		SBC		#4
-		STA		_obj_lvl_y,X
+		STA		_obj_y,X
 		LDA		#7
 		STA		_obj_hndl_idx,X
 		LDA		_player_explode_timer_tmp
@@ -2707,7 +2707,7 @@ loc_6171B:
 		AND		#3
 		CLC
 		ADC		#$10
-		STA		_star_field_data2+$24,X
+		STA		_obj_var6,X
 		LDA		#7
 		STA		_obj_hndl_idx,X
 		STA		_obj_flags,X
@@ -2790,10 +2790,10 @@ loc_617AB:
 		JSR		_hud_msg_set_request
 loc_617BB:
 		JSR		_lvl2_obj_jet_update
-		LDA		_star_field_data1+$25
+		LDA		_obj_var2
 		CMP		#$FD
 		BEQ		loc_617E1
-		DEC		_star_field_data1+$25
+		DEC		_obj_var2
 		JMP		loc_617E1
 loc_617CB:
 		LDA		_obj_flags._misc
@@ -2803,27 +2803,27 @@ loc_617CB:
 		LDA		#$E
 		STA		_snd_idx
 loc_617D7:
-		LDA		_star_field_data1+$25
+		LDA		_obj_var2
 		CMP		#8
 		BEQ		loc_617E1
-		INC		_star_field_data1+$25
+		INC		_obj_var2
 loc_617E1:
 		CLC
 		LDA		#$94
 		ADC		_tptr1
 		STA		_obj_spr_idx._player
 		LDA		#$C
-		STA		_star_field_data2+$17
-		LDA		_star_field_data1+$18
+		STA		_obj_var4
+		LDA		_obj_var1
 		BPL		loc_61805
 loc_617F2:
 		LDA		#8
-		STA		_star_field_data2+$17
-		LDA		_obj_lvl_y._player
+		STA		_obj_var4
+		LDA		_obj_y._player
 		CMP		#$3C
 		BCS		loc_61802
 		LDA		#0
-		STA		_star_field_data1+$18
+		STA		_obj_var1
 loc_61802:
 		JMP		loc_6193B
 loc_61805:
@@ -2837,16 +2837,16 @@ loc_6180B:
 		BNE		loc_61816
 		JMP		loc_6193B
 loc_61816:
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		AND		#$F0
-		STA		_obj_lvl_y._player
+		STA		_obj_y._player
 		LDA		#0
-		STA		_star_field_data1+$18
-		STA		_star_field_data1+$25
+		STA		_obj_var1
+		STA		_obj_var2
 		LDA		#2
 		STA		_player_sit_jump_flag
 		LDA		#8
-		STA		_star_field_data2+$24
+		STA		_obj_var6
 		LDA		#$B
 		STA		_snd_idx
 		JMP		loc_6186B
@@ -2864,7 +2864,7 @@ loc_61847:
 		LDA		_pads
 		AND		#4
 		BNE		loc_6185B
-		DEC		_star_field_data2+$24
+		DEC		_obj_var6
 		BNE		loc_6186B
 		LDA		_player_sit_jump_flag
 		AND		#$FD
@@ -2874,16 +2874,16 @@ loc_6185B:
 		LDA		_player_sit_jump_flag
 		ORA		#2
 		STA		_player_sit_jump_flag
-		LDA		_star_field_data2+$24
+		LDA		_obj_var6
 		CMP		#9
 		BCS		loc_6186B
-		INC		_star_field_data2+$24
+		INC		_obj_var6
 loc_6186B:
 		LDA		_player_cur_bullet_shot_state
 		CMP		#$A
 		PHP
 		STY		_tptr1
-		LDA		_star_field_data2+$24
+		LDA		_obj_var6
 		LSR
 		LSR
 		PLP
@@ -2900,7 +2900,7 @@ loc_61888:
 		AND		#1
 		BNE		loc_618A2
 		LDA		#8
-		STA		_star_field_data1+$25
+		STA		_obj_var2
 		LDA		_player_sit_jump_flag
 		ORA		#1
 		STA		_player_sit_jump_flag
@@ -3038,31 +3038,31 @@ _left_move_test:
 		LDA		_player_hor_move_anim_timer
 		ADC		_player_hor_move_anim_increment
 		STA		_player_hor_move_anim_timer
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		CMP		_lvl_stop_sctoll_room_idx
 		BNE		loc_619B6
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		CMP		#$75
 		BCS		loc_619B6
 		LDA		_player_wnd_scroll_counter
 		BEQ		locret_619DB
 		DEC		_player_wnd_scroll_counter
 		SEC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		SBC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		SBC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		RTS
 loc_619B6:
 		SEC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		SBC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		SBC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		LDA		_player_wnd_scroll_counter
 		CMP		#$75
 		BCC		loc_619CC
@@ -3094,12 +3094,12 @@ loc_619DC:
 		BEQ		locret_61A0B
 		INC		_player_wnd_scroll_counter
 		CLC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		ADC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		ADC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		CLC
 		LDA		_player_hor_move_anim_timer
 		ADC		_player_hor_move_anim_increment
@@ -3115,18 +3115,18 @@ _lvl2_obj_jet_update:
 		STA		_snd_idx
 		LDA		#0
 		STA		_obj_pal_idx._misc
-		STA		_star_field_data1+$22
-		STA		_obj_unk._misc
-		STA		_star_field_data1+$15
-		STA		_star_field_data2+7
+		STA		_obj_var1._misc
+		STA		_obj_x_velocity._misc
+		STA		_obj_var0._misc
+		STA		_obj_var2._misc
 		LDA		#$FF
 		STA		_obj_hndl_idx._misc
 		INC		_obj_flags._misc
 loc_61A29:
 		CLC
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		ADC		#$1C
-		STA		_obj_lvl_y._misc
+		STA		_obj_y._misc
 		LDY		#2
 		LDA		_obj_flags._player
 		AND		#$40
@@ -3135,13 +3135,13 @@ loc_61A29:
 loc_61A3A:
 		TYA
 		CLC
-		ADC		_obj_lvl_x_lo._player
-		STA		_obj_lvl_x_lo._misc
-		LDA		_obj_lvl_x_hi._player
+		ADC		_obj_x_lo._player
+		STA		_obj_x_lo._misc
+		LDA		_obj_x_hi._player
 		ADC		#0
-		STA		_obj_lvl_x_hi._misc
-		INC		_delay_counter+1
-		LDA		_delay_counter+1
+		STA		_obj_x_hi._misc
+		INC		_obj_var6._misc
+		LDA		_obj_var6._misc
 		AND		#$F
 		LSR
 		LSR
@@ -3179,22 +3179,22 @@ loc_61A76:
 		BEQ		locret_61A8F
 		DEC		_player_wnd_scroll_counter
 		SEC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		SBC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		SBC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 locret_61A8F:
 		RTS
 loc_61A90:
 		LDA		_obj_hcoll._player
 		AND		#4
 		BNE		locret_61ADD
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		CMP		_lvl_stop_sctoll_room_idx
 		BCC		loc_61AB8
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		CMP		#$74
 		BCC		loc_61AB8
 		LDA		_player_wnd_scroll_counter
@@ -3202,21 +3202,21 @@ loc_61A90:
 		BCS		locret_61ADD
 		INC		_player_wnd_scroll_counter
 		CLC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		ADC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		ADC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		RTS
 loc_61AB8:
 		CLC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		ADC		#1
-		STA		_obj_lvl_x_lo._player
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
 		ADC		#0
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		LDA		_player_wnd_scroll_counter
 		CMP		#$74
 		BEQ		loc_61ACE
@@ -3252,9 +3252,9 @@ loc_61AED:
 		LDA		#0
 		STA		_obj_hcoll,X
 		STA		_obj_vcoll,X
-		LDA		_obj_lvl_x_hi,X
+		LDA		_obj_x_hi,X
 		STA		_ptr0+1
-		LDA		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo,X
 		LSR		_ptr0+1
 		ROR
 		LSR		_ptr0+1
@@ -3284,7 +3284,7 @@ loc_61AED:
 		LDA		_tptr1+1
 		ADC		_lvl_collision_data2_ptr+1
 		STA		_tptr2+1
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		CMP		#$40
 		BCS		loc_61B37
 		JMP		loc_61BBB
@@ -3342,7 +3342,7 @@ loc_61B7F:
 loc_61B8D:
 		CPX		#0
 		BNE		loc_61B9D
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		CMP		#$BC
 		BCC		loc_61B9D
 		LDA		#$80
@@ -3454,7 +3454,7 @@ loc_61C32:
 		RTS
 loc_61C3C:
 		TYA
-		STA		_star_field_data2+$24,X
+		STA		_obj_var6,X
 		LDA		byte_65A
 		STA		_obj_hndl_idx,X
 		JSR		_player_bullet_insert
@@ -3479,20 +3479,20 @@ loc_61C60:
 		STA		_obj_hndl_idx._pbullet
 		STA		_obj_hndl_idx._pbullet+1
 		STA		_obj_hndl_idx._pbullet+2
-		LDA		_obj_lvl_x_lo._pbullet+1
-		STA		_obj_lvl_x_lo._pbullet
-		STA		_obj_lvl_x_lo._pbullet+2
-		LDA		_obj_lvl_x_hi._pbullet+1
-		STA		_obj_lvl_x_hi._pbullet
-		STA		_obj_lvl_x_hi._pbullet+2
-		LDA		_obj_lvl_y._pbullet+1
-		STA		_obj_lvl_y._pbullet
-		STA		_obj_lvl_y._pbullet+2
-		LDA		_star_field_data1+$10
-		STA		_star_field_data1+$F
-		STA		_star_field_data1+$11
-		STA		_obj_unk._pbullet
-		STA		_obj_unk._pbullet+2
+		LDA		_obj_x_lo._pbullet+1
+		STA		_obj_x_lo._pbullet
+		STA		_obj_x_lo._pbullet+2
+		LDA		_obj_x_hi._pbullet+1
+		STA		_obj_x_hi._pbullet
+		STA		_obj_x_hi._pbullet+2
+		LDA		_obj_y._pbullet+1
+		STA		_obj_y._pbullet
+		STA		_obj_y._pbullet+2
+		LDA		_obj_var0._pbullet+1
+		STA		_obj_var0._pbullet
+		STA		_obj_var0._pbullet+2
+		STA		_obj_x_velocity._pbullet
+		STA		_obj_x_velocity._pbullet+2
 		LDA		#3
 		STA		_obj_spr_idx._pbullet
 		STA		_obj_spr_idx._pbullet+1
@@ -3506,26 +3506,26 @@ loc_61C60:
 		LDY		#6
 loc_61CA0:
 		LDA		byte_61CF1,Y
-		STA		_star_field_data2+1
-		STA		_star_field_data1+$1C
+		STA		_obj_var2._pbullet
+		STA		_obj_var1._pbullet
 		LDA		byte_61CF1+1,Y
-		STA		_star_field_data2+2
-		STA		_star_field_data1+$1D
+		STA		_obj_var2._pbullet+1
+		STA		_obj_var1._pbullet+1
 		LDA		byte_61CF1+2,Y
-		STA		_star_field_data2+3
-		STA		_star_field_data1+$1E
-		LDA		_obj_unk._pbullet+1
+		STA		_obj_var2._pbullet+2
+		STA		_obj_var1._pbullet+2
+		LDA		_obj_x_velocity._pbullet+1
 		AND		byte_61CE8,Y
-		STA		_obj_unk._pbullet
-		STA		_star_field_data1+$F
-		LDA		_obj_unk._pbullet+1
+		STA		_obj_x_velocity._pbullet
+		STA		_obj_var0._pbullet
+		LDA		_obj_x_velocity._pbullet+1
 		AND		byte_61CE8+1,Y
-		STA		_obj_unk._pbullet+1
-		STA		_star_field_data1+$10
-		LDA		_obj_unk._pbullet+1
+		STA		_obj_x_velocity._pbullet+1
+		STA		_obj_var0._pbullet+1
+		LDA		_obj_x_velocity._pbullet+1
 		AND		byte_61CE8+2,Y
-		STA		_obj_unk._pbullet+2
-		STA		_star_field_data1+$11
+		STA		_obj_x_velocity._pbullet+2
+		STA		_obj_var0._pbullet+2
 		LDA		#0
 		STA		_obj_pal_idx._pbullet
 		STA		_obj_pal_idx._pbullet+2
@@ -3547,12 +3547,12 @@ loc_61CFC:
 		LDA		_obj_flags._enemy,X
 		BEQ		loc_61D11
 		LDA		#0
-		STA		_tmp3C3+1,X
+		STA		_obj_var9._enemy,X
 		LDA		#8
-		STA		_star_field_data1+$C,X
-		STA		_obj_unk._enemy,X
+		STA		_obj_var0._enemy,X
+		STA		_obj_x_velocity._enemy,X
 		LDA		#0
-		STA		_tmp3C3+1,X
+		STA		_obj_var9._enemy,X
 loc_61D11:
 		DEX
 		BPL		loc_61CFC
@@ -3595,12 +3595,12 @@ loc_61D4C:
 		LDA		#0
 		STA		_obj_pal_idx,X
 		CLC
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		ADC		byte_657
-		STA		_obj_lvl_y,X
+		STA		_obj_y,X
 		LDA		_player_diagonal_fire_delta
-		STA		_star_field_data1+$25,X
-		STA		_star_field_data1+$18,X
+		STA		_obj_var2,X
+		STA		_obj_var1,X
 		LDA		_tptr1
 		STA		_obj_spr_idx,X
 		LDA		_obj_flags._player
@@ -3611,27 +3611,27 @@ loc_61D4C:
 		PLP
 		BEQ		loc_61D90
 		LDA		#4
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		CLC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		ADC		#$1E
-		STA		_obj_lvl_x_lo,X
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo,X
+		LDA		_obj_x_hi._player
 		ADC		#0
-		STA		_obj_lvl_x_hi,X
+		STA		_obj_x_hi,X
 		RTS
 loc_61D90:
 		LDA		#$FC
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		SEC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		SBC		#6
-		STA		_obj_lvl_x_lo,X
-		LDA		_obj_lvl_x_hi._player
+		STA		_obj_x_lo,X
+		LDA		_obj_x_hi._player
 		SBC		#0
-		STA		_obj_lvl_x_hi,X
+		STA		_obj_x_hi,X
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -3644,7 +3644,7 @@ loc_61DAD:
 loc_61DAF:
 		LDA		_obj_flags,X
 		BEQ		_player_next_bullet
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		CMP		#$D8
 		BCS		loc_61DE7
 		CMP		#$3C
@@ -3700,54 +3700,54 @@ loc_61E08:
 loc_61E0B:
 		JMP		_player_next_bullet
 loc_61E0E:
-		LDY		_star_field_center_pos_x
+		LDY		 _obj_var6._pbullet
 		JMP		loc_61E99
 loc_61E14:
 		JMP		_player_next_bullet
 loc_61E17:
 		JMP		_player_next_bullet
 _player_bullet_anim_hit_test:
-		LDY		_star_field_center_pos_x
+		LDY		 _obj_var6._pbullet
 		BEQ		loc_61E29
 		LDA		_obj_flags,Y
 		BEQ		loc_61E29
-		LDA		_star_field_data0+$19,Y
+		LDA		_obj_var5,Y
 		BNE		loc_61E38
 loc_61E29:
 		LDY		#3
 loc_61E2B:
 		LDA		_obj_flags,Y
 		BEQ		loc_61E35
-		LDA		_star_field_data0+$19,Y
+		LDA		_obj_var5,Y
 		BNE		loc_61E38
 loc_61E35:
 		DEY
 		BNE		loc_61E2B
 loc_61E38:
-		STY		_star_field_center_pos_x
-		LDA		#<[_pal_buf+4]
+		STY		 _obj_var6._pbullet
+		LDA		#4
 		STA		_tptr1
-		LDA		#>[_pal_buf+4]
+		LDA		#3
 		STA		_tptr1+1
 		SEC
-		LDA		_obj_lvl_x_lo,Y
-		SBC		_obj_lvl_x_lo._pbullet
-		LDA		_obj_lvl_x_hi,Y
-		SBC		_obj_lvl_x_hi._pbullet
+		LDA		_obj_x_lo,Y
+		SBC		_obj_x_lo._pbullet
+		LDA		_obj_x_hi,Y
+		SBC		_obj_x_hi._pbullet
 		BCS		loc_61E54
 		LDA		#$FC
 		STA		_tptr1
 loc_61E54:
 		CLC
-		LDA		_obj_lvl_y,Y
+		LDA		_obj_y,Y
 		ADC		#$1E
 		SEC
-		SBC		_obj_lvl_y._pbullet
+		SBC		_obj_y._pbullet
 		PHP
-		LDA		_obj_lvl_y,Y
+		LDA		_obj_y,Y
 		AND		#$F8
 		STA		_tmpE4
-		LDA		_obj_lvl_y._pbullet
+		LDA		_obj_y._pbullet
 		AND		#$F8
 		CMP		_tmpE4
 		BNE		loc_61E74
@@ -3762,17 +3762,17 @@ loc_61E74:
 		STA		_tptr1+1
 loc_61E7B:
 		LDA		_tptr1
-		STA		_star_field_data1+$F
+		STA		_obj_var0._pbullet
 		LDA		_tptr1+1
-		STA		_star_field_data2+1
+		STA		_obj_var2._pbullet
 		LDY		#0
-		LDA		_obj_unk._pbullet
+		LDA		_obj_x_velocity._pbullet
 		BPL		loc_61E8D
 		LDY		#9
 loc_61E8D:
 		STY		_tptr1
 		CLC
-		LDA		_star_field_data1+$1C
+		LDA		_obj_var1._pbullet
 		ADC		#4
 		CLC
 		ADC		_tptr1
@@ -3785,11 +3785,11 @@ loc_61E99:
 		LDA		byte_61F1C,Y
 		BMI		loc_61EB6
 		CLC
-		ADC		_obj_lvl_x_lo._pbullet
-		STA		_obj_lvl_x_lo._pbullet+1
-		LDA		_obj_lvl_x_hi._pbullet
+		ADC		_obj_x_lo._pbullet
+		STA		_obj_x_lo._pbullet+1
+		LDA		_obj_x_hi._pbullet
 		ADC		#0
-		STA		_obj_lvl_x_hi._pbullet+1
+		STA		_obj_x_hi._pbullet+1
 		JMP		loc_61ECA
 loc_61EB6:
 		EOR		#$FF
@@ -3797,19 +3797,19 @@ loc_61EB6:
 		ADC		#1
 		STA		_tptr1
 		SEC
-		LDA		_obj_lvl_x_lo._pbullet
+		LDA		_obj_x_lo._pbullet
 		SBC		_tptr1
-		STA		_obj_lvl_x_lo._pbullet+1
-		LDA		_obj_lvl_x_hi._pbullet
+		STA		_obj_x_lo._pbullet+1
+		LDA		_obj_x_hi._pbullet
 		SBC		#0
-		STA		_obj_lvl_x_hi._pbullet+1
+		STA		_obj_x_hi._pbullet+1
 loc_61ECA:
 		CLC
 		LDA		byte_61F2E,Y
-		ADC		_obj_lvl_y._pbullet
-		STA		_obj_lvl_y._pbullet+1
-		DEC		_mul_argB
-		LDA		_mul_argB
+		ADC		_obj_y._pbullet
+		STA		_obj_y._pbullet+1
+		DEC		_obj_var7._pbullet
+		LDA		_obj_var7._pbullet
 		LSR
 		LSR
 		AND		#1
@@ -3822,8 +3822,8 @@ loc_61ECA:
 		STA		_obj_pal_idx._pbullet+1
 		LDA		#$FF
 		STA		_obj_hndl_idx._pbullet+1
-		LDA		_obj_unk._pbullet
-		STA		_obj_unk._pbullet+1
+		LDA		_obj_x_velocity._pbullet
+		STA		_obj_x_velocity._pbullet+1
 		LDA		#3
 		STA		_obj_pal_idx._pbullet
 		JMP		_player_next_bullet
@@ -3930,9 +3930,9 @@ _obj_add:
 		LDY		#1
 		LDA		(_lvl_obj_list_ptr),Y					; test for a special object for transition
 		BMI		.special_transition_objects				; between different parts of the level
-		LDA		_obj_lvl_x_lo._player					; x position is relative to player's pos
+		LDA		_obj_x_lo._player					; x position is relative to player's pos
 		STA		_tmpE6
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		STA		_tmpE7
 		LDY		#3
 		LDA		(_lvl_obj_list_ptr),Y					; +3 read x delta
@@ -3973,13 +3973,13 @@ loc_62009:
 		LDA		_tptr1+1
 		CLC
 		ADC		#$40
-		STA		_obj_lvl_y,X							; write object Y pos
+		STA		_obj_y,X							; write object Y pos
 		LDA		_obj_pal_lib,Y							; palette and sprite indexes are in the global object table
 		STA		_obj_pal_idx,X
 		LDA		_obj_spr_lib,Y
 		STA		_obj_spr_idx,X
 		LDA		byte_63BD0,Y
-		STA		_tmp3C3,X
+		STA		_obj_var9,X
 		LDA		_obj_init_flags_lib,Y					; as well as sprites
 		STA		_obj_flags,X
 .obj_pos_x_calc:
@@ -3989,29 +3989,29 @@ loc_62009:
 		SEC
 		LDA		_tmpE6
 		SBC		#$84									; adjust appear position
-		STA		_obj_lvl_x_lo,X
+		STA		_obj_x_lo,X
 		LDA		_tmpE7
 		SBC		#0
-		STA		_obj_lvl_x_hi,X
+		STA		_obj_x_hi,X
 		JMP		.obj_pos_delta_aplly
 .obj_gen_pos_x_calc:
 		CLC
 		LDA		_tmpE6
 		ADC		#$8E									; adjust appear position
-		STA		_obj_lvl_x_lo,X
+		STA		_obj_x_lo,X
 		LDA		_tmpE7
 		ADC		#0
-		STA		_obj_lvl_x_hi,X
+		STA		_obj_x_hi,X
 .obj_pos_delta_aplly:
 		LDA		_tptr1									; extra delta shift for the object
 		BMI		loc_62062								; can be positive or negative
 		ASL
 		CLC
-		ADC		_obj_lvl_x_lo,X
-		STA		_obj_lvl_x_lo,X
-		LDA		_obj_lvl_x_hi,X
+		ADC		_obj_x_lo,X
+		STA		_obj_x_lo,X
+		LDA		_obj_x_hi,X
 		ADC		#0
-		STA		_obj_lvl_x_hi,X
+		STA		_obj_x_hi,X
 		JMP		loc_62077
 loc_62062:
 		EOR		#$FF
@@ -4020,22 +4020,22 @@ loc_62062:
 		ASL
 		STA		_tptr1
 		SEC
-		LDA		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo,X
 		SBC		_tptr1
-		STA		_obj_lvl_x_lo,X
-		LDA		_obj_lvl_x_hi,X
+		STA		_obj_x_lo,X
+		LDA		_obj_x_hi,X
 		SBC		#0
-		STA		_obj_lvl_x_hi,X
+		STA		_obj_x_hi,X
 loc_62077:
 		LDA		#0										; init misc vars
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
-		STA		_star_field_data1+$25,X
-		STA		_star_field_data1+$18,X
-		STA		_star_field_data2+$24,X
-		STA		_chr1_bank_shadow,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
+		STA		_obj_var2,X
+		STA		_obj_var1,X
+		STA		_obj_var6,X
+		STA		_obj_var7,X
 		LDA		#1
-		STA		_star_field_data0+$19,X
+		STA		_obj_var5,X
 .advance_obj_ptr_and_break:
 		CLC
 		LDA		_lvl_obj_list_ptr
@@ -4130,7 +4130,7 @@ _obj_ehndl_regular_gunman:
 		STY		_tmpE4
 		INY
 		STY		_tmpE5
-		LDA		_tmp3C3,X
+		LDA		_obj_var9,X
 		BNE		loc_62122
 		LDA		_tmpE6
 		STA		_obj_spr_idx,X
@@ -4139,24 +4139,24 @@ loc_62122:
 		LDA		_obj_hcoll,X
 		AND		#1
 		BNE		loc_62130
-		LDA		_star_field_data1+$25,X
+		LDA		_obj_var2,X
 		BEQ		loc_6217E
 		JMP		loc_62228
 loc_62130:
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		CMP		#$A0
 		BCS		loc_62139
 		JMP		loc_62228
 loc_62139:
 		LDA		#0
-		STA		_star_field_data1+$25,X
-		STA		_star_field_data1+$18,X
-		LDA		_obj_lvl_y,X
+		STA		_obj_var2,X
+		STA		_obj_var1,X
+		LDA		_obj_y,X
 		AND		#$F0
-		STA		_obj_lvl_y,X
-		LDA		_obj_unk,X
+		STA		_obj_y,X
+		LDA		_obj_x_velocity,X
 		BNE		loc_62168
-		DEC		_chr1_bank_shadow,X
+		DEC		_obj_var7,X
 		BMI		loc_62153
 		JMP		loc_62228
 loc_62153:
@@ -4167,11 +4167,11 @@ loc_62153:
 		LDA		_rand_seed,X
 		AND		#$F
 		ORA		#$20
-		STA		_chr1_bank_shadow,X
+		STA		_obj_var7,X
 		JMP		loc_6217E
 loc_62168:
-		INC		_star_field_data2+$24,X
-		LDA		_star_field_data2+$24,X
+		INC		_obj_var6,X
+		LDA		_obj_var6,X
 		AND		#$1F
 		LSR
 		LSR
@@ -4192,16 +4192,16 @@ loc_6217E:
 		LDY		#$FF
 loc_6218C:
 		TYA
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		JMP		loc_62228
 loc_62195:
-		LDA		_chr1_bank_shadow,X
+		LDA		_obj_var7,X
 		BPL		loc_621C4
 		LDA		_rand_seed,X
 		AND		#$1F
 		ADC		#$1E
-		STA		_chr1_bank_shadow,X
+		STA		_obj_var7,X
 		JSR		_enemy_projectile_collision_test_ex
 		LDA		#$FF
 		STA		_tptr1
@@ -4216,12 +4216,12 @@ loc_62195:
 loc_621B8:
 		STA		_obj_flags,X
 		LDA		_tptr1
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		JMP		loc_62228
 loc_621C4:
-		DEC		_chr1_bank_shadow,X
-		LDA		_chr1_bank_shadow,X
+		DEC		_obj_var7,X
+		LDA		_obj_var7,X
 		CMP		#$A
 		BCS		loc_62228
 		JSR		_enemy_projectile_collision_test_ex
@@ -4263,10 +4263,10 @@ loc_621F9:
 		STA		_obj_spr_idx,X
 		LDA		#$F
 loc_6221E:
-		STA		_chr1_bank_shadow,X
+		STA		_obj_var7,X
 		LDA		#0
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 loc_62228:
 		JMP		_obj_next_enemy_ai
 
@@ -4299,19 +4299,19 @@ _obj_ehndl_bomb_thrower:
 		STY		_tmpE4
 		INY
 		STY		_tmpE5
-		LDA		_tmp3C3,X
+		LDA		_obj_var9,X
 		BNE		loc_62252
 		LDA		#$2E
 		STA		_obj_spr_idx,X
 		JMP		loc_6235C
 loc_62252:
-		DEC		_chr1_bank_shadow,X
+		DEC		_obj_var7,X
 		BMI		loc_6225A
 		JMP		loc_6235C
 loc_6225A:
 		LDA		#5
-		STA		_chr1_bank_shadow,X
-		LDA		_star_field_data2+$24,X
+		STA		_obj_var7,X
+		LDA		_obj_var6,X
 		BNE		loc_62280
 		LDA		_obj_spr_idx,X
 		CMP		_tptr1
@@ -4325,7 +4325,7 @@ loc_6226F:
 		JMP		loc_6235C
 loc_62278:
 		LDA		#1
-		STA		_star_field_data2+$24,X
+		STA		_obj_var6,X
 		JMP		loc_6235C
 loc_62280:
 		LDA		_obj_spr_idx,X
@@ -4341,7 +4341,7 @@ loc_6228B:
 		CMP		#7
 		BCS		loc_622A0
 		LDA		#0
-		STA		_star_field_data2+$24,X
+		STA		_obj_var6,X
 		JMP		loc_6235C
 loc_622A0:
 		JSR		_enemy_projectile_collision_test_ex
@@ -4355,7 +4355,7 @@ loc_622A0:
 loc_622B1:
 		LDA		_obj_flags,Y
 		BEQ		loc_622BF
-		LDA		_obj_lvl_y,Y
+		LDA		_obj_y,Y
 		CMP		#$8C
 		BCC		loc_622BF
 		INC		_tptr1
@@ -4365,7 +4365,7 @@ loc_622BF:
 		LDA		_tptr1
 		BNE		loc_622DC
 		LDA		#6
-		STA		_star_field_data1+$25,X
+		STA		_obj_var2,X
 		LDA		#0
 		STA		_obj_hndl_idx,X
 		LDA		#$2E
@@ -4423,19 +4423,19 @@ loc_6230C:
 		STA		_tptr1+1
 loc_6233A:
 		LDA		_tptr1
-		STA		_star_field_data1+$B,Y
+		STA		_obj_var0,Y
 		LDA		_tptr1+1
-		STA		_obj_unk,Y
+		STA		_obj_x_velocity,Y
 		LDA		#$FD
-		STA		_star_field_data1+$18,Y
+		STA		_obj_var1,Y
 		LDA		#3
 		STA		_obj_pal_idx,Y
 		LDA		#3
-		STA		_star_field_data2+$17,Y
+		STA		_obj_var4,Y
 		LDA		_tmpE5
 		STA		_obj_spr_idx,X
 		LDA		#$1E
-		STA		_chr1_bank_shadow,X
+		STA		_obj_var7,X
 loc_6235C:
 		JMP		_obj_next_enemy_ai
 
@@ -4478,21 +4478,21 @@ _obj_ehndl_hiding_barrel:
 		STY		_tmpE4
 		INY
 		STY		_tmpE5
-		LDA		_tmp3C3,X
+		LDA		_obj_var9,X
 		BNE		loc_62394
 		LDA		_tmpE6
 		STA		_obj_spr_idx,X
 loc_62391:
 		JMP		loc_62427
 loc_62394:
-		DEC		_chr1_bank_shadow,X
+		DEC		_obj_var7,X
 		BPL		loc_62391
 		LDA		#4
-		STA		_chr1_bank_shadow,X
-		LDA		_star_field_data2+$24,X
+		STA		_obj_var7,X
+		LDA		_obj_var6,X
 		BNE		loc_623D0
 		LDA		#3
-		STA		byte_3B6,X
+		STA		_obj_var8,X
 		LDA		_obj_spr_idx,X
 		CMP		_tptr1
 		BEQ		loc_623BE
@@ -4501,20 +4501,20 @@ loc_62394:
 		CMP		_tptr1
 		BNE		loc_62427
 		LDA		#0
-		STA		_star_field_data0+$19,X
+		STA		_obj_var5,X
 		JMP		loc_62427
 loc_623BE:
 		LDA		#0
-		STA		_star_field_data0+$19,X
+		STA		_obj_var5,X
 		LDA		_rand_seed,X
 		CMP		#6
 		BCS		loc_62427
 		LDA		#1
-		STA		_star_field_data2+$24,X
+		STA		_obj_var6,X
 		BNE		loc_62427
 loc_623D0:
 		LDA		#1
-		STA		_star_field_data0+$19,X
+		STA		_obj_var5,X
 		LDA		_obj_spr_idx,X
 		CMP		_tmpE4
 		BCS		loc_623DF
@@ -4523,11 +4523,11 @@ loc_623D0:
 loc_623DF:
 		LDA		_tmpE4
 		STA		_obj_spr_idx,X
-		LDA		byte_3B6,X
+		LDA		_obj_var8,X
 		BNE		loc_623EF
 loc_623E8:
 		LDA		#0
-		STA		_star_field_data2+$24,X
+		STA		_obj_var6,X
 		BEQ		loc_62427
 loc_623EF:
 		JSR		_enemy_projectile_collision_test_ex
@@ -4554,7 +4554,7 @@ loc_623FA:
 		STA		_snd_idx
 		LDA		_tmpE5
 		STA		_obj_spr_idx,X
-		DEC		byte_3B6,X
+		DEC		_obj_var8,X
 		LDA		#2
 		STA		_pal_blink_flag
 loc_62427:
@@ -4584,28 +4584,28 @@ _obj_ehndl_grenader:
 		INY
 		INY
 		STY		_tmpE4
-		LDA		_tmp3C3,X
+		LDA		_obj_var9,X
 		BNE		loc_62448
 		JMP		loc_624EB
 loc_62448:
 		LDA		_obj_hcoll,X
 		AND		#3
 		BNE		loc_62463
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		EOR		#$FF
 		CLC
 		ADC		#1
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		LDA		_obj_flags,X
 		EOR		#$40
 		STA		_obj_flags,X
 		JMP		loc_624EB
 loc_62463:
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		BEQ		loc_62477
-		INC		_star_field_data2+$24,X
-		LDA		_star_field_data2+$24,X
+		INC		_obj_var6,X
+		LDA		_obj_var6,X
 		AND		#$1F
 		LSR
 		LSR
@@ -4631,8 +4631,8 @@ loc_62477:
 loc_62492:
 		STA		_obj_flags,X
 		LDA		_tptr1
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		LDA		_rand_seed,X
 		CMP		#5
 		BCS		loc_624EB
@@ -4651,8 +4651,8 @@ loc_62492:
 		LDA		_tmpE4
 		STA		_obj_spr_idx,X
 		LDA		#0
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		JMP		_obj_next_enemy_ai
 loc_624C8:
 		LDA		_obj_spr_idx,X
@@ -4669,8 +4669,8 @@ loc_624C8:
 		LDA		#$10
 		STA		_snd_idx
 		LDA		#0
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 loc_624EB:
 		JMP		_obj_next_enemy_ai
 
@@ -4692,7 +4692,7 @@ _obj_ehndl_hanging_gunman:
 		STY		_tmpE4
 		INY
 		STY		_tmpE5
-		LDA		_tmp3C3,X
+		LDA		_obj_var9,X
 		BEQ		loc_62565
 		LDA		_rand_seed
 		CMP		#$A
@@ -4703,9 +4703,9 @@ _obj_ehndl_hanging_gunman:
 		LSR
 		AND		#1
 		STA		_tmpE6
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		EOR		_tmpE6
-		STA		_obj_lvl_y,X
+		STA		_obj_y,X
 loc_6251B:
 		JSR		_enemy_projectile_collision_test_ex
 		LDA		_obj_flags,X
@@ -4720,7 +4720,7 @@ loc_62526:
 		CMP		#$12
 		BCS		loc_6253E
 		LDA		#6
-		STA		_star_field_data1+$25,X
+		STA		_obj_var2,X
 		LDA		_tptr1+1
 		STA		_obj_hndl_idx,X
 		JMP		loc_62565
@@ -4766,28 +4766,28 @@ _obj_ehndl_walking_grenader:
 		STY		_tptr1+1
 		INY
 		STY		_tmpE4
-		LDA		_tmp3C3,X
+		LDA		_obj_var9,X
 		BNE		loc_62581
 		JMP		loc_6262C
 loc_62581:
 		LDA		_obj_hcoll,X
 		AND		#3
 		BNE		loc_6259C
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		EOR		#$FF
 		CLC
 		ADC		#1
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		LDA		_obj_flags,X
 		EOR		#$40
 		STA		_obj_flags,X
 		JMP		loc_6262C
 loc_6259C:
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		BEQ		loc_625B0
-		INC		_star_field_data2+$24,X
-		LDA		_star_field_data2+$24,X
+		INC		_obj_var6,X
+		LDA		_obj_var6,X
 		AND		#$1F
 		LSR
 		LSR
@@ -4813,8 +4813,8 @@ loc_625B0:
 loc_625CB:
 		STA		_obj_flags,X
 		LDA		_tptr1
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		LDA		_rand_seed,X
 		CMP		#5
 		BCS		loc_6262C
@@ -4834,34 +4834,34 @@ loc_625E6:
 		JSR		_enemy_bullet_insert
 		BCS		loc_6262C
 		LDA		#$FE
-		STA		_star_field_data1+$B,Y
+		STA		_obj_var0,Y
 		LDA		#$FC
-		STA		_obj_unk,Y
+		STA		_obj_x_velocity,Y
 		LDA		#$FD
-		STA		_star_field_data1+$18,Y
+		STA		_obj_var1,Y
 		LDA		#2
 		STA		_obj_pal_idx,Y
 		LDA		#3
-		STA		_star_field_data2+$17,Y
+		STA		_obj_var4,Y
 		LDA		_tmpE4
 		STA		_obj_spr_idx,X
 		LDA		_obj_flags,X
 		AND		#$40
 		BEQ		loc_62625
 		LDA		#2
-		STA		_star_field_data1+$B,Y
+		STA		_obj_var0,Y
 		LDA		#4
-		STA		_obj_unk,Y
+		STA		_obj_x_velocity,Y
 loc_62625:
 		LDA		#0
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 loc_6262C:
 		JMP		_obj_next_enemy_ai
 
 ; =============== S U B	R O U T	I N E =======================================
 _obj_ehndl18_rifle_man_lvl2:
-		LDA		_tmp3C3,X
+		LDA		_obj_var9,X
 		BNE		loc_6263B
 		LDA		#$B1
 		STA		_obj_spr_idx,X
@@ -4870,21 +4870,21 @@ loc_6263B:
 		LDA		_obj_hcoll,X
 		AND		#3
 		BNE		loc_62656
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		EOR		#$FF
 		CLC
 		ADC		#1
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		LDA		_obj_flags,X
 		EOR		#$40
 		STA		_obj_flags,X
 		JMP		loc_626B8
 loc_62656:
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		BEQ		loc_6266A
-		INC		_star_field_data2+$24,X
-		LDA		_star_field_data2+$24,X
+		INC		_obj_var6,X
+		LDA		_obj_var6,X
 		AND		#$1F
 		LSR
 		LSR
@@ -4910,8 +4910,8 @@ loc_6266A:
 loc_62685:
 		STA		_obj_flags,X
 		LDA		_tptr1
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		LDA		_rand_seed,X
 		CMP		#5
 		BCS		loc_626B8
@@ -4930,8 +4930,8 @@ loc_62685:
 		LDA		#$B6
 		STA		_obj_spr_idx,X
 		LDA		#0
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 loc_626B8:
 		JMP		_obj_next_enemy_ai
 
@@ -4946,7 +4946,7 @@ _obj_ehndl0A_ninja:
 		STA		_snd_idx
 		JSR		_far_apu_mus_load_unsafe
 loc_626CC:
-		LDA		_tmp3C3,X
+		LDA		_obj_var9,X
 		BNE		loc_6271B
 		LDA		_player_scroll_stop_override_tmp
 		BEQ		loc_626D9
@@ -4972,12 +4972,12 @@ loc_626F8:
 		BCC		loc_62700
 		JMP		loc_628D6
 loc_62700:
-		LDA		_obj_lvl_x_lo,X
-		STA		_obj_lvl_x_lo,Y
-		LDA		_obj_lvl_x_hi,X
-		STA		_obj_lvl_x_hi,Y
-		LDA		_obj_lvl_y,X
-		STA		_obj_lvl_y,Y
+		LDA		_obj_x_lo,X
+		STA		_obj_x_lo,Y
+		LDA		_obj_x_hi,X
+		STA		_obj_x_hi,Y
+		LDA		_obj_y,X
+		STA		_obj_y,Y
 		TXA
 		PHA
 		TYA
@@ -5020,33 +5020,33 @@ loc_6274A:
 		BNE		loc_62754
 		LDY		_tmpE6
 loc_62754:
-		STA		_chr1_bank_shadow,X
+		STA		_obj_var7,X
 		TYA
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		LDA		#$FB
-		STA		_star_field_data1+$18,X
+		STA		_obj_var1,X
 		LDA		#5
-		STA		_star_field_data1+$25,X
+		STA		_obj_var2,X
 		LDA		#0
-		STA		_star_field_data2+$24,X
+		STA		_obj_var6,X
 		LDA		#5
-		STA		_star_field_data2+$17,X
+		STA		_obj_var4,X
 		LDA		_obj_flags,X
 		ORA		#4
 		STA		_obj_flags,X
 		JMP		loc_628D6
 loc_6277A:
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		CMP		#$B4
 		BCS		loc_62742
-		INC		_star_field_data2+$24,X
-		LDA		_star_field_data2+$24,X
+		INC		_obj_var6,X
+		LDA		_obj_var6,X
 		LSR
 		LSR
 		LSR
 		AND		#3
-		LDY		_chr1_bank_shadow,X
+		LDY		_obj_var7,X
 		BEQ		loc_62793
 		CLC
 		ADC		#4
@@ -5062,22 +5062,22 @@ byte_627A1:
 byte_627A9:
 		.BYTE	  5,  5,$C5,$C5,$45,$45,$85,$85
 loc_627B1:
-		LDA		_star_field_data1+$18,X
+		LDA		_obj_var1,X
 		BPL		loc_627B9
 		JMP		loc_628D6
 loc_627B9:
 		LDA		#0
-		STA		_star_field_data1+$25,X
-		STA		_star_field_data1+$18,X
-		LDA		_obj_lvl_y,X
+		STA		_obj_var2,X
+		STA		_obj_var1,X
+		LDA		_obj_y,X
 		AND		#$F0
-		STA		_obj_lvl_y,X
+		STA		_obj_y,X
 		LDA		_obj_flags,X
 		AND		#4
 		BEQ		loc_627DA
 		LDA		_obj_flags,X
 		AND		#$3B
-		LDY		_chr1_bank_shadow,X
+		LDY		_obj_var7,X
 		BEQ		loc_627D8
 		ORA		#$40
 loc_627D8:
@@ -5086,11 +5086,11 @@ loc_627DA:
 		LDA		_cur_lvl_idx
 		CMP		#4
 		BNE		loc_627FB
-		LDA		_tmp3C3,X
+		LDA		_obj_var9,X
 		CMP		#$50
 		BCS		loc_627FB
 		LDA		#$63
-		STA		_tmp3C3,X
+		STA		_obj_var9,X
 		LDA		#0
 		STA		_obj_pal_idx,X
 		LDA		#3
@@ -5099,10 +5099,10 @@ loc_627DA:
 		STA		_tmpE6
 		JMP		loc_6274A
 loc_627FB:
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		BNE		loc_62841
-		INC		_star_field_data2+$24,X
-		LDA		_star_field_data2+$24,X
+		INC		_obj_var6,X
+		LDA		_obj_var6,X
 		LSR
 		LSR
 		AND		#7
@@ -5130,7 +5130,7 @@ loc_6282B:
 		LDA		_lvl4_destruction_counter
 		CMP		#$C
 		BCC		loc_6283E
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		CMP		#$64
 		BCC		loc_6286E
 loc_6283E:
@@ -5139,8 +5139,8 @@ loc_62841:
 		LDA		_obj_flags,X
 		AND		#8
 		BNE		loc_6286E
-		INC		_star_field_data2+$24,X
-		LDA		_star_field_data2+$24,X
+		INC		_obj_var6,X
+		LDA		_obj_var6,X
 		AND		#$1F
 		LSR
 		LSR
@@ -5153,12 +5153,12 @@ loc_62841:
 		BEQ		loc_62860
 		JMP		loc_62742
 loc_62860:
-		LDA		_chr1_bank_shadow,X
+		LDA		_obj_var7,X
 		BPL		loc_6288F
 		LDA		_rand_seed,X
 		AND		#$1F
 		ADC		#$1E
-		STA		_chr1_bank_shadow,X
+		STA		_obj_var7,X
 loc_6286E:
 		JSR		_obj_ninja_self_destruct_animate
 		LDA		#$FF
@@ -5174,11 +5174,11 @@ loc_6286E:
 loc_62883:
 		STA		_obj_flags,X
 		LDA		_tptr1
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 		JMP		loc_628D6
 loc_6288F:
-		DEC		_chr1_bank_shadow,X
+		DEC		_obj_var7,X
 		JSR		_enemy_projectile_collision_test_ex
 		TYA
 		BNE		loc_6289E
@@ -5186,7 +5186,7 @@ loc_6288F:
 		AND		#2
 		BNE		loc_628A8
 loc_6289E:
-		LDA		_chr1_bank_shadow,X
+		LDA		_obj_var7,X
 		CMP		#$A
 		BCS		loc_628D6
 		JMP		loc_6282B
@@ -5202,11 +5202,11 @@ loc_628A8:
 		LDA		#$5F
 		STA		_obj_spr_idx,X
 		LDA		#$A
-		STA		_chr1_bank_shadow,X
+		STA		_obj_var7,X
 		LDA		#0
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
-		STA		_star_field_data2+$24,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
+		STA		_obj_var6,X
 		LDA		#$11
 		STA		_snd_idx
 		JMP		loc_628D6
@@ -5214,10 +5214,10 @@ loc_628D6:
 		JMP		_obj_next_enemy_ai
 loc_628D9:
 		LDA		#0
-		STA		_obj_unk,X
-		STA		_star_field_data1+$B,X
-		STA		_star_field_data1+$25,X
-		STA		_star_field_data1+$18,X
+		STA		_obj_x_velocity,X
+		STA		_obj_var0,X
+		STA		_obj_var2,X
+		STA		_obj_var1,X
 		LDA		_obj_pal_idx._enemy+2
 		AND		_obj_pal_idx._enemy+1
 		BMI		loc_628EF
@@ -5226,12 +5226,12 @@ loc_628EF:
 		LDA		_obj_spr_idx._enemy+2
 		CMP		#$60
 		BEQ		loc_62908
-		DEC		_mul_argA
+		DEC		_obj_var7._enemy+2
 		BPL		loc_62903
 		INC		_obj_spr_idx._enemy+2
 		INC		_obj_spr_idx._enemy+1
 		LDA		#$14
-		STA		_mul_argA
+		STA		_obj_var7._enemy+2
 loc_62903:
 		LDA		#1
 		STA		_ingame_sync_counter
@@ -5247,16 +5247,16 @@ loc_62908:
 		ORA		_obj_flags._ebullet+1
 		BNE		loc_62939
 		LDA		#$6C
-		STA		_obj_lvl_y._ebullet
-		STA		_obj_lvl_y._ebullet+1
+		STA		_obj_y._ebullet
+		STA		_obj_y._ebullet+1
 		LDA		#$88
-		STA		_obj_lvl_x_lo._ebullet
+		STA		_obj_x_lo._ebullet
 		LDA		#1
-		STA		_obj_lvl_x_hi._ebullet
+		STA		_obj_x_hi._ebullet
 		LDA		#$91
-		STA		_obj_lvl_x_lo._ebullet+1
+		STA		_obj_x_lo._ebullet+1
 		LDA		#1
-		STA		_obj_lvl_x_hi._ebullet+1
+		STA		_obj_x_hi._ebullet+1
 		LDX		#7
 		JSR		_enemy_proj0_explode_start
 		LDX		#8
@@ -5278,34 +5278,34 @@ _obj_ehndl_ninja_animate:
 		LDA		_cur_lvl_idx
 		CMP		#4
 		BNE		loc_629C5
-		LDA		_obj_lvl_x_hi,X
+		LDA		_obj_x_hi,X
 		BNE		loc_62983
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		BPL		loc_6298D
-		LDA		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo,X
 		CMP		#8
 		BCS		loc_6298D
 loc_62963:
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		EOR		#$FF
 		CLC
 		ADC		#1
-		STA		_obj_unk,X
-		LDA		_star_field_data1+$B,X
+		STA		_obj_x_velocity,X
+		LDA		_obj_var0,X
 		EOR		#$FF
 		CLC
 		ADC		#1
-		STA		_star_field_data1+$B,X
-		LDA		_chr1_bank_shadow,X
+		STA		_obj_var0,X
+		LDA		_obj_var7,X
 		EOR		#$FF
 		CLC
 		ADC		#1
-		STA		_chr1_bank_shadow,X
+		STA		_obj_var7,X
 		RTS
 loc_62983:
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		BMI		loc_6298D
-		LDA		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo,X
 		CMP		#$F2
 		BCS		loc_62963
 loc_6298D:
@@ -5314,14 +5314,14 @@ loc_6298D:
 		BCC		locret_629BC
 		LDA		_obj_hcoll,X
 		BEQ		locret_629BC
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		BMI		locret_629BC
-		LDA		_obj_lvl_x_hi,X
+		LDA		_obj_x_hi,X
 		BEQ		locret_629BC
 		LDA		_obj_flags,X
 		AND		#4
 		BNE		locret_629BC
-		LDA		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo,X
 		CMP		byte_629BD,X
 		BNE		locret_629BC
 		LDA		_obj_pal_idx,X
@@ -5343,17 +5343,17 @@ loc_629C5:
 		BEQ		locret_629EC
 		JSR		_enemy_projectile_collision_test_ex
 		BCC		loc_629E4
-		LDA		_star_field_data1+$B,X
+		LDA		_obj_var0,X
 		BPL		locret_629EC
 		LDA		#1
-		STA		_star_field_data1+$B,X
+		STA		_obj_var0,X
 		LDA		#$40
-		STA		_chr1_bank_shadow,X
+		STA		_obj_var7,X
 		ORA		_obj_flags,X
 		STA		_obj_flags,X
 		RTS
 loc_629E4:
-		LDA		_star_field_data1+$B,X
+		LDA		_obj_var0,X
 		BMI		locret_629EC
 		JMP		loc_62963
 locret_629EC:
@@ -5386,7 +5386,7 @@ _obj_ehndl15_walker_droid:
 		LDA		#$B
 		STA		_lvl_cur_spr_chr_bank_up
 		STA		_lvl_cur_spr_chr_bank_down
-		LDA		_tmp3C3,X
+		LDA		_obj_var9,X
 		BNE		loc_62A1C
 		JMP		loc_62B48
 loc_62A1C:
@@ -5398,10 +5398,10 @@ loc_62A1C:
 loc_62A27:
 		STA		_obj_flags,X
 		CLC
-		LDA		_star_field_data2+$24,X
-		ADC		_obj_unk,X
+		LDA		_obj_var6,X
+		ADC		_obj_x_velocity,X
 		AND		#$1F
-		STA		_star_field_data2+$24,X
+		STA		_obj_var6,X
 		LSR
 		LSR
 		LSR
@@ -5410,40 +5410,40 @@ loc_62A27:
 		ADC		#$88
 		STA		_obj_spr_idx,X
 		LDA		byte_62B44,Y
-		STA		_obj_lvl_y,X
-		LDA		_obj_lvl_x_lo,X
+		STA		_obj_y,X
+		LDA		_obj_x_lo,X
 		BPL		loc_62A4A
 		LDY		#1
 		BNE		loc_62A6B
 loc_62A4A:
-		LDA		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo,X
 		CMP		#$50
 		BCC		loc_62A54
 		LDY		#$FF
 		BNE		loc_62A6B
 loc_62A54:
-		DEC		_chr1_bank_shadow,X
+		DEC		_obj_var7,X
 		BPL		loc_62A71
 		LDA		_rand_seed,X
 		AND		#$1F
 		ORA		#$20
-		STA		_chr1_bank_shadow,X
+		STA		_obj_var7,X
 		LDY		#1
-		LDA		_star_field_data1+$B,X
+		LDA		_obj_var0,X
 		BMI		loc_62A6B
 		LDY		#$FF
 loc_62A6B:
 		TYA
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
 loc_62A71:
 		LDA		#0
-		STA		_star_field_data1+$D
-		STA		_obj_unk._enemy+1
-		STA		_star_field_data1+$27
-		STA		_star_field_data1+$1A
-		STA		_star_field_data1+$25,X
-		STA		_star_field_data1+$18,X
+		STA		_obj_var0._enemy+1
+		STA		_obj_x_velocity._enemy+1
+		STA		_obj_var2._enemy+1
+		STA		_obj_var1._enemy+1
+		STA		_obj_var2,X
+		STA		_obj_var1,X
 		LDA		#3
 		STA		_obj_pal_idx._enemy+1
 		LDA		_obj_flags,X
@@ -5451,33 +5451,33 @@ loc_62A71:
 		AND		#$40
 		BNE		loc_62AA0
 		CLC
-		LDA		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo,X
 		ADC		#$28
-		STA		_obj_lvl_x_lo._enemy+1
-		LDA		_obj_lvl_x_hi,X
+		STA		_obj_x_lo._enemy+1
+		LDA		_obj_x_hi,X
 		ADC		#0
-		STA		_obj_lvl_x_hi._enemy+1
+		STA		_obj_x_hi._enemy+1
 		JMP		loc_62AA8
 loc_62AA0:
-		LDA		_obj_lvl_x_lo,X
-		STA		_obj_lvl_x_lo._enemy+1
-		LDA		_obj_lvl_x_hi,X
-		STA		_obj_lvl_x_hi._enemy+1
+		LDA		_obj_x_lo,X
+		STA		_obj_x_lo._enemy+1
+		LDA		_obj_x_hi,X
+		STA		_obj_x_hi._enemy+1
 loc_62AA8:
 		CLC
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		ADC		#$10
-		STA		_obj_lvl_y._enemy+1
+		STA		_obj_y._enemy+1
 		LDA		_obj_spr_idx._enemy+1
 		CMP		#$8C
 		BCC		loc_62ACF
-		DEC		_star_field_data2+$25
+		DEC		_obj_var6._enemy
 		BPL		loc_62AD3
 		LDA		#3
-		STA		_star_field_data2+$25
-		LDA		_disp_spr0hit_use
+		STA		_obj_var6._enemy
+		LDA		_obj_var7._enemy
 		BMI		loc_62AD3
-		DEC		_disp_spr0hit_use
+		DEC		_obj_var7._enemy
 		INC		_obj_spr_idx._enemy+1
 		LDA		_obj_spr_idx._enemy+1
 		CMP		#$91
@@ -5524,7 +5524,7 @@ loc_62B0B:
 		STA		_enemy_bullet_body_target_select_arg
 		LDA		#1
 		PHA
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		BMI		loc_62B27
 		PLA
 		LDA		#$FE
@@ -5536,7 +5536,7 @@ loc_62B2B:
 		BCS		loc_62B39
 		LDA		#3
 		STA		_obj_pal_idx,Y
-		STA		_disp_spr0hit_use
+		STA		_obj_var7._enemy
 		LDA		#1
 		STA		_snd_idx
 loc_62B39:
@@ -5561,16 +5561,16 @@ loc_62B56:
 		LDA		_rand_seed
 		AND		#$1F
 		ADC		#8
-		ADC		_obj_lvl_x_lo,X
-		STA		_obj_lvl_x_lo,Y
-		LDA		_obj_lvl_x_hi,X
+		ADC		_obj_x_lo,X
+		STA		_obj_x_lo,Y
+		LDA		_obj_x_hi,X
 		ADC		#0
-		STA		_obj_lvl_x_hi,Y
+		STA		_obj_x_hi,Y
 		LDA		_rand_seed+1
 		AND		#$1F
 		ADC		#8
-		ADC		_obj_lvl_y,X
-		STA		_obj_lvl_y,Y
+		ADC		_obj_y,X
+		STA		_obj_y,Y
 		TXA
 		PHA
 		TYA
@@ -5580,10 +5580,10 @@ loc_62B56:
 		TAX
 loc_62B7C:
 		LDA		#0
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
-		STA		_star_field_data1+$25,X
-		STA		_star_field_data1+$18,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
+		STA		_obj_var2,X
+		STA		_obj_var1,X
 		LDA		_obj_pal_idx,X
 		EOR		#3
 		STA		_obj_pal_idx,X
@@ -5598,8 +5598,8 @@ locret_62B9C:
 
 ; =============== S U B	R O U T	I N E =======================================
 _obj_ehndl16_ground_timed_bomb:
-		INC		_star_field_data2+$24,X
-		LDA		_star_field_data2+$24,X
+		INC		_obj_var6,X
+		LDA		_obj_var6,X
 		CMP		#$64
 		BCC		loc_62C0B
 
@@ -5607,24 +5607,24 @@ _obj_ehndl16_ground_timed_bomb:
 _obj_ehndl_ground_bomb:
 		LDY		#7
 loc_62BA9:
-		LDA		_obj_lvl_x_lo,X
-		STA		_obj_lvl_x_lo,Y
-		LDA		_obj_lvl_x_hi,X
-		STA		_obj_lvl_x_hi,Y
+		LDA		_obj_x_lo,X
+		STA		_obj_x_lo,Y
+		LDA		_obj_x_hi,X
+		STA		_obj_x_hi,Y
 		SEC
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		SBC		#4
-		STA		_obj_lvl_y,Y
+		STA		_obj_y,Y
 		LDA		#4
 		STA		_obj_spr_idx,Y
 		LDA		#$FC
-		STA		_star_field_data1+$18,Y
+		STA		_obj_var1,Y
 		LDA		#2
-		STA		_star_field_data1+$25,Y
+		STA		_obj_var2,Y
 		LDA		#0
 		STA		_obj_hndl_idx,Y
-		STA		_star_field_data1+$B,Y
-		STA		_obj_unk,Y
+		STA		_obj_var0,Y
+		STA		_obj_x_velocity,Y
 		STA		_obj_pal_idx,Y
 		LDA		#1
 		STA		_obj_flags,Y
@@ -5632,17 +5632,17 @@ loc_62BA9:
 		CPY		#$A
 		BCC		loc_62BA9
 		LDA		#$F8
-		STA		_obj_unk._ebullet
+		STA		_obj_x_velocity._ebullet
 		LDA		#$FC
-		STA		_star_field_data1+$12
+		STA		_obj_var0._ebullet
 		LDA		#8
-		STA		_obj_unk._ebullet+2
+		STA		_obj_x_velocity._ebullet+2
 		LDA		#4
-		STA		_star_field_data1+$14
+		STA		_obj_var0._ebullet+2
 		LDA		#$F8
-		STA		_star_field_data1+$20
+		STA		_obj_var1._ebullet+1
 		LDA		#6
-		STA		_star_field_data2+5
+		STA		_obj_var2._ebullet+1
 		LDA		#0
 		STA		_obj_flags,X
 		LDA		#7
@@ -5686,7 +5686,7 @@ _enemy_proj1_explode_start:
 ; =============== S U B	R O U T	I N E =======================================
 _enemy_projectile_explode_start:
 		LDA		#$13
-		STA		_star_field_data2+$24,X
+		STA		_obj_var6,X
 		LDA		#7
 		STA		_obj_hndl_idx,X
 		STA		_obj_spr_idx,X
@@ -5697,14 +5697,14 @@ _enemy_projectile_explode_start:
 ; =============== S U B	R O U T	I N E =======================================
 _player_death_anim_timers:
 		LDA		#0
-		STA		_star_field_data1+$25,X
-		STA		_star_field_data1+$B,X
-		STA		_obj_unk,X
-		STA		_star_field_data1+$18,X
+		STA		_obj_var2,X
+		STA		_obj_var0,X
+		STA		_obj_x_velocity,X
+		STA		_obj_var1,X
 		STA		_obj_pal_idx,X
-		DEC		_star_field_data2+$24,X
+		DEC		_obj_var6,X
 		BEQ		loc_62C62
-		LDA		_star_field_data2+$24,X
+		LDA		_obj_var6,X
 		LSR
 		LSR
 		CLC
@@ -5743,37 +5743,37 @@ loc_62C7D:
 		LDA		_enemy_bullet_body_target_select_arg
 		STA		_obj_hndl_idx,Y
 		CLC
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		ADC		_enemy_bullet_y_pos_global_arg
-		STA		_obj_lvl_y,Y
+		STA		_obj_y,Y
 		LDA		_tptr1
-		STA		_star_field_data1+$25,Y
-		STA		_star_field_data1+$18,Y
+		STA		_obj_var2,Y
+		STA		_obj_var1,Y
 		LDA		_tptr1+1
 		STA		_obj_spr_idx,Y
 		LDA		_obj_flags,X
 		AND		#$40
 		BEQ		loc_62CC1
 		LDA		#5
-		STA		_star_field_data1+$B,Y
-		STA		_obj_unk,Y
+		STA		_obj_var0,Y
+		STA		_obj_x_velocity,Y
 		CLC
-		LDA		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo,X
 		ADC		#$18
-		STA		_obj_lvl_x_lo,Y
-		LDA		_obj_lvl_x_hi,X
+		STA		_obj_x_lo,Y
+		LDA		_obj_x_hi,X
 		ADC		#0
-		STA		_obj_lvl_x_hi,Y
+		STA		_obj_x_hi,Y
 		CLC
 		RTS
 loc_62CC1:
 		LDA		#$FB
-		STA		_star_field_data1+$B,Y
-		STA		_obj_unk,Y
-		LDA		_obj_lvl_x_lo,X
-		STA		_obj_lvl_x_lo,Y
-		LDA		_obj_lvl_x_hi,X
-		STA		_obj_lvl_x_hi,Y
+		STA		_obj_var0,Y
+		STA		_obj_x_velocity,Y
+		LDA		_obj_x_lo,X
+		STA		_obj_x_lo,Y
+		LDA		_obj_x_hi,X
+		STA		_obj_x_hi,Y
 		CLC
 		RTS
 
@@ -5781,7 +5781,7 @@ loc_62CC1:
 _enemy_bullet_animate:
 		LDX		#9
 loc_62CD7:
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		CMP		#$D4
 		BCS		loc_62CF7
 		CMP		#$3C
@@ -5817,7 +5817,7 @@ locret_62D09:
 loc_62D0A:
 		LDA		_lvl3_tank_weapon_disable_flag
 		BNE		locret_62D09
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		CMP		#$E
 		BCS		loc_62D18
 		JMP		loc_62D94
@@ -5851,20 +5851,20 @@ loc_62D45:
 		AND		#$F
 		TAX
 		LDA		byte_62E2D,X
-		STA		_obj_lvl_x_lo,Y
+		STA		_obj_x_lo,Y
 		LDA		#$F
-		STA		_obj_lvl_x_hi,Y
+		STA		_obj_x_hi,Y
 		LDA		byte_62E3D,X
-		STA		_obj_lvl_y,Y
+		STA		_obj_y,Y
 		LDA		byte_62E8D,X
 		STA		_obj_pal_idx,Y
 		LDA		byte_62E5D,X
-		STA		_star_field_data1+$B,Y
-		STA		_obj_unk,Y
+		STA		_obj_var0,Y
+		STA		_obj_x_velocity,Y
 		LDA		byte_62E7D,X
-		STA		_star_field_data1+$25,Y
+		STA		_obj_var2,Y
 		LDA		byte_62E6D,X
-		STA		_star_field_data1+$18,Y
+		STA		_obj_var1,Y
 		LDA		#2
 		STA		_obj_hndl_idx,Y
 		LDA		#1
@@ -5888,7 +5888,7 @@ loc_62D94:
 loc_62DA1:
 		SEC
 		LDA		#$E
-		SBC		_obj_lvl_x_hi._player
+		SBC		_obj_x_hi._player
 		STA		byte_69B
 		LDA		#3
 		STA		_pal_blink_flag
@@ -5910,27 +5910,27 @@ loc_62DCA:
 		BCS		locret_62E28
 		LDX		byte_69D
 		SEC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		SBC		_player_wnd_scroll_counter
 		STA		_tptr1
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		SBC		#0
 		STA		_tptr1+1
 		CLC
 		LDA		_tptr1
 		ADC		#$FA
-		STA		_obj_lvl_x_lo,Y
+		STA		_obj_x_lo,Y
 		LDA		_tptr1+1
 		ADC		#0
-		STA		_obj_lvl_x_hi,Y
+		STA		_obj_x_hi,Y
 		LDA		byte_62E29,X
-		STA		_obj_lvl_y,Y
+		STA		_obj_y,Y
 		LDA		#0
-		STA		_star_field_data1+$25,Y
-		STA		_star_field_data1+$18,Y
+		STA		_obj_var2,Y
+		STA		_obj_var1,Y
 		LDA		#$FA
-		STA		_star_field_data1+$B,Y
-		STA		_obj_unk,Y
+		STA		_obj_var0,Y
+		STA		_obj_x_velocity,Y
 		LDA		#$AB
 		STA		_obj_spr_idx,Y
 		LDA		#3
@@ -5968,29 +5968,29 @@ byte_62E8D:
 ; =============== S U B	R O U T	I N E =======================================
 _enemy_projectile_collision_test_ex:
 		LDY		#0
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		AND		#$80
 		STA		_tptr1
-		LDA		_obj_lvl_y,X
+		LDA		_obj_y,X
 		AND		#$80
 		CMP		_tptr1
 		BEQ		loc_62EAE
 		INY
 loc_62EAE:
 		SEC
-		LDA		_obj_lvl_x_lo._player
-		SBC		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo._player
+		SBC		_obj_x_lo,X
 		STA		_tptr1
-		LDA		_obj_lvl_x_hi._player
-		SBC		_obj_lvl_x_hi,X
+		LDA		_obj_x_hi._player
+		SBC		_obj_x_hi,X
 		PHP
 		BCS		loc_62ECF
 		SEC
-		LDA		_obj_lvl_x_lo,X
-		SBC		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo,X
+		SBC		_obj_x_lo._player
 		STA		_tptr1
-		LDA		_obj_lvl_x_hi,X
-		SBC		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi,X
+		SBC		_obj_x_hi._player
 		LSR
 		LDA		_tptr1
 		ROR
@@ -6015,17 +6015,17 @@ _obj_ninja_self_destruct_animate:
 		LDY		#0
 		SEC
 		LDA		#$60
-		SBC		_obj_lvl_x_lo,X
+		SBC		_obj_x_lo,X
 		STA		_tptr1
 		LDA		#1
-		SBC		_obj_lvl_x_hi,X
+		SBC		_obj_x_hi,X
 		PHP
 		BCS		loc_62F01
 		SEC
-		LDA		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo,X
 		SBC		#$60
 		STA		_tptr1
-		LDA		_obj_lvl_x_hi,X
+		LDA		_obj_x_hi,X
 		SBC		#1
 		LSR
 		LDA		_tptr1
@@ -6049,15 +6049,15 @@ _obj_hidden_passage_test_and_bonus_animate:
 		STA		_lvl_bonus_portal_detected
 		LDY		_cur_lvl_state_idx
 		SEC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		SBC		_lvl_hidden_passage_x_lo_list,Y
 		TAX
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		SBC		_lvl_hidden_passage_x_hi_list,Y
 		BNE		loc_62F2E
 		CPX		#8
 		BCS		loc_62F2E
-		LDA		_obj_lvl_y._player
+		LDA		_obj_y._player
 		AND		#$F0
 		CMP		_lvl_hidden_passage_y_list,Y
 		BNE		loc_62F2E
@@ -6287,9 +6287,9 @@ loc_630AA:
 loc_630B0:
 		LDX		_tptr1+1
 		SEC
-		LDA		_tmp3C3,Y
+		LDA		_obj_var9,Y
 		SBC		byte_63C22,X
-		STA		_tmp3C3,Y
+		STA		_obj_var9,Y
 		STY		_last_enemy_hit
 		LDX		_tptr1
 		BCC		loc_630C6
@@ -6300,7 +6300,7 @@ loc_630C6:
 		STA		_tptr1
 		LDA		#$F9
 		STA		_tptr1+1
-		LDA		_obj_lvl_y,Y
+		LDA		_obj_y,Y
 		BPL		loc_630D3
 loc_630D3:
 		LDA		#4
@@ -6308,23 +6308,23 @@ loc_630D3:
 		LDA		#$FD
 		STA		_tptr1+1
 		LDA		_tptr1
-		STA		_star_field_data1+$25,Y
+		STA		_obj_var2,Y
 		LDA		_tptr1+1
-		STA		_star_field_data1+$18,Y
+		STA		_obj_var1,Y
 		LDA		#0
-		STA		_tmp3C3,Y
+		STA		_obj_var9,Y
 		LDA		#5
-		STA		_star_field_data2+$17,Y
+		STA		_obj_var4,Y
 		LDA		#6
 		STA		_tptr1
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		BPL		loc_630FB
 		LDA		#$FA
 		STA		_tptr1
 loc_630FB:
 		LDA		_tptr1
-		STA		_obj_unk,Y
-		STA		_star_field_data1+$B,Y
+		STA		_obj_x_velocity,Y
+		STA		_obj_var0,Y
 		JSR		_obj_add_score
 		JMP		loc_6310F
 loc_63109:
@@ -6448,13 +6448,13 @@ _exit:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_obj_misc_collision_handler:
+_obj_misc_collision_test:
 		LDA		_obj_flags._misc
 		BEQ		loc_63220
-		LDA		_obj_flags._misc
+;		LDA		_obj_flags._misc						; redundant
 		CMP		#$FF
 		BEQ		loc_63220
-		LDA		_star_field_data1+$22
+		LDA		_obj_var1._misc
 		BNE		loc_63216
 		LDY		#6
 		JSR		_mmc1_prg
@@ -6463,8 +6463,8 @@ _obj_misc_collision_handler:
 		JSR		_collision_test
 		BEQ		loc_63220
 		SEC
-		LDA		_obj_lvl_y._misc
-		SBC		_obj_lvl_y._player
+		LDA		_obj_y._misc
+		SBC		_obj_y._player
 		BCC		loc_63220
 		CMP		#$28
 		BCC		loc_63220
@@ -6473,15 +6473,15 @@ _obj_misc_collision_handler:
 		LDA		#1
 		STA		_obj_hcoll._player
 		STA		_obj_vcoll._player
-		INC		_delay_counter+1
-		LDA		_delay_counter+1
+		INC		_obj_var6._misc
+		LDA		_obj_var6._misc
 		CMP		#$1E
 		BCC		loc_63220
 		LDA		#5
-		STA		_star_field_data2+7
+		STA		_obj_var2._misc
 		RTS
 loc_63216:
-		LDA		_obj_lvl_y._misc
+		LDA		_obj_y._misc
 		CMP		#$E6
 		BCC		loc_63220
 		LDA		#0
@@ -6517,7 +6517,7 @@ _collision_test:
 loc_63250:
 		LDA		_spr_bbox_y_list,Y
 		CLC
-		ADC		_obj_lvl_y,X
+		ADC		_obj_y,X
 		STA		_tmpE4
 		ADC		_spr_bbox_width_list,Y
 		STA		_tmpE5
@@ -6525,26 +6525,26 @@ loc_63250:
 		LDY		_obj_spr_idx,X
 		LDA		_spr_bbox_y_list,Y
 		CLC
-		ADC		_obj_lvl_y,X
+		ADC		_obj_y,X
 		CMP		_tmpE5
 		BCS		loc_632D0
 		ADC		_spr_bbox_width_list,Y
 		CMP		_tmpE4
 		BCC		loc_632D0
 		CLC
-		LDA		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo,X
 		ADC		_spr_bbox_x_list,Y
 		STA		_tmpE6
-		LDA		_obj_lvl_x_hi,X
+		LDA		_obj_x_hi,X
 		ADC		#0
 		STA		_tmpE7
 		LDX		_tptr1+1
 		LDY		_obj_spr_idx,X
 		CLC
-		LDA		_obj_lvl_x_lo,X
+		LDA		_obj_x_lo,X
 		ADC		_spr_bbox_x_list,Y
 		STA		_tmpE8
-		LDA		_obj_lvl_x_hi,X
+		LDA		_obj_x_hi,X
 		ADC		#0
 		STA		_tmpE9
 		LDX		_tptr1+1
@@ -6593,34 +6593,34 @@ loc_632D9:
 		LDA		#0
 		STA		_obj_flags,X
 		LDA		#3
-		STA		_star_field_data2+$17,X
-		STA		_star_field_data2+$A,X
+		STA		_obj_var4,X
+		STA		_obj_var3,X
 		DEX
 		BPL		loc_632D9
 		LDY		_cur_lvl_state_idx
 		LDA		_lvl_player_start_y_list,Y
-		STA		_obj_lvl_y._player
+		STA		_obj_y._player
 		LDA		_lvl_player_start_x_lo_list,Y
-		STA		_obj_lvl_x_lo._player
+		STA		_obj_x_lo._player
 		LDA		_lvl_player_start_x_hi_list,Y
-		STA		_obj_lvl_x_hi._player
+		STA		_obj_x_hi._player
 		LDA		#0
-		STA		_star_field_data1+$25
-		STA		_star_field_data1+$18
-		STA		_star_field_data1+$B
-		STA		_obj_unk._player
+		STA		_obj_var2
+		STA		_obj_var1
+		STA		_obj_var0
+		STA		_obj_x_velocity._player
 		LDA		#3
 		STA		_obj_pal_idx._player
 		LDA		#$41
 		STA		_obj_flags._player
 		LDA		#1
-		STA		_star_field_data0+$19
+		STA		_obj_var5
 		LDA		_lvl_spr_hit0_x_lo_list,Y
-		STA		_obj_lvl_x_lo._spr0hit
+		STA		_obj_x_lo._spr0hit
 		LDA		_lvl_spr_hit0_x_hi_list,Y
-		STA		_obj_lvl_x_hi._spr0hit
+		STA		_obj_x_hi._spr0hit
 		LDA		_lvl_spr_hit0_y_list,Y
-		STA		_obj_lvl_y._spr0hit
+		STA		_obj_y._spr0hit
 		LDA		#$21
 		STA		_obj_flags._spr0hit
 		LDA		#0
@@ -6633,10 +6633,10 @@ _obj_spr_manager:
 		LDY		#6
 		JSR		_mmc1_prg
 		SEC
-		LDA		_obj_lvl_x_lo._player
+		LDA		_obj_x_lo._player
 		SBC		_player_wnd_scroll_counter
 		STA		_tmpE5
-		LDA		_obj_lvl_x_hi._player
+		LDA		_obj_x_hi._player
 		SBC		#0
 		STA		_tmpE6
 		LDA		_obj_shuffle_mode
@@ -6711,10 +6711,10 @@ loc_633DE:
 		LDA		#1
 		STA		_obj_offscreen_flag_tmp
 		SEC
-		LDA		_obj_lvl_x_lo,Y
+		LDA		_obj_x_lo,Y
 		SBC		_tmpE5
 		STA		_obj_scr_x_pos_tmp
-		LDA		_obj_lvl_x_hi,Y
+		LDA		_obj_x_hi,Y
 		SBC		_tmpE6
 		BEQ		loc_63429
 		CMP		#1
@@ -6746,7 +6746,7 @@ loc_63425:
 		LDA		#0
 		STA		_obj_offscreen_flag_tmp
 loc_63429:
-		LDA		_obj_lvl_y,Y
+		LDA		_obj_y,Y
 		CLC
 		ADC		_obj_global_y_delta
 		SEC
@@ -6924,50 +6924,50 @@ locret_63558:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_obj_proj_position_adjust:
+_obj_position_adjust:
 		LDX		#$A
 loc_6355B:
 		LDA		_obj_flags,X
 		BEQ		loc_635AB
 		CLC
-		LDA		_obj_unk,X
+		LDA		_obj_x_velocity,X
 		TAY
-		ADC		_obj_lvl_x_lo,X
-		STA		_obj_lvl_x_lo,X
+		ADC		_obj_x_lo,X
+		STA		_obj_x_lo,X
 		TYA
 		BMI		loc_63571
 		BCC		loc_63575
-		INC		_obj_lvl_x_hi,X
+		INC		_obj_x_hi,X
 		JMP		loc_63575
 loc_63571:
 		BCS		loc_63575
-		DEC		_obj_lvl_x_hi,X
+		DEC		_obj_x_hi,X
 loc_63575:
 		CLC
-		LDA		_star_field_data1+$18,X
-		ADC		_obj_lvl_y,X
-		STA		_obj_lvl_y,X
-		DEC		_star_field_data2+$A,X
+		LDA		_obj_var1,X
+		ADC		_obj_y,X
+		STA		_obj_y,X
+		DEC		_obj_var3,X
 		BNE		loc_635AB
-		LDA		_star_field_data2+$17,X
-		STA		_star_field_data2+$A,X
-		LDA		_star_field_data1+$B,X
-		CMP		_obj_unk,X
+		LDA		_obj_var4,X
+		STA		_obj_var3,X
+		LDA		_obj_var0,X
+		CMP		_obj_x_velocity,X
 		BEQ		loc_63598
 		BMI		loc_63596
-		INC		_obj_unk,X
+		INC		_obj_x_velocity,X
 		JMP		loc_63598
 loc_63596:
-		DEC		_obj_unk,X
+		DEC		_obj_x_velocity,X
 loc_63598:
-		LDA		_star_field_data1+$25,X
-		CMP		_star_field_data1+$18,X
+		LDA		_obj_var2,X
+		CMP		_obj_var1,X
 		BEQ		loc_635AB
 		BMI		loc_635A8
-		INC		_star_field_data1+$18,X
+		INC		_obj_var1,X
 		JMP		loc_635AB
 loc_635A8:
-		DEC		_star_field_data1+$18,X
+		DEC		_obj_var1,X
 loc_635AB:
 		DEX
 		BPL		loc_6355B
@@ -7290,29 +7290,31 @@ locret_637CC:
 _sound_lib:
 _snd00_silence:
 		.BYTE	  0,  0,  1,  0,  2,  0,  3,  0
-_snd01:
+_snd01_shotgun:
 		.BYTE	  0,  1,  3,  2,$FF,$FF,$FF,$FF
-_snd02:
+_snd02_rocket_launch1:
 		.BYTE	  3,  3,$FF,$FF,$FF,$FF,$FF,$FF
-_snd03:
+_snd03_rocket_launch2:
 		.BYTE	  3,  4,$FF,$FF,$FF,$FF,$FF,$FF
-_snd04:
+_snd04_screen_explosion:
 		.BYTE	  2,  5,  3,  6,$FF,$FF,$FF,$FF
-_snd05:
+_snd05_small_explosion:
 		.BYTE	  2,  7,  3,  8,$FF,$FF,$FF,$FF
-_snd06:
+_snd06_medium_explosion:
 		.BYTE	  2,  9,  3, $A,$FF,$FF,$FF,$FF
-_snd07:
+_snd07_large_explosion:
 		.BYTE	  2, $B,  3, $C,$FF,$FF,$FF,$FF
-_snd08:
+_snd08_pickup1:
 		.BYTE	  0, $D,$FF,$FF,$FF,$FF,$FF,$FF
-_snd09:
+;		.BYTE	  0, $D,  1, $E,$FF,$FF,$FF,$FF		; original version of effect
+_snd09_pickup2:
 		.BYTE	  0, $F,$FF,$FF,$FF,$FF,$FF,$FF
-_snd0A:
+;		.BYTE	  0, $F,  1,$10,$FF,$FF,$FF,$FF		; original version of effect
+_snd0A_jetpack:
 		.BYTE	  3,$11,$FF,$FF,$FF,$FF,$FF,$FF
-_snd0B:
+_snd0B_robocop_land1:
 		.BYTE	  2,$13,  3,$14,$FF,$FF,$FF,$FF
-_snd0C:
+_snd0C_robocop_land2:
 		.BYTE	  0,$12,  2,$13,  3,$14,$FF,$FF
 _snd0D:
 		.BYTE	  3,$3B,$FF,$FF,$FF,$FF,$FF,$FF

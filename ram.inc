@@ -78,9 +78,9 @@ _weapon1_idx:						.BYTE	0
 		TOBJ	_obj_flags
 		TOBJ	_obj_spr_idx
 		TOBJ	_obj_pal_idx
-		TOBJ	_obj_lvl_x_lo
-		TOBJ	_obj_lvl_x_hi
-		TOBJ	_obj_lvl_y
+		TOBJ	_obj_x_lo
+		TOBJ	_obj_x_hi
+		TOBJ	_obj_y
 		TOBJ	_obj_hcoll
 		TOBJ	_obj_vcoll
 
@@ -95,7 +95,7 @@ _weapon1_idx:						.BYTE	0
 ; 0x27 - missile upgrade
 ;
 		TOBJ	_obj_hndl_idx
-		TOBJ	_obj_unk
+		TOBJ	_obj_x_velocity
 
 _end_of_zero_ram	EQU	.
 
@@ -229,84 +229,88 @@ _cur_repair_tanks_backup:
 
 		ORG	$400
 
-byte_1400:
-		.BYTE	0,0,0,0,0
-byte_1405:
-		.BYTE	0,0,0,0,0
-byte_140A:
-		.BYTE	0,0,0,0,0
-byte_140F:
-		.BYTE	0,0,0,0,0
-byte_1414:
-		.BYTE	0,0,0,0,0
-byte_1419:
-		.BYTE	0,0,0,0,0
-byte_141E:
-		.BYTE	0,0,0,0,0
-byte_1423:
-		.BYTE	0,0,0,0,0
-byte_1428:
-		.BYTE	0,0,0,0,0
-byte_142D:
-		.BYTE	0,0,0,0,0
-byte_1432:
-		.BYTE	0,0,0,0,0
-byte_1437:
-		.BYTE	0,0,0,0,0
-byte_143C:
-		.BYTE	0,0,0,0,0
-		.BYTE	0,0,0,0,0
-byte_1446:
-		.BYTE	0,0,0,0,0
-byte_144B:
-		.BYTE	0,0,0,0,0
-byte_1450:
-		.BYTE	0,0,0,0,0
-byte_1455:
-		.BYTE	0,0,0,0,0
-byte_145A:
-		.BYTE	0,0,0,0,0
-byte_145F:
-		.BYTE	0,0,0,0,0
-byte_1464:
-		.BYTE	0,0,0,0,0
-byte_1469:
-		.BYTE	0,0,0,0,0
-byte_146E:
-		.BYTE	0,0,0,0,0
-byte_1473:
-		.BYTE	0,0,0,0,0
-		.BYTE	0,0,0,0,0
-byte_147D:
-		.BYTE	0,0,0,0,0
-byte_1482:
-		.BYTE	0,0,0,0,0
-byte_1487:
-		.BYTE	0,0,0,0,0
-byte_148C:
-		.BYTE	0,0,0,0,0
-byte_1491:
-		.BYTE	0,0,0,0,0
-byte_1496:
-		.BYTE	0,0,0,0,0
-byte_149B:
-		.BYTE	0,0,0,0,0
-byte_14A0:
-		.BYTE	0,0,0,0,0
-byte_14A5:
-		.BYTE	0,0,0,0,0
-byte_14AA:
-		.BYTE	0,0,0,0,0
-byte_14AF:
-		.BYTE	0,0,0,0,0
-byte_14B4:
-		.BYTE	0,0,0,0,0
-		.BYTE	0,0,0,0,0
-		.BYTE	0,0,0,0,0
-byte_14C3:
-		.BYTE	0,0,0,0,0
-byte_14C8:
-		.BYTE	0,0,0,0,0
+_apu_voictest:
+		.BYTE	0,0,0,0
+_apu_stpindex:
+		.BYTE	0,0,0,0
+_apu_seqindex:
+		.BYTE	0,0,0,0
+_apu_seqposit:
+		.BYTE	0,0,0,0
+_apu_repstcnt:
+		.BYTE	0,0,0,0
+_apu_stepnumb:
+		.BYTE	0,0,0,0
+_apu_spdcount:
+		.BYTE	0,0,0,0
+_apu_spdcheck:
+		.BYTE	0,0,0,0
+_apu_realplay:
+		.BYTE	0,0,0,0
+_apu_noteinit:
+		.BYTE	0,0,0,0
+_apu_realsoun:
+		.BYTE	0,0,0,0
+_apu_noteleng:
+		.BYTE	0,0,0,0
+_apu_realleng:
+		.BYTE	0,0,0,0
+;_apu_gateleng:
+		.BYTE	0,0,0,0
+_apu_realnote:
+		.BYTE	0,0,0,0
+_apu_lofrqwrd:
+		.BYTE	0,0,0,0
+_apu_hifrqwrd:
+		.BYTE	0,0,0,0
+_apu_tranbyte:
+		.BYTE	0,0,0,0
+_apu_sfxtrans:
+		.BYTE	0,0,0,0
+_apu_arptrans:
+		.BYTE	0,0,0,0
+_apu_arpindex:
+		.BYTE	0,0,0,0
+_apu_arpnumbo:
+		.BYTE	0,0,0,0
+_apu_arpspeed:
+		.BYTE	0,0,0,0
+_apu_arponoto:
+		.BYTE	0,0,0,0
+;_apu_vibglbyt:
+		.BYTE	0,0,0,0
+_apu_gldspeed:
+		.BYTE	0,0,0,0
+_apu_glddirec:
+		.BYTE	0,0,0,0
+_apu_glddelay:
+		.BYTE	0,0,0,0
+_apu_destnote:
+		.BYTE	0,0,0,0
+_apu_vibdelay:
+		.BYTE	0,0,0,0
+_apu_vibindex:
+		.BYTE	0,0,0,0
+_apu_continos:
+		.BYTE	0,0,0,0
+_apu_amplitud:
+		.BYTE	0,0,0,0
+_apu_ampindex:
+		.BYTE	0,0,0,0
+_apu_fx01:
+		.BYTE	0,0,0,0
+_apu_fx02:
+		.BYTE	0,0,0,0
+_apu_fx03:
+		.BYTE	0,0,0,0
+;_unused:
+		.BYTE	0,0,0,0
+;_unused:
+		.BYTE	0,0,0,0
+_apu_pulindex:
+		.BYTE	0,0,0,0
+_apu_pulsbyt1:
+		.BYTE	0,0,0,0
 
 		ORG	$500
 
@@ -316,19 +320,41 @@ _tmp501:
 		.BYTE	0
 _tmp502:
 		.BYTE	0
-_tmp503:
-		.BYTE	0
-_tmp505:
-		.BYTE	0
-_tmp506:
-		.BYTE	0
-_tmp507:
-		.BYTE	0
-_tmp508:
-		.BYTE	0
-_tmp509:
-		.BYTE	0
+;_tmp503:
+;		.BYTE	0
+;_tmp505:
+;		.BYTE	0
+;_tmp506:
+;		.BYTE	0
+;_tmp507:
+;		.BYTE	0
+;_tmp508:
+;		.BYTE	0
+;_tmp509:
+;		.BYTE	0
+;_tmp50A:
+;		.BYTE	0
+;_tmp50B:
+;		.BYTE	0
+;_tmp50C:
+;		.BYTE	0
+;_tmp50D:
+;		.BYTE	0
+;_tmp50E:
+;		.BYTE	0
+;_tmp50F:
+;		.BYTE	0
 
+		TOBJ	_obj_var0
+		TOBJ	_obj_var1
+		TOBJ	_obj_var2
+		TOBJ	_obj_var3
+		TOBJ	_obj_var4
+		TOBJ	_obj_var5
+		TOBJ	_obj_var6
+		TOBJ	_obj_var7
+		TOBJ	_obj_var8
+		TOBJ	_obj_var9
 
 		ORG	$600
 
