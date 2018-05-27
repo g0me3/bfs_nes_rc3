@@ -70,7 +70,7 @@
 		.BYTE	>[byte_1408F]
 		.BYTE	>[byte_1408F]
 		.BYTE	>[byte_1408F]
-		
+
 byte_1406F:
 		.BYTE	 $F,$1B,$2B,$3B, $F,$16,$26,$36, $F,  0,$10,$16, $F,  1,$11,$21
 byte_1407F:

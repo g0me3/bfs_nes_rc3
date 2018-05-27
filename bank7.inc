@@ -80,8 +80,15 @@ _MAIN_GAME_START:
 		STA		_cur_arms_percent
 		LDA		_pl_bckp_legs_percent,X
 		STA		_cur_legs_percent
+		LDA		_pl_bckp_repair_tanks,X
+		STA		_cur_repair_tanks
+		LDA		_pl_bckp_score_hex_lo,X
+		STA		_cur_score_hex
+		LDA		_pl_bckp_score_hex_hi,X
+		STA		_cur_score_hex+1
+		JSR		_calc_failure_threshold
 ; --
-; fix for starting explosion sprite appearance at the start 
+; fix for starting explosion sprite appearance at the start
 ; of the level
 		CLC
 		LDA		_cur_head_percent
@@ -90,14 +97,7 @@ _MAIN_GAME_START:
 		ADC		_cur_legs_percent
 		STA		_cur_overal_armor_sum
 ; --
-		LDA		_pl_bckp_repair_tanks,X
-		STA		_cur_repair_tanks
-		LDA		_pl_bckp_score_hex_lo,X
-		STA		_cur_score_hex
-		LDA		_pl_bckp_score_hex_hi,X
-		STA		_cur_score_hex+1
-		JSR		_calc_failure_threshold
-loc_600D6:
+_main_ingame_loop3:
 		SEI
 		LDA		_PPU_STATUS
 		LDX		#0
@@ -204,10 +204,11 @@ loc_601BA:
 		STA		_pl_bckp_score_hex_lo,X
 		STA		_pl_bckp_score_hex_hi,X
 		JMP		_MAIN_LOOP
+; --------------------------------
 _level_complete:
 		LDA		_cur_lvl_idx							; test if the game is complete
 		CMP		#5
-		BEQ		_game_complete
+		BEQ		.game_complete
 		LDX		_player_number							; save cur level number
 		LDA		_cur_lvl_idx
 		STA		_pl_bckp_lvl_idx,X
@@ -221,6 +222,7 @@ _level_complete:
 		CMP		#4
 		BNE		.player_backup							; there is no repair after the level 4, except a secret one
 		JMP		_MAIN_LOOP								; and this is the main reason for score disappear at the level 5
+; --------------------------------
 .player_backup:
 		LDX		_player_number							; backup player data and go to repair lab
 		LDA		_cur_score_hex
@@ -239,7 +241,8 @@ _level_complete:
 		JSR		_bios_msg_display
 		JSR		_repair_lab_display
 		JMP		_MAIN_LOOP
-_game_complete:
+; --------------------------------
+.game_complete:
 		LDY		#5
 		JSR		_mmc1_prg
 		JSR		_ppu_reinit
@@ -502,7 +505,7 @@ _far_apu_mus_load_prg5_safe:
 
 ; =============== S U B	R O U T	I N E =======================================
 ; used only from bank 5 routines, changes bank to 6 and restores it back to 5
-; 
+;
 _far_apu_play_prg5_safe:
 		LDY		#6
 		JSR		_mmc1_prg
@@ -579,7 +582,6 @@ _nmi5:
 		LDX		#0
 		STX		_PPU_MASK
 		STX		_ppu_mask_shadow
-;		STX		_unused1B3
 		STX		_PPU_CTRL
 		STX		_PPU_OAM_ADDR
 		LDA		#2
@@ -660,7 +662,7 @@ _nmi4:
 		JSR		_lvl_rooms_init_draw
 		INC		_nmi_hndl_idx
 		JMP		_nmi_on_exit
-		
+
 ; =============== S U B	R O U T	I N E =======================================
 _lvl_ppu_data_dequeue:
 		LDA		_cur_lvl_idx
@@ -671,7 +673,7 @@ _lvl_ppu_data_dequeue:
 		LDA		_ppu_dequeues_lib+1,Y
 		STA		_tmp_ptr+1
 		JMP		(_tmp_ptr)
-		
+
 _ppu_dequeues_lib:
 		.WORD _lvl0_ppu_data_dequeue
 		.WORD _lvl0_ppu_data_dequeue
@@ -1227,6 +1229,7 @@ _hud_msg_set_request:
 		LDA		#0
 		STA		_hud_msg_type_pos
 		RTS
+
 _hud_msg_lib:
 		.WORD _hud_msg00
 		.WORD _hud_msg01
@@ -1390,12 +1393,8 @@ loc_60C9E:
 		LDA		#$40
 		STA		_tmp_buf2+$12
 		STA		_tmp_buf2+$13
-;		LDA		#0
-;		STA		_pal_update_redundant
 		BNE		loc_60CD4
 loc_60CB5:
-;		LDA		#$10
-;		STA		_pal_update_redundant
 		LDA		#$63
 		LDX		_cur_lvl_idx
 		CPX		#4
@@ -1433,8 +1432,6 @@ loc_60CF5:
 		STA		_tmp_buf2+$D,X
 		DEX
 		BPL		loc_60CF5
-;		LDA		#$20
-;		STA		_pal_update_redundant
 		DEC		_smart_bomb_timer
 		BNE		locret_60D49
 		LDA		#$7F
@@ -1548,6 +1545,7 @@ loc_60DE0:
 		STA		_tmp_buf2+$B,X
 locret_60DFB:
 		RTS
+
 byte_60DFC:
 		.BYTE	  0,  1,  2
 byte_60DFF:
@@ -1611,7 +1609,7 @@ _hud_ppu_data_send:
 		LDA		_hud_ppu_data_send_lib+1,Y
 		STA		_tmp_ptr+1
 		JMP		(_tmp_ptr)
-		
+
 _hud_ppu_data_send_lib:
 		.WORD _hud_msg_ppu_data_send
 		.WORD _hud_all_energy_ppu_data_send
@@ -1916,13 +1914,6 @@ loc_61167:
 		DEX
 		BPL		loc_61167
 		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-;_level_skip_unused:
-;		INC		_cur_lvl_idx
-;		PLA
-;		PLA
-;		JMP		_level_complete
 
 ; =============== S U B	R O U T	I N E =======================================
 _main_ingame_handler:
@@ -2348,7 +2339,7 @@ loc_61487:
 		LDA		_cur_lvl_idx
 		CMP		#3
 		BEQ		loc_61498
-		JMP		loc_600D6
+		JMP		_main_ingame_loop3
 loc_61498:
 		JMP		_lvl3_bonus_repair_lab
 locret_6149B:
@@ -3918,13 +3909,13 @@ loc_61F97:
 		LDA		#$50
 		STA		_tmpE6									; low x
 		LDA		_end_of_level_enemy_appear_pos_x,Y		; hi x is different for every level
-		STA		_tmpE7									
+		STA		_tmpE7
 		LDY		#$A
 		LDA		_rand_seed								; select appearance side delta
 		BMI		loc_61FBF								; $0A - left side, $88 - right side
 		LDY		#$88
 loc_61FBF:
-		STY		_tptr1									
+		STY		_tptr1
 		DEC		_special_boss_flood_object_count		; decrease enemies counter, do insert
 		JMP		.insert_object
 
@@ -3951,7 +3942,7 @@ _obj_add:
 		STA		_tmpE4
 		CMP		#$21
 		BCS		loc_61FF5
-		LDX		#3										; object handlers from $00 to $20 are enemies 
+		LDX		#3										; object handlers from $00 to $20 are enemies
 loc_61FEB:
 		LDA		_obj_flags,X							; look for free slot to add
 		BEQ		.insert_object
@@ -3960,14 +3951,14 @@ loc_61FEB:
 		JMP		.advance_obj_ptr_and_break				; if no empty slots, skip enemy and do next one
 loc_61FF5:
 		CMP		#$28
-		BCC		loc_62001								; object 28 is a special spr0hit object		
+		BCC		loc_62001								; object 28 is a special spr0hit object
 		LDX		#$C
 		STA		_obj_hndl_idx,X
 		TAY
 		JMP		.obj_pos_x_calc
 loc_62001:
 		CMP		#$24
-		BNE		loc_62009				
+		BNE		loc_62009
 		LDX		#$A										; $24 is misc object slot
 		BNE		.insert_object
 loc_62009:
@@ -4066,13 +4057,13 @@ _obj_enemy_ai_loop:
 		LDA		_obj_enemy_ai_handlers_lib+1,Y
 		STA		_tmp_ptr+1
 		JMP		(_tmp_ptr)
-		
+
 _obj_next_enemy_ai:
 		DEX
 		BNE		_obj_enemy_ai_loop
 		JSR		_obj_tank_weapon_handler
 		RTS
-		
+
 _obj_enemy_ai_handlers_lib:
 		.WORD _obj_ehndl00_regular_gunman0
 		.WORD _obj_ehndl01_bomb_thrower0
@@ -5953,6 +5944,7 @@ loc_62DCA:
 		STA		byte_69C
 locret_62E28:
 		RTS
+
 byte_62E29:
 		.BYTE	$50,$78,$A0,$C8
 byte_62E2D:
@@ -6101,7 +6093,7 @@ loc_62F4C:
 		LDA		_collision_tests_lib+1,Y
 		STA		_tmp_ptr+1
 		JMP		(_tmp_ptr)
-		
+
 _collision_tests_lib:
 		.WORD _player_to_enemy_collision_test
 		.WORD _enemy_to_player_shot_collision_test
@@ -7009,7 +7001,6 @@ _ingame_pal_update:
 		STA		_PPU_ADDR
 		LDA		#0
 		STA		_PPU_ADDR
-;		LDX		_pal_update_redundant					; overrided here by zero, never used
 		LDX		#0
 		LDY		#$10
 loc_635EF:
@@ -7292,7 +7283,7 @@ loc_637B5:
 		BNE		loc_637B5
 locret_637CC:
 		RTS
-		
+
 _sound_lib:
 _snd00_silence:
 		.BYTE	  0,  0,  1,  0,  2,  0,  3,  0
@@ -7418,7 +7409,7 @@ _mmc1_prg:
 		LSR
 		STA		$FFFF
 		RTS
-		
+
 _hud_score_num_tile_upper_list:
 		.BYTE	$41,$42,$43,$44,$45,$46,$47,$48,$49,$4A
 _hud_score_num_tile_lower_list:
@@ -7505,27 +7496,25 @@ _lvl2_transition_pal_lib:
 		.BYTE	 $F,$18,$1B,$2B, $F,  6,$16,$26, $F,$18,$28,$38, $F,$12,$22,$32
 		.BYTE	 $F, $C,$1C,$2C, $F,  6,$16,$26, $F,$18,$28,$38, $F,$12,$22,$32
 		.BYTE	 $F,$22,$18,$29, $F,$18,$29,$39, $F,$18,$28,$38, $F,$12,$22,$32
-; unknown unused data
-;		.BYTE	  0,  1,  1,  0,  0,  0
 
 ; --
 ; original final version of hi-score table
-;_def_score_tbl:
-;		.BYTE	  0,  0,  2,  0,  0,  7,$24,  8,  1,$12,$12,  9,$13, $F, $E
-;		.BYTE	  0,  0,  1,  0,  0,$13,$24, $E,  9,  3, $F, $C,  0,  0,  0
-;		.BYTE	  0,  0,  0,  8,  0,$13,$24,  3,$12, $F,$17,  0,  0,  0,  0
-;		.BYTE	  0,  0,  0,  6,  0, $A,$24,  2, $F, $E,  1,$12,  0,  0,  0
-;		.BYTE	  0,  0,  0,  4,  0, $A,$24,$14,  5, $C,  0,  0,  0,  0,  0
-;		.BYTE	  0,  0,  0,  1,  0,  8,$24,  2,  9, $E, $E,$13,  0,  0,  0
+_def_score_tbl:
+		.BYTE	  0,  0,  2,  0,  0,  7,$24,  8,  1,$12,$12,  9,$13, $F, $E
+		.BYTE	  0,  0,  1,  0,  0,$13,$24, $E,  9,  3, $F, $C,  0,  0,  0
+		.BYTE	  0,  0,  0,  8,  0,$13,$24,  3,$12, $F,$17,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  6,  0, $A,$24,  2, $F, $E,  1,$12,  0,  0,  0
+		.BYTE	  0,  0,  0,  4,  0, $A,$24,$14,  5, $C,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  1,  0,  8,$24,  2,  9, $E, $E,$13,  0,  0,  0
 ; --
 ; older unused version of hi-score table from bank 5 used now instead
-_def_score_tbl:
-		.BYTE	  1,  0,  2,  0,  0,  7,$24,  8,  1,$12,$12,  9,$13, $F, $E
-		.BYTE	  0,  7,  5,  3,  0,$13,$24, $E,  9,  3, $F, $C,  0,  0,  0
-		.BYTE	  0,  7,  0,  0,  0,$13,$24,  3,$12, $F,$17,  0,  0,  0,  0
-		.BYTE	  0,  4,  0,  6,  5,  8,$24,  2,  9, $E, $E,$13,  0,  0,  0
-		.BYTE	  0,  0,  8,  0,  0, $A,$24,$14,  5, $C,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  4,  5, $A,$24,  2, $F, $E,  1,$12,  0,  0,  0
+;_def_score_tbl:
+;		.BYTE	  1,  0,  2,  0,  0,  7,$24,  8,  1,$12,$12,  9,$13, $F, $E
+;		.BYTE	  0,  7,  5,  3,  0,$13,$24, $E,  9,  3, $F, $C,  0,  0,  0
+;		.BYTE	  0,  7,  0,  0,  0,$13,$24,  3,$12, $F,$17,  0,  0,  0,  0
+;		.BYTE	  0,  4,  0,  6,  5,  8,$24,  2,  9, $E, $E,$13,  0,  0,  0
+;		.BYTE	  0,  0,  8,  0,  0, $A,$24,$14,  5, $C,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  4,  5, $A,$24,  2, $F, $E,  1,$12,  0,  0,  0
 
 		ECHO "bank 7 free space", [SYS_STUB_ORG-.]
 		ECHO "zero ram free", [$100 - _end_of_zero_ram]

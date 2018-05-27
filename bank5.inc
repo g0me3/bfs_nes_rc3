@@ -12,7 +12,7 @@ loc_440C1:
 		DEX
 		BNE		loc_440C1
 		RTS
-		
+
 ; =============== S U B	R O U T	I N E =======================================
 ; start to display the copyright message, then start the main title attract
 ; event with logos, title and hi-score table
@@ -45,11 +45,6 @@ loc_44059:
 		BEQ		.do_next_line							; $FE - return symbol
 		CMP		#$FA
 		BEQ		.do_music_and_delay						; $FA - stop symbol
-;		CMP		#$C0
-;		BCS		loc_4406A								; tiles above $C0 goes unchanged
-;		SEC
-;		SBC		#$40									; fonts are at 00, so they used delta $40 for regular ascii symbols
-;loc_4406A:
 		STA		_PPU_DATA
 loc_4406A0:
 		INC		_txt_ptr
@@ -89,7 +84,6 @@ loc_4406A0:
 		PHA
 		LDX		#3
 		JSR		_delay
-;		JSR		_far_apu_play_prg5_safe					; do play sync 
 		JSR		_star_field_animate
 		PLA
 		TAX
@@ -104,11 +98,9 @@ loc_4406A0:
 		STA		_event_reload_idx						; set actual title event session index
 		LDA		#$FF
 		STA		byte_3B1
-;		LDA		#8										; not actually used
-;		STA		_ppu_scroll_x_override_redundant
 		LDA		#$80
 		STA		_PPU_CTRL								; do actual event, not it's NMI-based
-		JMP		_event_exec			
+		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
 ; start a new game, display the initial intro sequence before the common
@@ -126,7 +118,7 @@ _intro_display:
 		LDA		#8										; init pad prev value with START button to make sure it won't
 		STA		_pad_prev								; skip intro immediately after you press start at the title screen
 		LDA		#1
-		STA		byte_3D3								
+		STA		byte_3D3
 		LDA		#3
 		STA		_event_reload_idx
 		LDA		#$FF
@@ -322,6 +314,7 @@ loc_442ED:
 		LDA		#$81
 		STA		_PPU_CTRL
 		JMP		_event_exec
+
 _txt_game_over:
 		.BYTE	_G,_A,_M,_E,_,_,_O,_V,_E,_R
 
@@ -349,7 +342,7 @@ _event_exec:
 		LDA		#0
 		STA		_event_idx
 		JMP		(_tptr0)
-		
+
 _events_lib:
 		.WORD _event_exec
 		.WORD _event_exec
@@ -359,11 +352,6 @@ _events_lib:
 		.WORD _event5_repair
 		.WORD _event6_game_over
 		.WORD _event7_log_msg
-
-_spr_presents:
-		.BYTE	_P,_R,_E,_S,_E,_N,_T,_S
-_spr_oduction:
-		.BYTE	_O,_D,_U,_C,_T,_I,_O,_N
 
 ; =============== S U B	R O U T	I N E =======================================
 _event2_title:
@@ -493,7 +481,6 @@ loc_4444F:
 		LDA		_delays_list_hi,X
 		STA		_delay_counter
 loc_4448B:
-;		JSR		_far_apu_play_prg5_safe
 		JMP		_event_exec
 loc_44491:
 		LDA		_disp_spr0hit_use
@@ -501,19 +488,14 @@ loc_44491:
 		LDX		#3
 		JSR		_delay
 		JSR		_read_pad
-;		JSR		_far_apu_play_prg5_safe
 		LDA		#1
 		STA		_logo_skip_forbid_flag
 		JMP		_event_exec
 loc_444AD:
 		LDX		#1
 		JSR		_delay
-;		JSR		_far_apu_play_prg5_safe
 		JSR		_read_pad
-		LDY		_title_menu_idx							
-;		LDX		byte_44651,Y							; here we table calc the sprite offset pos in buffer
-;		LDA		_A_mul_4_table,X					; selected menu item to make it blink idx * 4 previously
-;		TAX
+		LDY		_title_menu_idx
 		LDX		byte_44651,Y							; but why we just can't have already precalc table for it? lol
 		LDA		byte_44655,Y
 		STA		_tmp3C3+2
@@ -680,18 +662,20 @@ loc_44615:
 loc_44623:
 		DEX
 		BNE		loc_44623
-		LDA		#$1A									; mm1_chr0 call - 48 clocks
-;		STA		$BFFF									; direct set - 30 clocks to change bank
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
+		LDA		#$1A									; call - 48 clocks
 		JSR		_mmc1_chr0
 		JMP		_event_exec
+
+byte_44651:
+		.BYTE	$54,$70,$90,$B0
+byte_44655:
+		.BYTE	  5,  8,  8,  8
+byte_44659:
+		.BYTE	$8F,$9F,$AF,$BF
+_spr_presents:
+		.BYTE	_P,_R,_E,_S,_E,_N,_T,_S
+_spr_oduction:
+		.BYTE	_O,_D,_U,_C,_T,_I,_O,_N
 
 ; =============== S U B	R O U T	I N E =======================================
 _reload_delay_counter_2:
@@ -705,20 +689,16 @@ _reload_delay_counter_2:
 		PLA
 		TAX
 		RTS
-;byte_44651:
-;		.BYTE	$15,$1C,$24,$2C
-byte_44651:
-		.BYTE	$54,$70,$90,$B0
-byte_44655:
-		.BYTE	  5,  8,  8,  8
-byte_44659:
-		.BYTE	$8F,$9F,$AF,$BF
+
+_delays_list_lo:
+		.BYTE	  0,  1,  2,  6, $A, $A, $B, $C,$11
+_delays_list_hi:
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0
 
 ; =============== S U B	R O U T	I N E =======================================
 _event3_intro:
 		LDX		#4
 		JSR		_delay
-;		JSR		_far_apu_play_prg5_safe
 		JSR		_read_pad
 		LDA		_pad
 		CMP		_pad_prev
@@ -726,9 +706,6 @@ _event3_intro:
 		STA		_pad_prev
 		AND		#9
 		BEQ		loc_44684								; test if button is pressed to skip
-;		LDA		byte_3B4								; one more leftover, the idx here can be only up to 2
-;		CMP		#7
-;		BEQ		loc_44684
 .i_cmdFA_break:
 		RTS
 loc_44684:
@@ -746,9 +723,6 @@ loc_44684:
 		BEQ		.i_cmdFF_next_screen					; $FF - next screen code
 		CMP		#$FE
 		BEQ		.i_cmdFE_scroll_up						; $FE - scroll buffer up
-;		CMP		#$FD
-;		BNE		loc_446A8
-;		JMP		.i_cmdFD_short_delay					; $FD - unused short delay
 ;loc_446A8:
 		CMP		#$FC
 		BEQ		.i_cmdFC_delay							; $FC - long delay
@@ -757,7 +731,6 @@ loc_44684:
 		CMP		#$FA
 		BEQ		.i_cmdFA_break							; $FA code - end of messages
 		LDX		byte_3D7								; output buf pos temp value
-;		LDA		(_txt_ptr),Y							; why read it one more time?
 		STA		_log_msg_buf+$54,X						; start to display at the bottom line of the buf
 		INC		byte_3B5
 		INC		byte_3D7
@@ -812,25 +785,12 @@ loc_446FF:
 		STA		byte_3D7
 		STA		_delay_counter
 		JMP		_event_exec
-; --------------------------------
-;.i_cmdFD_short_delay:
-;		LDA		_delay_counter
-;		CLC
-;		ADC		#1
-;		STA		_delay_counter
-;		CMP		#7
-;		BCC		.j_event_exec0
-;		INC		byte_3B5
-;		LDA		#0
-;		STA		byte_3D7
-;		STA		_delay_counter
-;		JMP		_event_exec
-		
+
 _lvl0_intro_log_lib:
 		.WORD _lvl0_intro_log0
 		.WORD _lvl0_intro_log1
 		.WORD _lvl0_intro_log2
-		
+
 _lvl0_intro_log0:
 		.BYTE	_C,_O,_M,_M,_A,_N,_D,_DT,_C,_O,_M,_SCL
 		.BYTE	_L,_O,_A,_D,_,_B,_I,_O,_S,_SCL
@@ -889,7 +849,7 @@ loc_4487B:
 		BIT		_PPU_STATUS
 		BMI		loc_448B8
 		BVC		loc_4487B
-		NOP												; delay 66 clocks
+		NOP												; delay 48 clocks
 		NOP
 		NOP
 		NOP
@@ -913,28 +873,9 @@ loc_4487B:
 		NOP
 		NOP
 		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-		LDA		#$1F									; direct delay 30 clocks
-;		STA		$BFFF									; with call - 48 clocks
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
+		LDA		#$1F									; call delay 48 clocks
 		JSR		_mmc1_chr0
 loc_448B8:
-;		JSR		_far_apu_play_prg5_safe
 		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -953,8 +894,6 @@ _title_screen_display:
 		STA		_event_reload_idx
 		LDA		#$FF
 		STA		byte_3B1
-;		LDA		#8										; not actually used
-;		STA		_ppu_scroll_x_override_redundant
 		LDA		#2
 		STA		_screen_idx
 		JSR		_screen_display
@@ -1001,7 +940,6 @@ _hi_score_entry_event:
 		STA		_PPU_CTRL
 loc_44965:
 		JSR		_star_field_animate
-;		JSR		_far_apu_play_prg5_safe
 		JSR		_read_pad
 		LDX		_hi_score_line_idx
 		LDA		_hi_score_ram_ofs_list,X
@@ -1079,22 +1017,250 @@ loc_44A05:
 		JMP		_title_screen_display
 .j_event_exec3:
 		JMP		_event_exec
-		
+
 _hi_score_ram_ofs_list:
 		.BYTE	$75,$84,$93,$A2,$B1,$C0
+
+; =============== S U B	R O U T	I N E =======================================
+_sort_hiscore_test:
+		LDX		#0
+		LDA		_cur_score_hex
+		STA		_pl_bckp_score_hex_lo,X
+		STA		_str_ptr
+		LDA		_cur_score_hex+1
+		STA		_pl_bckp_score_hex_hi,X
+		STA		_str_ptr+1
+		LDA		#0
+		STA		_hex2dec_tile_delta
+		LDX		#<[_hi_dec_tmp_buf]
+		LDY		#>[_hi_dec_tmp_buf]
+		JSR		_hex2str
+		LDX		#0
+		LDY		#0
+loc_45A16:
+		LDA		_hi_dec_tmp_buf,X
+		STA		_score_cmp_buf,X
+		INX
+		CPX		#5
+		BNE		loc_45A16
+loc_45A21:
+		LDA		#0
+		STA		_score_cmp_buf,X
+		INX
+		CPX		#$F
+		BCC		loc_45A21
+		LDA		#0
+		STA		_hi_score_pos_count
+		STA		_hi_score_line_idx
+		LDA		#<[_hi0_score]
+		STA		_tptr1
+		LDA		#>[_hi0_score]
+		STA		_tptr1+1
+loc_45A3B:
+		LDY		#0
+		LDA		_hi_score_pos_count
+		CMP		#6
+		BCS		locret_45A7A
+loc_45A44:
+		LDA		_score_cmp_buf,Y
+		CMP		(_tptr1),Y
+		BCC		loc_45A52
+		BNE		_hiscore_swap
+		INY
+		CPY		#5
+		BNE		loc_45A44
+loc_45A52:
+		INC		_hi_score_line_idx
+loc_45A55:
+		INC		_hi_score_pos_count
+		LDA		_tptr1
+		CLC
+		ADC		#$F
+		STA		_tptr1
+		LDA		_tptr1+1
+		ADC		#0
+		STA		_tptr1+1
+		BNE		loc_45A3B
+_hiscore_swap:
+		LDY		#$E
+loc_45A69:
+		LDA		(_tptr1),Y
+		TAX
+		LDA		_score_cmp_buf,Y
+		STA		(_tptr1),Y
+		TXA
+		STA		_score_cmp_buf,Y
+		DEY
+		BPL		loc_45A69
+		BMI		loc_45A55
+locret_45A7A:
+		RTS
+
+_nums_table:
+		.BYTE	_O,_1,_2,_3,_4,_5,_6,_7,_8,_9
+
+; =============== S U B	R O U T	I N E =======================================
+; draws an actual hi-score table data from RAM at the fixed position
+; on the screen
+;
+_draw_hiscore_table:
+		BIT		_PPU_STATUS
+		LDA		#$21
+		STA		_PPU_ADDR
+		LDA		#$47
+		STA		_PPU_ADDR
+		LDX		#0
+loc_45AEE:
+		LDY		_hi0_score,X
+		LDA		_nums_table,Y
+		STA		_PPU_DATA
+		INX
+		CPX		#5
+		BCC		loc_45AEE
+		LDA		#$F
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		LDA		#0
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+loc_45B0F:
+		LDA		_hi0_score,X
+		STA		_PPU_DATA
+		INX
+		CPX		#$F
+		BCC		loc_45B0F
+		LDA		#$21
+		STA		_PPU_ADDR
+		LDA		#$87
+		STA		_PPU_ADDR
+		LDX		#0
+loc_45B26:
+		LDY		_hi1_score,X
+		LDA		_nums_table,Y
+		STA		_PPU_DATA
+		INX
+		CPX		#5
+		BCC		loc_45B26
+		LDA		#$F
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		LDA		#0
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+loc_45B47:
+		LDA		_hi1_score,X
+		STA		_PPU_DATA
+		INX
+		CPX		#$F
+		BCC		loc_45B47
+		LDA		#$21
+		STA		_PPU_ADDR
+		LDA		#$C7
+		STA		_PPU_ADDR
+		LDX		#0
+loc_45B5E:
+		LDY		_hi2_score,X
+		LDA		_nums_table,Y
+		STA		_PPU_DATA
+		INX
+		CPX		#5
+		BCC		loc_45B5E
+		LDA		#$F
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		LDA		#0
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+loc_45B7F:
+		LDA		_hi2_score,X
+		STA		_PPU_DATA
+		INX
+		CPX		#$F
+		BCC		loc_45B7F
+		LDA		#$22
+		STA		_PPU_ADDR
+		LDA		#7
+		STA		_PPU_ADDR
+		LDX		#0
+loc_45B96:
+		LDY		_hi3_score,X
+		LDA		_nums_table,Y
+		STA		_PPU_DATA
+		INX
+		CPX		#5
+		BCC		loc_45B96
+		LDA		#$F
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		LDA		#0
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+loc_45BB7:
+		LDA		_hi3_score,X
+		STA		_PPU_DATA
+		INX
+		CPX		#$F
+		BCC		loc_45BB7
+		LDA		#$22
+		STA		_PPU_ADDR
+		LDA		#$47
+		STA		_PPU_ADDR
+		LDX		#0
+loc_45BCE:
+		LDY		_hi4_score,X
+		LDA		_nums_table,Y
+		STA		_PPU_DATA
+		INX
+		CPX		#5
+		BCC		loc_45BCE
+		LDA		#$F
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		LDA		#0
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+loc_45BEF:
+		LDA		_hi4_score,X
+		STA		_PPU_DATA
+		INX
+		CPX		#$F
+		BCC		loc_45BEF
+		LDA		#$22
+		STA		_PPU_ADDR
+		LDA		#$87
+		STA		_PPU_ADDR
+		LDX		#0
+loc_45C06:
+		LDY		_hi5_score,X
+		LDA		_nums_table,Y
+		STA		_PPU_DATA
+		INX
+		CPX		#5
+		BCC		loc_45C06
+		LDA		#$F
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		LDA		#0
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+		STA		_PPU_DATA
+loc_45C27:
+		LDA		_hi5_score,X
+		STA		_PPU_DATA
+		INX
+		CPX		#$F
+		BCC		loc_45C27
+		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
 _event5_repair:
 		LDX		#1
 		JSR		_delay
-;		LDA		#$66									; draw sprite0 for screen split effect
-;		STA		_spr_buf								; for unknown reason, it is done in two
-;		LDA		#$30									; different places, one in the display
-;		STA		_spr_buf+1								; drawing routine, one is here hardcoded
-;		LDA		#$FF
-;		STA		_spr_buf+2
-;		LDA		#$30
-;		STA		_spr_buf+3
 		LDA		_tmp3C3									; draw cursor
 		STA		_spr_buf+4
 		CLC
@@ -1176,7 +1342,7 @@ loc_44AF1:
 		BIT		_PPU_STATUS
 		BMI		loc_44B2B
 		BVC		loc_44AF1
-		NOP												; 60 clocks delay
+		NOP												; 48 clocks delay
 		NOP
 		NOP
 		NOP
@@ -1197,43 +1363,197 @@ loc_44AF1:
 		NOP
 		NOP
 		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-;		NOP
-		LDA		#$17									; 30 clocks direct set to change bank
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
+		LDA		#$17
 		JSR		_mmc1_chr0								; 48 clocks call
 loc_44B2B:
 		JSR		_repair_cursor_input
 		JSR		_repair_cursor_animate
 		JSR		_dpad_convert
-;		JSR		_far_apu_play_prg5_safe
 		JMP		_event_exec
+
+; =============== S U B	R O U T	I N E =======================================
+_repair_cursor_input:
+		LDA		_dpad
+		BNE		loc_45C39
+		RTS
+loc_45C39:
+		CMP		#1
+		BEQ		loc_45C54
+		CMP		#2
+		BEQ		loc_45C6B
+		CMP		#3
+		BEQ		loc_45C82
+		JSR		_get_cursor_allow_list_ptr
+		LDY		#3
+		LDA		(_tptr0),Y
+		BMI		locret_45CAF
+		CMP		_repair_body_index_request
+		BEQ		locret_45CAF
+		STA		_repair_body_index_request
+		LDA		#1
+		STA		byte_3BF
+locret_45CAF:
+		RTS
+loc_45C54:
+		JSR		_get_cursor_allow_list_ptr
+		LDY		#0
+		LDA		(_tptr0),Y
+		BMI		locret_45C6A
+		CMP		_repair_body_index_request
+		BEQ		locret_45C6A
+		STA		_repair_body_index_request
+		LDA		#1
+		STA		byte_3BF
+locret_45C6A:
+		RTS
+loc_45C6B:
+		JSR		_get_cursor_allow_list_ptr
+		LDY		#1
+		LDA		(_tptr0),Y
+		BMI		locret_45C81
+		CMP		_repair_body_index_request
+		BEQ		locret_45C81
+		STA		_repair_body_index_request
+		LDA		#1
+		STA		byte_3BF
+locret_45C81:
+		RTS
+loc_45C82:
+		JSR		_get_cursor_allow_list_ptr
+		LDY		#2
+		LDA		(_tptr0),Y
+		BMI		locret_45C98
+		CMP		_repair_body_index_request
+		BEQ		locret_45C98
+		STA		_repair_body_index_request
+		LDA		#1
+		STA		byte_3BF
+locret_45C98:
+		RTS
+
+; =============== S U B	R O U T	I N E =======================================
+_get_cursor_allow_list_ptr:
+		LDA		#0
+		STA		_tptr0+1
+		LDA		_repair_cur_body_index
+		ASL
+		ASL
+		ROL		_tptr0+1
+		CLC
+		ADC		#<[_repair_cursor_allow_table]
+		STA		_tptr0
+		LDA		_tptr0+1
+		ADC		#>[_repair_cursor_allow_table]
+		STA		_tptr0+1
+		RTS
+
+; =============== S U B	R O U T	I N E =======================================
+_repair_cursor_animate:
+		LDA		byte_3BF
+		BNE		loc_45CD4
+		RTS
+loc_45CD4:
+		INC		_repair_cursor_animate_tmp
+		LDA		_repair_cursor_animate_tmp
+		CMP		#2
+		BEQ		loc_45CDF
+		RTS
+loc_45CDF:
+		LDA		#0
+		STA		_repair_cursor_animate_tmp
+		LDA		_repair_body_index_request
+		ASL
+		TAX
+		LDA		_repair_cursor_anim_data,X
+		STA		word_3BA
+		LDA		_repair_cursor_anim_data+1,X
+		STA		word_3BA+1
+		LDA		byte_3B8
+		CMP		word_3BA
+		BCS		loc_45D1D
+		LDA		word_3BA
+		SEC
+		SBC		byte_3B8
+		LSR
+		LSR
+		STA		word_3BA
+		LDA		byte_3B8
+		CLC
+		ADC		word_3BA
+		STA		byte_3B8
+		JMP		loc_45D33
+loc_45D1D:
+		LDA		byte_3B8
+		SEC
+		SBC		word_3BA
+		LSR
+		LSR
+		STA		word_3BA
+		LDA		byte_3B8
+		SEC
+		SBC		word_3BA
+		STA		byte_3B8
+loc_45D33:
+		LDA		_tmp3C3
+		CMP		word_3BA+1
+		BCS		loc_45D54
+		LDA		word_3BA+1
+		SEC
+		SBC		_tmp3C3
+		LSR
+		LSR
+		STA		word_3BA+1
+		LDA		_tmp3C3
+		CLC
+		ADC		word_3BA+1
+		STA		_tmp3C3
+		JMP		loc_45D6A
+loc_45D54:
+		LDA		_tmp3C3
+		SEC
+		SBC		word_3BA+1
+		LSR
+		LSR
+		STA		word_3BA+1
+		LDA		_tmp3C3
+		SEC
+		SBC		word_3BA+1
+		STA		_tmp3C3
+loc_45D6A:
+		LDA		word_3BA
+		ORA		word_3BA+1
+		BNE		locret_45D7D
+		LDA		#0
+		STA		byte_3BF
+		LDA		_repair_body_index_request
+		STA		_repair_cur_body_index
+locret_45D7D:
+		RTS
+
+_repair_update_flag_list:
+		.BYTE	  0,  2,  1,  2,  3
+_repair_cursor_allow_table:
+		.BYTE	$FF,  3,  2,  1
+		.BYTE	  0,  2,  4,$FF
+		.BYTE	  0,  3,  4,  1
+		.BYTE	  0,$FF,  4,  2
+		.BYTE	  2,$FF,$FF,  1
+_repair_cursor_anim_data:
+		.WORD $20A0
+		.WORD $5888
+		.WORD $40A8
+		.WORD $48C0
+		.WORD $80CB
 
 ; =============== S U B	R O U T	I N E =======================================
 _event6_game_over:
 		LDX		#3
 		JSR		_delay
-;		JSR		_far_apu_play_prg5_safe
 		JSR		_star_field_animate
 		JSR		_read_pad								; read pad
 		LDA		_pad
 		BEQ		loc_44B5A								; if nothing is pressed, do times
-		LDA		_pad_prev								; check if _pad_prev is zero, so we has released any buttons before	
+		LDA		_pad_prev								; check if _pad_prev is zero, so we has released any buttons before
 		BEQ		.game_over_set_max_timers				; then jump to max timers set!
 		JMP		.game_over_timers_increase
 loc_44B5A:
@@ -1244,7 +1564,7 @@ loc_44B5A:
 		LDA		#2										; here we set timers to max value and jump to test it and so skip!
 		STA		_delay_counter+1						; why don't you just jupm to skip here?! maybe because it's mean some
 		LDA		#$30									; kind of reinitialization of the same timers used by the title screen
-		STA		_delay_counter							
+		STA		_delay_counter
 		BNE		.game_over_timers_test
 .game_over_timers_increase:
 		LDA		_delay_counter
@@ -1276,7 +1596,6 @@ loc_44B5A:
 _event7_log_msg:
 		LDX		#3
 		JSR		_delay
-;		JSR		_far_apu_play_prg5_safe
 		LDA		_log_msg_skip_forbid
 		BNE		loc_44BCA
 		JSR		_read_pad
@@ -1311,9 +1630,6 @@ loc_44BE1:
 		RTS
 loc_44BFC:
 		LDX		byte_3D7
-;		LDA		(_txt_ptr),Y							; no need to read it one more time
-;		SEC
-;		SBC		#$40
 		STA		_log_msg_buf+$54,X
 		INC		byte_3B5
 		INC		byte_3D7
@@ -1321,19 +1637,6 @@ loc_44BFC:
 		STA		_generic_nmi_over_counter
 .j_event_exec1:
 		JMP		_event_exec
-; --------------------------------
-; unused here, but used in intro copy of this code, no debug though
-;.l_cmdFF_next_screen:
-;		INC		byte_3B4
-;		LDA		#0
-;		STA		byte_3D7
-;		STA		byte_3B5
-;		INC		_screen_idx
-;		LDA		_screen_idx
-;		JSR		_screen_display
-;		LDA		#$81
-;		STA		_PPU_CTRL
-;		JMP		_event_exec
 ; --------------------------------
 .l_cmdFE_scroll_up:
 		LDA		_generic_nmi_over_counter
@@ -1457,26 +1760,8 @@ _nmi0:
 		STA		_PPU_OAM_DMA
 		JSR		_ppu_pal_send
 		LDA		_chr0_bank_shadow
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
-;		LSR
-;		STA		$BFFF
 		JSR		_mmc1_chr0
 		LDA		_chr1_bank_shadow
-;		STA		$DFFF
-;		LSR
-;		STA		$DFFF
-;		LSR
-;		STA		$DFFF
-;		LSR
-;		STA		$DFFF
-;		LSR
-;		STA		$DFFF
 		JSR		_mmc1_chr1
 		LDA		_event_reload_idx
 		CMP		#3
@@ -2216,7 +2501,7 @@ loc_45314:
 		INY
 		DEX
 		BNE		loc_45314
-;
+; --
 ; portion of code to display extra missing legs tilemap in repair lab
 ; original resource data is 8x6 tiles, but only 8x5 is used, restored
 ;
@@ -2243,7 +2528,6 @@ _nmi0_common:
 		LDA		_special_controls_flag					; used only for title screen, overrides generic
 		BEQ		.nmi0_generic_input						; input controls for the rest of the screens displayed
 		LDA		#$A8
-;		ORA		_nmi_ppu_ctrl_override_redundant
 		STA		_PPU_CTRL
 		INC		_generic_nmi_over_counter
 		JSR		_far_apu_play_prg5_safe					; put it here, because we always run in prg5 during
@@ -2330,7 +2614,6 @@ loc_453E8:
 ; --------------------------------
 .nmi0_finish:
 		LDA		#$88
-;		ORA		_nmi_ppu_ctrl_override_redundant
 		STA		_PPU_CTRL
 		INC		_generic_nmi_over_counter
 		JSR		_far_apu_play_prg5_safe					; put it here, because we always run in prg5 during
@@ -2338,7 +2621,7 @@ loc_453E8:
 		LDX		_irq_regs_backup+1
 		LDY		_irq_regs_backup+2
 		RTI
-		
+
 _hi_score_ppu_ofs_list:
 		.WORD $2151
 		.WORD $2191
@@ -2346,7 +2629,7 @@ _hi_score_ppu_ofs_list:
 		.WORD $2211
 		.WORD $2251
 		.WORD $2291
-		
+
 _repair_small_frame_txt_lib:
 		.WORD _repair_small_frame_txt0
 		.WORD _repair_small_frame_txt1
@@ -2375,7 +2658,6 @@ loc_45427:
 ; =============== S U B	R O U T	I N E =======================================
 _nmi0_scroll_reload:
 		BIT		_PPU_STATUS
-;		LDA		_ppu_scroll_x_override_redundant		; see, overrided
 		LDA		#0
 		STA		_PPU_SCROLL
 		LDA		_disp_extra_shift
@@ -2383,7 +2665,6 @@ _nmi0_scroll_reload:
 		LDA		#$E0
 loc_4544C:
 		STA		_PPU_SCROLL
-;		INC		_nmi0_scroll_reload_counter_redundant
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -2397,92 +2678,9 @@ _dpad_convert:
 		LDA		_dpad_conv_tbl,X
 		STA		_dpad
 		RTS
-		
+
 _dpad_conv_tbl:
 		.BYTE	0,1,3,0,4,0,0,0,2,0,0,0,0,0,0,0
-		
-;		LDA		_pad
-;		AND		#$F0
-;		LSR
-;		LSR
-;		LSR
-;		TAX
-;		LDA		off_4546B,X
-;		STA		_tmp_buf0
-;		LDA		off_4546B+1,X
-;		STA		_tmp_buf0+1
-;		JMP		(_tmp_buf0)
-;off_4546B:
-;		.WORD _dpad_0
-;		.WORD _dpad_1
-;		.WORD _dpad_3
-;		.WORD _dpad_0
-;		.WORD _dpad_4
-;		.WORD _dpad_0_0
-;		.WORD _dpad_0_1
-;		.WORD _dpad_0
-;		.WORD _dpad_2
-;		.WORD _dpad_0_2
-;		.WORD _dpad_0_3
-;		.WORD _dpad_0
-;		.WORD _dpad_0
-;		.WORD _dpad_0
-;		.WORD _dpad_0
-;		.WORD _dpad_0
-
-; =============== S U B	R O U T	I N E =======================================
-;_dpad_0:
-;		LDA		#0
-;		STA		_dpad
-;		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-;_dpad_1:
-;		LDA		#1
-;		STA		_dpad
-;		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-;_dpad_3:
-;		LDA		#3
-;		STA		_dpad
-;		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-;_dpad_4:
-;		LDA		#4
-;		STA		_dpad
-;		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-;_dpad_2:
-;		LDA		#2
-;		STA		_dpad
-;		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-;_dpad_0_0:
-;		LDA		#0
-;		STA		_dpad
-;		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-;_dpad_0_1:
-;		LDA		#0
-;		STA		_dpad
-;		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-;_dpad_0_2:
-;		LDA		#0
-;		STA		_dpad
-;		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-;_dpad_0_3:
-;		LDA		#0
-;		STA		_dpad
-;		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
 _read_pad:
@@ -2635,7 +2833,7 @@ loc_455BF:
 		ASL		_mul_result_low
 		ROL
 		RTS
-		
+
 _A_mul_4_table:
 		.BYTE	  0,  4,  8, $C,$10,$14,$18,$1C,$20,$24,$28,$2C,$30,$34,$38,$3C
 		.BYTE	$40,$44,$48,$4C,$50,$54,$58,$5C,$60,$64,$68,$6C,$70,$74,$78,$7C
@@ -2671,69 +2869,6 @@ _star_field_params2:
 		.BYTE	$8D,$FF,$DF,$4A,$8D,$FF,$DF,$4A,$8D,$FF,$DF,$4A,$8D,$FF,$DF,$A9
 		.BYTE	 $F,$8D,$FF,$FF,$4A,$8D,$FF,$FF,$4A,$8D,$FF,$FF,$4A,$8D,$FF,$FF
 		.BYTE	$4A,$8D,$FF,$FF,$60
-		
-_disp_tlm_lib:
-		.WORD _tlm0_ocean
-		.WORD _tlm1_probe
-		.WORD _tlm2_title
-		.WORD _tlm3_hiscore
-		.WORD _tlm4_frame
-		.WORD _tlm5_lewis
-		.WORD _tlm6_robocop
-		.WORD _tlm7_ending
-		.WORD _tlm8_repair
-_disp_atr_lib:
-		.WORD _atr0_ocean
-		.WORD _atr1_probe
-		.WORD _atr2_title
-		.WORD _atr3_hiscore
-		.WORD _atr4_frame
-		.WORD _atr5_lewis
-		.WORD _atr6_robocop
-		.WORD _atr7_ending
-		.WORD _atr8_repair
-_disp_spr_lib:
-		.WORD 0
-		.WORD 0
-		.WORD _spr2_title
-		.WORD 0
-		.WORD 0
-		.WORD 0
-		.WORD 0
-		.WORD 0
-		.WORD _spr8_repair
-_disp_pal_lib:
-		.WORD _pal0_ocean
-		.WORD _pal1_probe
-		.WORD _pal2_title
-		.WORD _pal3456_frame
-		.WORD _pal3456_frame
-		.WORD _pal3456_frame
-		.WORD _pal3456_frame
-		.WORD _pal7_ending
-		.WORD _pal8_repair
-_disp_spr_tile_delta:
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,$BE
-_disp_chr1_list:
-		.BYTE	$18,$18,$19,$1C,$1C,$1C,$1D,$1E,$16
-_disp_chr0_list:
-		.BYTE	$1C,$1C,$1B,$18,$18,$18,$18,$1E,$16
-_disp_spr0hit_use_flags:
-		.BYTE	  0,  0,$FF,  0,  0,  0,  0,$FF,$FF
-_disp_spr0hit_x:
-		.BYTE	  0,  0,$BD,  0,  0,  0,  0,$F8,$30
-_disp_spr0hit_y:
-		.BYTE	  0,  0,$65,  0,  0,  0,  0,$7C,$66
-_disp_spr0hit_tile:
-		.BYTE	  0,  0,$FF,  0,  0,  0,  0,$30,$30
-_special_controls_flag_flags_list:
-		.BYTE	  0,  0,$FF,  0,  0,  0,  0,  0,  0
-_disp_extra_shifts_list:
-		.BYTE	  0,  0,$10,  0,  0,  0,  0,$10,$10
-_delays_list_lo:
-		.BYTE	  0,  1,  2,  6, $A, $A, $B, $C,$11
-_delays_list_hi:
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0
 
 ; =============== S U B	R O U T	I N E =======================================
 _screen_display:
@@ -2829,12 +2964,12 @@ loc_458F7:
 		LDA		#$20
 		STA		_PPU_ADDR
 		STY		_PPU_ADDR
-_disp_tlm_send:
+.disp_tlm_send:
 		LDY		#0
 		LDA		(_tptr0),Y
 		BPL		loc_4592B
 		CMP		#$FF
-		BEQ		_disp_atr_send
+		BEQ		.disp_atr_send
 		AND		#$7F
 		TAX
 		JSR		_ptr5_inc
@@ -2844,7 +2979,7 @@ loc_4591E:
 		JSR		_ptr5_inc
 		DEX
 		BNE		loc_4591E
-		BEQ		_disp_tlm_send
+		BEQ		.disp_tlm_send
 loc_4592B:
 		TAX
 		JSR		_ptr5_inc
@@ -2854,14 +2989,14 @@ loc_45931:
 		DEX
 		BNE		loc_45931
 		JSR		_ptr5_inc
-		JMP		_disp_tlm_send
+		JMP		.disp_tlm_send
 _ptr5_inc:
 		INC		_tptr0
 		BNE		locret_45943
 		INC		_tptr0+1
 locret_45943:
 		RTS
-_disp_atr_send:
+.disp_atr_send:
 		LDA		#$23
 		STA		_PPU_ADDR
 		LDX		#$C0
@@ -2879,11 +3014,11 @@ loc_45959:
 		DEY
 		BPL		loc_45959
 		LDA		_str_ptr
-		BNE		_disp_spr_send
+		BNE		.disp_spr_send
 		LDA		_str_ptr+1
-		BNE		_disp_spr_send
+		BNE		.disp_spr_send
 		JMP		locret_459F1
-_disp_spr_send:
+.disp_spr_send:
 		LDA		#$C
 		STA		_tptr0
 		LDA		#$FF
@@ -2962,460 +3097,65 @@ loc_459D4:
 locret_459F1:
 		RTS
 
-; =============== S U B	R O U T	I N E =======================================
-_sort_hiscore_test:
-		LDX		#0
-		LDA		_cur_score_hex
-		STA		_pl_bckp_score_hex_lo,X
-		STA		_str_ptr
-		LDA		_cur_score_hex+1
-		STA		_pl_bckp_score_hex_hi,X
-		STA		_str_ptr+1
-		LDA		#0
-		STA		_hex2dec_tile_delta
-		LDX		#<[_hi_dec_tmp_buf]
-		LDY		#>[_hi_dec_tmp_buf]
-		JSR		_hex2str
-		LDX		#0
-		LDY		#0
-loc_45A16:
-		LDA		_hi_dec_tmp_buf,X
-		STA		_score_cmp_buf,X
-		INX
-		CPX		#5
-		BNE		loc_45A16
-loc_45A21:
-		LDA		#0
-		STA		_score_cmp_buf,X
-		INX
-		CPX		#$F
-		BCC		loc_45A21
-		LDA		#0
-		STA		_hi_score_pos_count
-		STA		_hi_score_line_idx
-		LDA		#<[_hi0_score]
-		STA		_tptr1
-		LDA		#>[_hi0_score]
-		STA		_tptr1+1
-loc_45A3B:
-		LDY		#0
-		LDA		_hi_score_pos_count
-		CMP		#6
-		BCS		locret_45A7A
-loc_45A44:
-		LDA		_score_cmp_buf,Y
-		CMP		(_tptr1),Y
-		BCC		loc_45A52
-		BNE		_hiscore_swap
-		INY
-		CPY		#5
-		BNE		loc_45A44
-loc_45A52:
-		INC		_hi_score_line_idx
-loc_45A55:
-		INC		_hi_score_pos_count
-		LDA		_tptr1
-		CLC
-		ADC		#$F
-		STA		_tptr1
-		LDA		_tptr1+1
-		ADC		#0
-		STA		_tptr1+1
-		BNE		loc_45A3B
-_hiscore_swap:
-		LDY		#$E
-loc_45A69:
-		LDA		(_tptr1),Y
-		TAX
-		LDA		_score_cmp_buf,Y
-		STA		(_tptr1),Y
-		TXA
-		STA		_score_cmp_buf,Y
-		DEY
-		BPL		loc_45A69
-		BMI		loc_45A55
-locret_45A7A:
-		RTS
-_nums_table:
-		.BYTE	_O,_1,_2,_3,_4,_5,_6,_7,_8,_9
 
-; =============== S U B	R O U T	I N E =======================================
-; draws an actual hi-score table data from RAM at the fixed position
-; on the screen
-;
-_draw_hiscore_table:
-		BIT		_PPU_STATUS
-		LDA		#$21
-		STA		_PPU_ADDR
-		LDA		#$47
-		STA		_PPU_ADDR
-		LDX		#0
-loc_45AEE:
-		LDY		_hi0_score,X
-		LDA		_nums_table,Y
-		STA		_PPU_DATA
-		INX
-		CPX		#5
-		BCC		loc_45AEE
-		LDA		#$F
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45B0F:
-		LDA		_hi0_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45B0F
-		LDA		#$21
-		STA		_PPU_ADDR
-		LDA		#$87
-		STA		_PPU_ADDR
-		LDX		#0
-loc_45B26:
-		LDY		_hi1_score,X
-		LDA		_nums_table,Y
-		STA		_PPU_DATA
-		INX
-		CPX		#5
-		BCC		loc_45B26
-		LDA		#$F
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45B47:
-		LDA		_hi1_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45B47
-		LDA		#$21
-		STA		_PPU_ADDR
-		LDA		#$C7
-		STA		_PPU_ADDR
-		LDX		#0
-loc_45B5E:
-		LDY		_hi2_score,X
-		LDA		_nums_table,Y
-		STA		_PPU_DATA
-		INX
-		CPX		#5
-		BCC		loc_45B5E
-		LDA		#$F
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45B7F:
-		LDA		_hi2_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45B7F
-		LDA		#$22
-		STA		_PPU_ADDR
-		LDA		#7
-		STA		_PPU_ADDR
-		LDX		#0
-loc_45B96:
-		LDY		_hi3_score,X
-		LDA		_nums_table,Y
-		STA		_PPU_DATA
-		INX
-		CPX		#5
-		BCC		loc_45B96
-		LDA		#$F
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45BB7:
-		LDA		_hi3_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45BB7
-		LDA		#$22
-		STA		_PPU_ADDR
-		LDA		#$47
-		STA		_PPU_ADDR
-		LDX		#0
-loc_45BCE:
-		LDY		_hi4_score,X
-		LDA		_nums_table,Y
-		STA		_PPU_DATA
-		INX
-		CPX		#5
-		BCC		loc_45BCE
-		LDA		#$F
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45BEF:
-		LDA		_hi4_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45BEF
-		LDA		#$22
-		STA		_PPU_ADDR
-		LDA		#$87
-		STA		_PPU_ADDR
-		LDX		#0
-loc_45C06:
-		LDY		_hi5_score,X
-		LDA		_nums_table,Y
-		STA		_PPU_DATA
-		INX
-		CPX		#5
-		BCC		loc_45C06
-		LDA		#$F
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45C27:
-		LDA		_hi5_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45C27
-		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-_repair_cursor_input:
-		LDA		_dpad
-		BNE		loc_45C39
-		RTS
-loc_45C39:
-		CMP		#1
-		BEQ		loc_45C54
-		CMP		#2
-		BEQ		loc_45C6B
-		CMP		#3
-		BEQ		loc_45C82
-		JSR		_get_cursor_allow_list_ptr
-		LDY		#3
-		LDA		(_tptr0),Y
-		BMI		locret_45CAF
-		CMP		_repair_body_index_request
-		BEQ		locret_45CAF
-		STA		_repair_body_index_request
-		LDA		#1
-		STA		byte_3BF
-locret_45CAF:
-		RTS
-loc_45C54:
-		JSR		_get_cursor_allow_list_ptr
-		LDY		#0
-		LDA		(_tptr0),Y
-		BMI		locret_45C6A
-		CMP		_repair_body_index_request
-		BEQ		locret_45C6A
-		STA		_repair_body_index_request
-		LDA		#1
-		STA		byte_3BF
-locret_45C6A:
-		RTS
-loc_45C6B:
-		JSR		_get_cursor_allow_list_ptr
-		LDY		#1
-		LDA		(_tptr0),Y
-		BMI		locret_45C81
-		CMP		_repair_body_index_request
-		BEQ		locret_45C81
-		STA		_repair_body_index_request
-		LDA		#1
-		STA		byte_3BF
-locret_45C81:
-		RTS
-loc_45C82:
-		JSR		_get_cursor_allow_list_ptr
-		LDY		#2
-		LDA		(_tptr0),Y
-		BMI		locret_45C98
-		CMP		_repair_body_index_request
-		BEQ		locret_45C98
-		STA		_repair_body_index_request
-		LDA		#1
-		STA		byte_3BF
-locret_45C98:
-		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-_get_cursor_allow_list_ptr:
-		LDA		#0
-		STA		_tptr0+1
-;		LDX		_repair_redundant_idx					; sone unknown redundant variable, probably
-;		LDA		byte_45D7E,X							; meant to be used when 2-player mode is used
-;		CLC
-		LDA		_repair_cur_body_index
-		ASL
-		ASL
-		ROL		_tptr0+1
-		CLC
-		ADC		#<[_repair_cursor_allow_table]
-		STA		_tptr0
-		LDA		_tptr0+1
-		ADC		#>[_repair_cursor_allow_table]
-		STA		_tptr0+1
-		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-_repair_cursor_animate:
-		LDA		byte_3BF
-		BNE		loc_45CD4
-		RTS
-loc_45CD4:
-		INC		_repair_cursor_animate_tmp
-		LDA		_repair_cursor_animate_tmp
-		CMP		#2
-		BEQ		loc_45CDF
-		RTS
-loc_45CDF:
-		LDA		#0
-		STA		_repair_cursor_animate_tmp
-;		LDX		_repair_redundant_idx					; second part of dummy redundant variable
-;		LDA		byte_45D7E,X							; presumably for 2-players repair mode screen
-;		CLC
-;		ADC		_repair_body_index_request
-		LDA		_repair_body_index_request
-		ASL
-		TAX
-		LDA		_repair_cursor_anim_data,X
-		STA		word_3BA
-		LDA		_repair_cursor_anim_data+1,X
-		STA		word_3BA+1
-		LDA		byte_3B8
-		CMP		word_3BA
-		BCS		loc_45D1D
-		LDA		word_3BA
-		SEC
-		SBC		byte_3B8
-		LSR
-		LSR
-		STA		word_3BA
-		LDA		byte_3B8
-		CLC
-		ADC		word_3BA
-		STA		byte_3B8
-		JMP		loc_45D33
-loc_45D1D:
-		LDA		byte_3B8
-		SEC
-		SBC		word_3BA
-		LSR
-		LSR
-		STA		word_3BA
-		LDA		byte_3B8
-		SEC
-		SBC		word_3BA
-		STA		byte_3B8
-loc_45D33:
-		LDA		_tmp3C3
-		CMP		word_3BA+1
-		BCS		loc_45D54
-		LDA		word_3BA+1
-		SEC
-		SBC		_tmp3C3
-		LSR
-		LSR
-		STA		word_3BA+1
-		LDA		_tmp3C3
-		CLC
-		ADC		word_3BA+1
-		STA		_tmp3C3
-		JMP		loc_45D6A
-loc_45D54:
-		LDA		_tmp3C3
-		SEC
-		SBC		word_3BA+1
-		LSR
-		LSR
-		STA		word_3BA+1
-		LDA		_tmp3C3
-		SEC
-		SBC		word_3BA+1
-		STA		_tmp3C3
-loc_45D6A:
-		LDA		word_3BA
-		ORA		word_3BA+1
-		BNE		locret_45D7D
-		LDA		#0
-		STA		byte_3BF
-		LDA		_repair_body_index_request
-		STA		_repair_cur_body_index
-locret_45D7D:
-		RTS
-
-;byte_45D7E:
-;		.BYTE	0
-
-; =============== S U B	R O U T	I N E =======================================
-;_hex2str_hiscore:
-;		STX		_ptr1
-;		STY		_ptr1+1
-;		LDY		#0
-;loc_45D85:
-;		LDX		#$FF
-;		SEC
-;loc_45D88:
-;		INX
-;		LDA		_str_ptr
-;		SBC		_dec_list_lo,Y
-;		STA		_str_ptr
-;		LDA		_str_ptr+1
-;		SBC		_dec_list_hi,Y
-;		STA		_str_ptr+1
-;		BCS		loc_45D88
-;		LDA		_str_ptr
-;		ADC		_dec_list_lo,Y
-;		STA		_str_ptr
-;		LDA		_str_ptr+1
-;		ADC		_dec_list_hi,Y
-;		STA		_str_ptr+1
-;		TXA
-;		CLC
-;		ADC		_hex2dec_tile_delta
-;		STA		(_ptr1),Y
-;		INY
-;		CPY		#5
-;		BNE		loc_45D85
-;		RTS
-;_dec_list_lo:
-;		.BYTE	$10,$E8,$64, $A,  1
-;_dec_list_hi:
-;		.BYTE	$27,  3,  0,  0,  0
-		
-_repair_update_flag_list:
-		.BYTE	  0,  2,  1,  2,  3
-_repair_cursor_allow_table:
-		.BYTE	$FF,  3,  2,  1
-		.BYTE	  0,  2,  4,$FF
-		.BYTE	  0,  3,  4,  1
-		.BYTE	  0,$FF,  4,  2
-		.BYTE	  2,$FF,$FF,  1
-_repair_cursor_anim_data:
-		.WORD $20A0
-		.WORD $5888
-		.WORD $40A8
-		.WORD $48C0
-		.WORD $80CB
+_disp_tlm_lib:
+		.WORD _tlm0_ocean
+		.WORD _tlm1_probe
+		.WORD _tlm2_title
+		.WORD _tlm3_hiscore
+		.WORD _tlm4_frame
+		.WORD _tlm5_lewis
+		.WORD _tlm6_robocop
+		.WORD _tlm7_ending
+		.WORD _tlm8_repair
+_disp_atr_lib:
+		.WORD _atr0_ocean
+		.WORD _atr1_probe
+		.WORD _atr2_title
+		.WORD _atr3_hiscore
+		.WORD _atr4_frame
+		.WORD _atr5_lewis
+		.WORD _atr6_robocop
+		.WORD _atr7_ending
+		.WORD _atr8_repair
+_disp_spr_lib:
+		.WORD 0
+		.WORD 0
+		.WORD _spr2_title
+		.WORD 0
+		.WORD 0
+		.WORD 0
+		.WORD 0
+		.WORD 0
+		.WORD _spr8_repair
+_disp_pal_lib:
+		.WORD _pal0_ocean
+		.WORD _pal1_probe
+		.WORD _pal2_title
+		.WORD _pal3456_frame
+		.WORD _pal3456_frame
+		.WORD _pal3456_frame
+		.WORD _pal3456_frame
+		.WORD _pal7_ending
+		.WORD _pal8_repair
+_disp_spr_tile_delta:
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,$BE
+_disp_chr1_list:
+		.BYTE	$18,$18,$19,$1C,$1C,$1C,$1D,$1E,$16
+_disp_chr0_list:
+		.BYTE	$1C,$1C,$1B,$18,$18,$18,$18,$1E,$16
+_disp_spr0hit_use_flags:
+		.BYTE	  0,  0,$FF,  0,  0,  0,  0,$FF,$FF
+_disp_spr0hit_x:
+		.BYTE	  0,  0,$BD,  0,  0,  0,  0,$F8,$30
+_disp_spr0hit_y:
+		.BYTE	  0,  0,$65,  0,  0,  0,  0,$7C,$66
+_disp_spr0hit_tile:
+		.BYTE	  0,  0,$FF,  0,  0,  0,  0,$30,$30
+_special_controls_flag_flags_list:
+		.BYTE	  0,  0,$FF,  0,  0,  0,  0,  0,  0
+_disp_extra_shifts_list:
+		.BYTE	  0,  0,$10,  0,  0,  0,  0,$10,$10
 
 ; displays tilemaps
 ;
@@ -3511,23 +3251,23 @@ _atr8_repair:
 		.BYTE	$AF,$2F,$A0, $D,$AF,$8F,$AF,$8F
 
 _tlm0_ocean:
-		INCBIN	"tlm\tlm0.pak"		
+		INCBIN	"tlm\tlm0.pak"
 _tlm1_probe:
-		INCBIN	"tlm\tlm1.pak"		
+		INCBIN	"tlm\tlm1.pak"
 _tlm2_title:
-		INCBIN	"tlm\tlm2.pak"		
+		INCBIN	"tlm\tlm2.pak"
 _tlm3_hiscore:
-		INCBIN	"tlm\tlm3.pak"		
+		INCBIN	"tlm\tlm3.pak"
 _tlm4_frame:
-		INCBIN	"tlm\tlm4.pak"		
+		INCBIN	"tlm\tlm4.pak"
 _tlm5_lewis:
-		INCBIN	"tlm\tlm5.pak"		
+		INCBIN	"tlm\tlm5.pak"
 _tlm6_robocop:
-		INCBIN	"tlm\tlm6.pak"		
+		INCBIN	"tlm\tlm6.pak"
 _tlm7_ending:
-		INCBIN	"tlm\tlm7.pak"		
+		INCBIN	"tlm\tlm7.pak"
 _tlm8_repair:
-		INCBIN	"tlm\tlm8.pak"		
+		INCBIN	"tlm\tlm8.pak"
 
 _spr2_title:
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
@@ -3591,12 +3331,12 @@ _ovl_repair_head:
 		.BYTE	 $D,  0, $E, $F
 		.BYTE	$1B,$1C,$1D,$1E
 		.BYTE	$27,$28,$29,$2A
-		
+
 		.BYTE	  3,$7C,$7D,  0
 		.BYTE	 $D,  0,$7E,$7F
 		.BYTE	$1B,$1C,$80,$1E
 		.BYTE	$27,$28,$29,$2A
-		
+
 		.BYTE	  3,$81,$82,$83
 		.BYTE	$84,$85,$86,$7F
 		.BYTE	$1B,$1C,$87,$1E
@@ -3608,14 +3348,14 @@ _ovl_repair_rarm0:
 		.BYTE	$58,$59,$5A
 		.BYTE	$62,$63,$64
 		.BYTE	$6F,$70,$71
-		
+
 		.BYTE	$38,$39,$3A
 		.BYTE	$88,$89,$46
 		.BYTE	$8A,$8B,$8C
 		.BYTE	$8D,$59,$5A
 		.BYTE	$62,$8E,$8F
 		.BYTE	$6F,$70,$71
-		
+
 		.BYTE	$38,$39,$3A
 		.BYTE	$88,$90,$91
 		.BYTE	$92,$93,$94
@@ -3629,20 +3369,22 @@ _ovl_repair_rarm1:
 		.BYTE	$4B
 		.BYTE	$55
 		.BYTE	$5F
-		
+
 		.BYTE	$2C
 		.BYTE	$9A
 		.BYTE	$3F
 		.BYTE	$9B
 		.BYTE	$9C
 		.BYTE	$9D
-		
+
 		.BYTE	$2C
 		.BYTE	$9E
 		.BYTE	$9F
 		.BYTE	$A0
 		.BYTE	$A1
 		.BYTE	$9D
+
+; --------------------------------
 ; unused palm hand repair graphics tilemaps 4x4
 ;_ovl_repair_larm:
 ;		.BYTE	$60,$61,  0,  0
@@ -3659,22 +3401,25 @@ _ovl_repair_rarm1:
 ;		.BYTE	  0,$BB,$BC,$6C
 ;		.BYTE	$77,$78,$BD,$7A
 ;		.BYTE	  0,  0,  0,  0
+
 _ovl_repair_body:
 		.BYTE	$3B,$3C,$3D,$3E
 		.BYTE	$47,$48,$49,$4A
 		.BYTE	$51,$52,$53,$54
 		.BYTE	$5B,$5C,$5D,$5E
-		
+
 		.BYTE	$3B,$3C,$A2,$A3
 		.BYTE	$A4,$A5,$A6,$A7
 		.BYTE	$A8,$A9,$AA,$54
 		.BYTE	$AB,$AC,$AD,$5E
-		
+
 		.BYTE	$3B,$3C,$A2,$AE
 		.BYTE	$AF,$B0,$B1,$B2
 		.BYTE	$B3,$B4,$B5,$B6
 		.BYTE	$AB,$AC,$B7,$5E
+
 ; 6th rows are unused
+;
 _ovl_repair_legs:
 		.BYTE	  5,  6,  7,  8,  9, $A, $B, $C
 		.BYTE	$14,$15,$16,$17,$18,$19,$1A,$1B
@@ -3682,14 +3427,14 @@ _ovl_repair_legs:
 		.BYTE	  0,$35,$36,$37,$38,  0,$39,$3A
 		.BYTE	  0,  0,$49,$4A,$4B,  0,$4C,$4D
 		.BYTE	  0,  0,$56,$57,$58,  0,$59,$5A
-		
+
 		.BYTE	  5,$70,$71,  8,  9,$72,$73,$74
 		.BYTE	$14,$75,$76,$77,$18,$19,$1A,$1B
 		.BYTE	$25,$26,$78,$79,$29,  0,$2A,$7A
 		.BYTE	  0,$35,$36,$37,$38,  0,$39,$7B
 		.BYTE	  0,  0,$49,$7C,$7D,  0,$4C,$7E
 		.BYTE	  0,  0,$56,$57,$58,  0,$59,$5A
-		
+
 		.BYTE	  5,$70,$7F,  8,$80,$72,$81,$74
 		.BYTE	$14,$75,$82,$83,$84,$85,$1A,$86
 		.BYTE	$25,$26,$87,$88,$29,  0,$2A,$89
@@ -3746,8 +3491,6 @@ _bios_msg_display:
 		STY		_log_msg_skip_forbid
 
 ; =============== S U B	R O U T	I N E =======================================
-; may be non skippable
-;
 _bios_msg_display_ex:
 		STA		byte_3B4
 		ASL
@@ -3806,15 +3549,13 @@ _rom_bios_hdr_display:
 		LDA		_rom_bios_hdr,X
 		CMP		#_SCL
 		BEQ		loc_4784A
-;		SEC
-;		SBC		#$40
 		STA		_PPU_DATA
 		INX
 		BNE		_rom_bios_hdr_display
 loc_4784A:
 		INX
 		RTS
-		
+
 _rom_bios_hdr:
 		.BYTE	_R,_O,_M,_,_B,_I,_O,_S,_SCL
 		.BYTE	_D,_A,_T,_A,_,_R,_E,_T,_R,_I,_E,_V,_A,_L,_,_S,_Y,_S,_T,_E,_M,_SCL
@@ -3830,7 +3571,7 @@ _msg_lib:
 		.WORD _msg6_prepare_to_repair
 		.WORD _msg7_confirm_repair
 		.WORD _msg8_get_out_of_there
-		
+
 _msg0_lvl0_briefing:
 		.BYTE	_C,_A,_D,_I,_L,_L,_A,_C,_,_H,_E,_I,_G,_H,_T,_S,_CO,_,_D,_U,_S,_K,_DT,_SCL
 		.BYTE	_DLY,_SCL

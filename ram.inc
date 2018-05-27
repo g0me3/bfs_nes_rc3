@@ -20,7 +20,7 @@ _lvl_collision_data2_ptr:			.BYTE	0,0
 _lvl_cur_bg_chr_bank:				.BYTE	0
 _lvl_cur_spr_chr_bank_down:			.BYTE	0
 _lvl_cur_spr_chr_bank_up:			.BYTE	0
-_lvl_bonus_portal_delay:				.BYTE	0
+_lvl_bonus_portal_delay:			.BYTE	0
 _lvl_nt_value:						.BYTE	0
 _lvl_obj_list_ptr:					.BYTE	0,0
 _lvl_phase_bg_chr_banks_list:		.BYTE	0,0,0
@@ -110,13 +110,10 @@ _spr_buf:
 		.BYTE	0
 
 		ORG	$300
-		
+
 _pal_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
 _star_field_rand_seed:
 		.BYTE	0,0,0,0,0
 _star_field_data0:
@@ -137,8 +134,6 @@ _star_field_center_pos_y:
 		.BYTE	0
 _event_idx:
 		.BYTE	0
-_unused_41:
-		.BYTE	0,0
 _delay_counter:
 		.BYTE	0,0
 _screen_idx:
@@ -172,11 +167,9 @@ byte_3B4:
 byte_3B5:
 		.BYTE	0
 byte_3B6:
-		.BYTE	0
-		.BYTE	0
+		.BYTE	0,0
 byte_3B8:
-		.BYTE	0
-		.BYTE	0
+		.BYTE	0,0
 word_3BA:
 		.BYTE	0,0
 _repair_cur_body_index:
@@ -234,7 +227,7 @@ _cur_repair_tanks_backup:
 		.BYTE	0
 
 		ORG	$400
-		
+
 byte_1400:
 		.BYTE	0,0,0,0,0
 byte_1405:
@@ -314,8 +307,30 @@ byte_14C3:
 byte_14C8:
 		.BYTE	0,0,0,0,0
 
+		ORG	$500
+
+_tmp500:
+		.BYTE	0
+_tmp501:
+		.BYTE	0
+_tmp502:
+		.BYTE	0
+_tmp503:
+		.BYTE	0
+_tmp505:
+		.BYTE	0
+_tmp506:
+		.BYTE	0
+_tmp507:
+		.BYTE	0
+_tmp508:
+		.BYTE	0
+_tmp509:
+		.BYTE	0
+
+
 		ORG	$600
-		
+
 _tmp_ptr:
 		.BYTE	0,0
 _tmp_buf0:
@@ -559,7 +574,7 @@ _hi5_score:
 		.BYTE	0,0,0,0,0
 _hi5_name:
 		.BYTE	0,0,0,0,0,0,0,0,0,0
-		
+
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0
 _score_cmp_buf:
