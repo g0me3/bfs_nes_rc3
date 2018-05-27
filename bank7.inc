@@ -2,6 +2,27 @@
 		ORG $C000, $00
 
 ; =============== S U B	R O U T	I N E =======================================
+; be careful! dump loop routine may take different amount of clocks depending
+; on location in memory! normal operation is 5900 clocks, if jump cross page
+; boundary, delay will be 7000 clocks!!!
+;
+_delay256:
+		LDY		#5
+		LDX		#$99
+loc_6362D:
+		DEX
+		BNE		loc_6362D
+		DEY
+		BNE		loc_6362D
+		RTS
+
+; =============== S U B	R O U T	I N E =======================================
+_delayX:
+		DEX
+		BNE		_delayX
+		RTS
+
+; =============== S U B	R O U T	I N E =======================================
 _RESET:
 		SEI
 		LDA		_PPU_STATUS
@@ -25,21 +46,19 @@ loc_60023:
 		BNE		loc_60023
 		DEX
 		TXS
-		LDX		#0
+		LDX		#[_def_score_tbl_end-_def_score_tbl]
 loc_60044:
 		LDA		_def_score_tbl,X
 		STA		_ram_score_tbl,X
-		INX
-		CPX		#[_def_score_tbl_end-_def_score_tbl]
+		DEX
 		BNE		loc_60044
+		STX		_nmi_hndl_idx
 		LDA		#1
 		STA		_apu_music_enable
 		STA		_apu_sound_enable
 		LDY		#5
 		JSR		_mmc1_prg
 		JSR		_ppu_reinit
-		LDA		#0
-		STA		_nmi_hndl_idx
 		JSR		_attract_display
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -58,7 +77,7 @@ _MAIN_LOOP:
 		STA		_lvl2_smart_bomb_flag
 		STA		_lvl4_destruction_counter
 		LDA		#2
-		STA		_hud_random_msg_timeout+1
+		STA		_hud_msg_expose_time+1
 		STA		_player_damage_blink_timer
 		STA		byte_685
 		LDA		_lvl_idx
@@ -86,11 +105,11 @@ _GAME_START:
 		STA		_pause_flag
 		LDA		#2
 		STA		_game_delay_nmi_counter					; set the delay counter
-		LDA		#1
-		STA		_tmp502
-		LDA		#$F
-		STA		_tmp501
-		STA		_tmp500
+		LDA		#1										; set lvl4 timer to 01:15
+		STA		_lvl4_minutes_timer
+		LDA		#$F										; as well as load delay timer (60/4 = 15)
+		STA		_lvl4_seconds_timer
+		STA		_lvl4_clock_delay
 .ingame_init_loop0:
 		LDA		_nmi_is_over_flag						; wait for next nmi, first will clear screen
 		BEQ		.ingame_init_loop0						; second will draw the level itself
@@ -269,11 +288,15 @@ _player_overall_armor_calc:
 ; =============== S U B	R O U T	I N E =======================================
 _player_vars_init:
 		LDA		#0
+;		LDA		#4
 		STA		_lvl_idx
+;		LDA		#0
 		STA		_score_hex
 		STA		_score_hex+1
+;		LDA		#2
 		STA		_weapon0_idx
 		STA		_weapon1_idx
+;		LDA		#0
 		STA		_weapon_type
 		LDA		#DEF_PERCENT_VALUE
 		STA		_percents.head
@@ -509,12 +532,6 @@ loc_6044B:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_delayX:
-		DEX
-		BNE		_delayX
-		RTS
-
-; =============== S U B	R O U T	I N E =======================================
 IRQ:
 		CLI
 		RTI
@@ -545,7 +562,7 @@ _nmis_lib:
 ; general ingame nmi routine
 ;
 _nmi5:
-		BIT		_PPU_STATUS
+		BIT		_PPU_STATUS								; from here
 		LDX		#0
 		STX		_PPU_MASK
 		STX		_PPU_CTRL
@@ -569,11 +586,11 @@ _nmi5:
 		LDA		_lvl_spr_chr_bank_up
 		JSR		_mmc1_chr1
 		LDA		#0
-		JSR		_mmc1_chr0
-		JSR		_delay256								; timing based HUD back switch delay!
-		LDA		_lvl_bg_chr_bank					; just wait for particular number of ticks
-		JSR		_mmc1_chr0								; and set the game bg bank!
-		LDA		_ppu_mask_shadow
+		JSR		_mmc1_chr0								; to here 2200-2300 clocks original
+		JSR		_delay256								; should be 5900 clocks delay
+		LDA		_lvl_bg_chr_bank						; timing based HUD back switch delay!
+		JSR		_mmc1_chr0								; just wait for particular number of ticks...
+		LDA		_ppu_mask_shadow						; set the game bg bank! 
 		ORA		#$18
 		AND		_ppu_mask_shadow_mask
 		AND		#$FE
@@ -1117,6 +1134,12 @@ _hud_update_ppu_data:
 		STA		_tmp_ptr+1
 		JMP		(_tmp_ptr)
 
+_hud_ppu_data_update_lib:
+		.WORD _hud_msg_ppu_data_update
+		.WORD _hud_all_energy_ppu_data_update
+		.WORD _hud_score_weapon_ppu_data_update
+		.WORD _hud_large_weapon_ppu_data_update
+
 ; =============== S U B	R O U T	I N E =======================================
 _hud_msg_ppu_data_update:
 		LDA		_hud_msg_idx
@@ -1127,55 +1150,51 @@ _hud_msg_ppu_data_update:
 		LDA		_hud_msg_lib+1,Y
 		STA		_ptr0+1
 		LDY		#0
-loc_60923:
+.copy_msg_until_cur_pos:
 		LDA		(_ptr0),Y
-		BEQ		loc_60935
-		SEC
-		SBC		#$35
+		BEQ		.write_over_char
 		STA		_tmp_buf2,Y
 		INY
 		CPY		_hud_msg_type_pos
-		BCC		loc_60923
-		JMP		loc_6093B
-loc_60935:
-		LDA		#$28
-		STA		_tmp_buf2,Y
+		BCC		.copy_msg_until_cur_pos
+		BEQ		loc_6093B
+.write_over_char:
+		LDA		#_rq
+		STA		_tmp_buf2,Y								; write right "quote" char
 		INY
 loc_6093B:
-		LDX		#$2B
 		CLC
-		LDA		_hud_msg_cursor_blink_timer
+		LDA		_hud_msg_cursor_blink_timer				; blink counters
 		ADC		#$20
 		STA		_hud_msg_cursor_blink_timer
-		BPL		loc_6094A
-		LDX		#0
-loc_6094A:
-		TXA
+		BMI		loc_6094A
+		LDA		#_cur									; write cursor
 		STA		_tmp_buf2,Y
-		LDA		#0
-loc_60950:
 		INY
-		CPY		#$1C
-		BEQ		loc_6095B
-		STA		_tmp_buf2,Y
-		JMP		loc_60950
+loc_6094A:
+		LDA		#0										; fill the rest with zeroes
+loc_60950:
+		CPY		#$1B
+		BEQ		loc_6095B								; check for end of buffer first
+		STA		_tmp_buf2,Y								; write if any
+		INY
+		BNE		loc_60950
 loc_6095B:
-		LDA		_hud_msg_type_pos
+		LDA		_hud_msg_type_pos						; increase msg position, up to $1B
 		CMP		#$1B
 		BCS		loc_60963
-		INC		_hud_msg_type_pos
+		INC		_hud_msg_type_pos						; this occurs every 4th frame, so does typing delay
 loc_60963:
-		DEC		_hud_random_msg_timeout
+		DEC		_hud_msg_expose_time
 		BNE		locret_6097A
-		DEC		_hud_random_msg_timeout+1
+		DEC		_hud_msg_expose_time+1
 		BNE		locret_6097A
-		LDA		_rand_seed+1
+		LDA		_rand_seed+1							; message displayed, time to randomly select another one.
 		AND		#3
-		CMP		_hud_msg_idx
-		BNE		loc_60977
+		CMP		_hud_msg_idx							; if the same as current, force it to be different
+		BNE		_hud_msg_set_request_ex
 		EOR		#1
-loc_60977:
-		JMP		_hud_msg_set_request_ex
+		BPL		_hud_msg_set_request_ex
 locret_6097A:
 		RTS
 
@@ -1188,145 +1207,97 @@ _hud_msg_set_request:
 _hud_msg_set_request_ex:
 		STA		_hud_msg_idx
 		LDA		#$C8
-		STA		_hud_random_msg_timeout
+		STA		_hud_msg_expose_time
 		LDA		#2
-		STA		_hud_random_msg_timeout+1
+		STA		_hud_msg_expose_time+1
 		LDA		#0
-		STA		_hud_msg_type_pos
+		STA		_hud_msg_type_pos						; do not remove this 0, some code rely on it!
 .no_override:
 		RTS
 
 _hud_msg_lib:
-		.WORD _hud_msg00
-		.WORD _hud_msg01
-		.WORD _hud_msg02
-		.WORD _hud_msg03
-		.WORD _hud_msg04
-		.WORD _hud_msg05_damage_alert
-		.WORD _hud_msg06_fire_upgrade
-		.WORD _hud_msg07
-		.WORD _hud_msg08
-		.WORD _hud_msg09_system_failure
-		.WORD _hud_msg0A_missile_jammed
-		.WORD _hud_msg0B_passcode_accepted
-		.WORD _hud_msg0C_otomo_destruction
-		.WORD _hud_msg0D
-		.WORD _hud_msg0E_smart_bomb_deployed
-		.WORD _hud_msg0F
-		.WORD _hud_msg10
-		.WORD _hud_msg11
-		.WORD _hud_msg12
-		.WORD _hud_msg13_jetpack_fuel_low
-		.WORD _hud_msg14_maximum_fuel
-		.WORD _hud_msg15_tank_weapon_disabled
-		.WORD _hud_msg16_head_failure
-		.WORD _hud_msg17_body_failure
-		.WORD _hud_msg18_arms_failure
-		.WORD _hud_msg19_legs_failure
+		.WORD	_hud_msg00
+		.WORD	_hud_msg01
+		.WORD	_hud_msg02
+		.WORD	_hud_msg03
+		.WORD	_hud_msg04
+		.WORD	_hud_msg05_damage_alert
+		.WORD	_hud_msg06_fire_upgrade
+		.WORD	_hud_msg07
+		.WORD	_hud_msg08
+		.WORD	_hud_msg09_system_failure
+		.WORD	_hud_msg0A_missile_jammed
+		.WORD	_hud_msg0B_passcode_accepted
+		.WORD	_hud_msg0C_otomo_destruction
+		.WORD	_hud_msg0D
+		.WORD	_hud_msg0E_smart_bomb_deployed
+		.WORD	_hud_msg0F
+		.WORD	_hud_msg10
+		.WORD	_hud_msg11
+		.WORD	_hud_msg12
+		.WORD	_hud_msg13_jetpack_fuel_low
+		.WORD	_hud_msg14_maximum_fuel
+		.WORD	_hud_msg15_tank_weapon_disabled
+		.WORD	_hud_msg16_head_failure
+		.WORD	_hud_msg17_body_failure
+		.WORD	_hud_msg18_arms_failure
+		.WORD	_hud_msg19_legs_failure
+		.WORD	_hud_msg1A_out_of_time
+		
 _hud_msg00:
-		.BYTE	"PROTECT@THE@INNOCENT_",0
+		.BYTE	_p,_r,_o,_t,_e,_c,_t,__,_t,_h,_e,__,_i,_n,_n,_o,_c,_e,_n,_t,_dot,0
 _hud_msg01:
-		.BYTE	"UPHOLD@THE@LAW_",0
+		.BYTE	_u,_p,_h,_o,_l,_d,__,_t,_h,_e,__,_l,_a,_w,_dot,0
 _hud_msg02:
-		.BYTE	"COME@AND@GET@IT@SCUM_",0
+		.BYTE	_c,_o,_m,_e,__,_a,_n,_d,__,_g,_e,_t,__,_i,_t,__,_s,_c,_u,_m,_dot,0
 _hud_msg03:
-		.BYTE	"SERVE@THE@PUBLIC@TRUST_",0
+		.BYTE	_s,_e,_r,_v,_e,__,_t,_h,_e,__,_p,_u,_b,_l,_i,_c,__,_t,_r,_u,_s,_t,_dot,0
 _hud_msg04:
-		.BYTE	"EFFICIENCY@INCREASED_",0
+		.BYTE	_e,_f,_f,_i,_c,_i,_e,_n,_c,_y,__,_i,_n,_c,_r,_e,_a,_s,_e,_d,_dot,0
 _hud_msg05_damage_alert:
-		.BYTE	"SYSTEMS@DAMAGE@ALERT_",0
+		.BYTE	_s,_y,_s,_t,_e,_m,_s,__,_d,_a,_m,_a,_g,_e,__,_a,_l,_e,_r,_t,_dot,0
 _hud_msg06_fire_upgrade:
-		.BYTE	"FIRE@POWER@UPGRADED_",0
+		.BYTE	_f,_i,_r,_e,__,_p,_o,_w,_e,_r,__,_u,_p,_g,_r,_a,_d,_e,_d,_dot,0
 _hud_msg07:
-		.BYTE	"MISSILES@UPGRADED_",0
+		.BYTE	_m,_i,_s,_s,_i,_l,_e,_s,__,_u,_p,_g,_r,_a,_d,_e,_d,_dot,0
 _hud_msg08:
-		.BYTE	"REPAIR@ITEM@OBTAINED_",0
+		.BYTE	_r,_e,_p,_a,_i,_r,__,_i,_t,_e,_m,__,_o,_b,_t,_a,_i,_n,_e,_d,_dot,0
 _hud_msg09_system_failure:
-		.BYTE	"SYSTEM@FAILURE_",0
+		.BYTE	_s,_y,_s,_t,_e,_m,__,_f,_a,_i,_l,_u,_r,_e,_dot,0
 _hud_msg0A_missile_jammed:
-		.BYTE	"MISSILE@JAMMED_",0
+		.BYTE	_m,_i,_s,_s,_i,_l,_e,__,_j,_a,_m,_m,_e,_d,_dot,0
 _hud_msg0B_passcode_accepted:
-		.BYTE	"PASSCODE@ACCEPTED_",0
+		.BYTE	_p,_a,_s,_s,_c,_o,_d,_e,__,_a,_c,_c,_e,_p,_t,_e,_d,_dot,0
 _hud_msg0C_otomo_destruction:
-		.BYTE	"OTOMO@DESTRUCT@INITIATED_",0
+		.BYTE	_o,_t,_o,_m,_o,__,_d,_e,_s,_t,_r,_u,_c,_t,__,_i,_n,_i,_t,_i,_a,_t,_e,_d,_dot,0
 _hud_msg0D:
-		.BYTE	"SMART@BOMB@INITIATED_",0
+		.BYTE	_s,_m,_a,_r,_t,__,_b,_o,_m,_b,__,_i,_n,_i,_t,_i,_a,_t,_e,_d,_dot,0
 _hud_msg0E_smart_bomb_deployed:
-		.BYTE	"SMART@BOMB@DEPLOYED_",0
+		.BYTE	_s,_m,_a,_r,_t,__,_b,_o,_m,_b,__,_d,_e,_p,_l,_o,_y,_e,_d,_dot,0
 _hud_msg0F:
-		.BYTE	"WARNING@HEAD@UNIT@DAMAGED_",0
+		.BYTE	_w,_a,_r,_n,_i,_n,_g,__,_h,_e,_a,_d,__,_u,_n,_i,_t,__,_d,_a,_m,_a,_g,_e,_d,_dot,0
 _hud_msg10:
-		.BYTE	"WARNING@BODY@UNIT@DAMAGED_",0
+		.BYTE	_w,_a,_r,_n,_i,_n,_g,__,_b,_o,_d,_y,__,_u,_n,_i,_t,__,_d,_a,_m,_a,_g,_e,_d,_dot,0
 _hud_msg11:
-		.BYTE	"WARNING@ARM@UNITS@DAMAGED_",0
+		.BYTE	_w,_a,_r,_n,_i,_n,_g,__,_a,_r,_m,__,_u,_n,_i,_t,_s,__,_d,_a,_m,_a,_g,_e,_d,_dot,0
 _hud_msg12:
-		.BYTE	"WARNING@LEG@UNITS@DAMAGED_",0
+		.BYTE	_w,_a,_r,_n,_i,_n,_g,__,_l,_e,_g,__,_u,_n,_i,_t,_s,__,_d,_a,_m,_a,_g,_e,_d,_dot,0
 _hud_msg13_jetpack_fuel_low:
-		.BYTE	"WARNING@JETPACK@FUEL@LOW_",0
+		.BYTE	_w,_a,_r,_n,_i,_n,_g,__,_j,_e,_t,_p,_a,_c,_k,__,_f,_u,_e,_l,__,_l,_o,_w,_dot,0
 _hud_msg14_maximum_fuel:
-		.BYTE	"MAXIMUM@FUEL_",0
+		.BYTE	_m,_a,_x,_i,_m,_u,_m,__,_f,_u,_e,_l,_dot,0
 _hud_msg15_tank_weapon_disabled:
-		.BYTE	"TANK@WEAPONS@DISABLED_",0
+		.BYTE	_t,_a,_n,_k,__,_w,_e,_a,_p,_o,_n,_s,__,_d,_i,_s,_a,_b,_l,_e,_d,_dot,0
 _hud_msg16_head_failure:
-		.BYTE	"HEAD@UNIT@MALFUNCTION_",0
+		.BYTE	_h,_e,_a,_d,__,_u,_n,_i,_t,__,_m,_a,_l,_f,_u,_n,_c,_t,_i,_o,_n,_dot,0
 _hud_msg17_body_failure:
-		.BYTE	"BODY@UNIT@MALFUNCTION_",0
+		.BYTE	_b,_o,_d,_y,__,_u,_n,_i,_t,__,_m,_a,_l,_f,_u,_n,_c,_t,_i,_o,_n,_dot,0
 _hud_msg18_arms_failure:
-		.BYTE	"ARM@UNITS@MALFUNCTION_",0
+		.BYTE	_a,_r,_m,__,_u,_n,_i,_t,_s,__,_m,_a,_l,_f,_u,_n,_c,_t,_i,_o,_n,_dot,0
 _hud_msg19_legs_failure:
-		.BYTE	"LEG@UNITS@MALFUNCTION_",0
+		.BYTE	_l,_e,_g,__,_u,_n,_i,_t,_s,__,_m,_a,_l,_f,_u,_n,_c,_t,_i,_o,_n,_dot,0
 _hud_msg1A_out_of_time:
-		.BYTE	"OUT@OF@TIME_",0
-
-; =============== S U B	R O U T	I N E =======================================
-_hud_lvl4_timer_ppu_data_update:
-		DEC		_tmp500
-		BNE		loc_60C31
-		LDA		#$F
-		STA		_tmp500
-		DEC		_tmp501
-		BNE		loc_60C31
-		LDA		_tmp502
-		BNE		loc_60C29
-;		LDA		#$1A									; unused, no message in array assigned
-;		JSR		_hud_msg_set_request_ex
-		LDA		#$FF
-		STA		_game_over_flag
-		RTS
-loc_60C29:
-		LDA		#$3B
-		STA		_tmp501
-		DEC		_tmp502
-loc_60C31:
-		LDA		#$36
-		STA		_hex2dec_tile_delta
-		LDA		_tmp501
-		STA		_str_ptr
-		LDA		#0
-		STA		_str_ptr+1
-		LDX		#<[_tmp_buf2+$10]
-		LDY		#>[_tmp_buf2+$10]
-		JSR		_hex2str
-		LDA		#$F6
-		STA		_tmp_buf2+$12
-		LDA		_tmp502
-		STA		_str_ptr
-		LDA		#0
-		STA		_str_ptr+1
-		LDX		#<[_tmp_buf2+$D]
-		LDY		#>[_tmp_buf2+$D]
-		JSR		_hex2str
-		LDX		#7
-		LDA		#0
-loc_60C5F:
-		STA		_tmp_buf2+5,X
-		DEX
-		BPL		loc_60C5F
-		STA		_tmp_buf2+$D
-		STA		_tmp_buf2+$E
-		STA		_tmp_buf2+$F
-		STA		_tmp_buf2+$10
-		RTS
+		.BYTE	_o,_u,_t,__,_o,_f,__,_t,_i,_m,_e,_dot,0
 
 ; =============== S U B	R O U T	I N E =======================================
 _j_hud_lvl4_timer_ppu_data_update:
@@ -1335,41 +1306,32 @@ _j_hud_lvl4_timer_ppu_data_update:
 ; =============== S U B	R O U T	I N E =======================================
 _hud_all_energy_ppu_data_update:
 		LDA		#$36
-		STA		_hex2dec_tile_delta
-		LDA		#0
-		STA		_str_ptr+1
-;		JSR		_player_overall_armor_calc				; should change only when damage taken
-		LDA		_overal_armor_sum						; so, probably don't need to recal it here, check
-		STA		_str_ptr
-		LDX		#<[_tmp_buf2]
-		LDY		#>[_tmp_buf2]
-		JSR		_hex2str
-		LDA		_lvl2_smart_bomb_flag
-		BNE		_hud_draw_smartbomb
-		LDY		#3
-loc_60C9E:
-		LDA		_obj_flags,Y
-		BNE		loc_60CB5
+		STA		_hex2str_tile_delta
+		LDA		_overal_armor_sum
+		U8TOS	_tmp_buf2								; draw armor number
+		LDA		_lvl2_smart_bomb_flag					; ckeck if smartbomb taken
+		BNE		.hud_draw_smartbomb
+		LDY		#3										; if not, draw enemy energy
+.look_for_active_enemy:
+		LDA		_obj_flags,Y							; find active enemy
+		BNE		.active_enemy_found						; Y loaded with enemy idx
 		DEY
-		BNE		loc_60C9E
+		BNE		.look_for_active_enemy
 		LDA		#$40
-		STA		_tmp_buf2+$12
+		STA		_tmp_buf2+$12							; draw -- placeholder if no enemy
 		STA		_tmp_buf2+$13
 		BNE		loc_60CD4
-loc_60CB5:
-		LDA		#$63
-		LDX		_lvl_idx
-		CPX		#4
+.active_enemy_found:
+;		LDA		#$63									; whatwhat? default 99 value? not used anymore
+		LDX		_lvl_idx								; check for additional case
+		CPX		#4										; timer in the last level instead of energy
 		BEQ		_j_hud_lvl4_timer_ppu_data_update
-		LDX		_last_enemy_hit
-		LDA		_obj_var9,X
+		LDX		_last_enemy_hit							; first we found an active enemy, then use
+		LDA		_obj_energy,X							; different index lol, maybe we should check it first?
 		BNE		loc_60CCB
-		LDA		_obj_var9,Y
+		LDA		_obj_energy,Y							; last hit enemy died, choose another one
 loc_60CCB:
-		STA		_str_ptr
-		LDX		#<[_tmp_buf2+$F]
-		LDY		#>[_tmp_buf2+$F]
-		JSR		_hex2str
+		U8TOS	_tmp_buf2+$F
 loc_60CD4:
 		LDX		#4
 loc_60CD6:
@@ -1385,7 +1347,7 @@ loc_60CD6:
 		STA		_tmp_buf2+$C
 		STA		_tmp_buf2+$14
 		RTS
-_hud_draw_smartbomb:
+.hud_draw_smartbomb:
 		LDX		#7
 loc_60CF5:
 		LDA		_tlm_hud_rocket,X
@@ -1427,16 +1389,49 @@ locret_60D49:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
+_hud_lvl4_timer_ppu_data_update:
+		DEC		_lvl4_clock_delay						; this function is calling every 4th frame
+		BNE		.do_lvl4_timer_draw						; so to count 1 second, skip 15 times on NTSC!
+		LDA		#$F
+		STA		_lvl4_clock_delay						; reload skip timer
+		DEC		_lvl4_seconds_timer
+		BNE		.do_lvl4_timer_draw
+		LDA		_lvl4_minutes_timer
+		BNE		.lvl4_dec_minutes
+;		LDA		#$1A									; were unused, wrong msg index (max 19), nothing
+;		JSR		_hud_msg_set_request_ex					; is displayed because of immediate game over
+		LDA		#$FF
+		STA		_game_over_flag
+		RTS
+.lvl4_dec_minutes:
+		LDA		#$3B									; after first 15 sec is over, reload the rest with 59
+		STA		_lvl4_seconds_timer
+		DEC		_lvl4_minutes_timer
+.do_lvl4_timer_draw:
+;		LDA		#$36
+;		STA		_hex2str_tile_delta						; actually, already loaded before
+		LDA		_lvl4_seconds_timer
+		U8TOS	_tmp_buf2+$10-2							; write seconds
+		LDA		#$F6									; write : original tyle is empty!
+		STA		[_tmp_buf2+$12-2]
+		LDA		_lvl4_minutes_timer
+		U8TOS	_tmp_buf2+$D-2							; write minutes
+		LDX		#9										; erase the rest of the buffer
+		LDA		#0
+loc_60C5F:
+		STA		_tmp_buf2+5,X
+		DEX
+		BPL		loc_60C5F
+;		STA		_tmp_buf2+$12
+		STA		_tmp_buf2+$13
+		STA		_tmp_buf2+$14
+		RTS
+
+; =============== S U B	R O U T	I N E =======================================
 _hud_score_weapon_ppu_data_update:
 		LDA		#0
-		STA		_hex2dec_tile_delta
-		LDA		_score_hex+1
-		STA		_str_ptr+1
-		LDA		_score_hex
-		STA		_str_ptr
-		LDX		#<[_tmp_buf2]
-		LDY		#>[_tmp_buf2]
-		JSR		_hex2str
+		STA		_hex2str_tile_delta
+		U16TOS	_score_hex, _tmp_buf2					; write scores
 		LDX		#4
 loc_60D62:
 		LDY		_tmp_buf2,X
@@ -1555,12 +1550,7 @@ loc_60E59:
 		CPY		#$12
 		BNE		loc_60E59
 		RTS
-_hud_ppu_data_update_lib:
-		.WORD _hud_msg_ppu_data_update
-		.WORD _hud_all_energy_ppu_data_update
-		.WORD _hud_score_weapon_ppu_data_update
-		.WORD _hud_large_weapon_ppu_data_update
-
+		
 ; =============== S U B	R O U T	I N E =======================================
 _hud_ppu_data_send:
 		LDA		_hud_update_ppu_data_counter
@@ -1855,12 +1845,13 @@ loc_6112D:
 		STA		_str_ptr+1
 		TXA
 		CLC
-		ADC		_hex2dec_tile_delta
+		ADC		_hex2str_tile_delta
 		STA		(_ptr1),Y
 		INY
 		CPY		#5
 		BNE		loc_6112A
 		RTS
+		
 _dec_list_lo:
 		.BYTE	$10,$E8,$64, $A,  1
 _dec_list_hi:
@@ -3511,12 +3502,12 @@ loc_61CFC:
 		LDA		_obj_flags._enemy,X
 		BEQ		loc_61D11
 		LDA		#0
-		STA		_obj_var9._enemy,X
+		STA		_obj_energy._enemy,X
 		LDA		#8
 		STA		_obj_var0._enemy,X
 		STA		_obj_x_velocity._enemy,X
 		LDA		#0
-		STA		_obj_var9._enemy,X
+		STA		_obj_energy._enemy,X
 loc_61D11:
 		DEX
 		BPL		loc_61CFC
@@ -3936,7 +3927,7 @@ loc_62009:
 		LDA		_obj_spr_lib,Y
 		STA		_obj_spr_idx,X
 		LDA		byte_63BD0,Y
-		STA		_obj_var9,X
+		STA		_obj_energy,X
 		LDA		_obj_init_flags_lib,Y					; as well as sprites
 		STA		_obj_flags,X
 .obj_pos_x_calc:
@@ -4087,7 +4078,7 @@ _obj_ehndl_regular_gunman:
 		STY		_tmpE4
 		INY
 		STY		_tmpE5
-		LDA		_obj_var9,X
+		LDA		_obj_energy,X
 		BNE		loc_62122
 		LDA		_tmpE6
 		STA		_obj_spr_idx,X
@@ -4256,7 +4247,7 @@ _obj_ehndl_bomb_thrower:
 		STY		_tmpE4
 		INY
 		STY		_tmpE5
-		LDA		_obj_var9,X
+		LDA		_obj_energy,X
 		BNE		loc_62252
 		LDA		#$2E
 		STA		_obj_spr_idx,X
@@ -4435,7 +4426,7 @@ _obj_ehndl_hiding_barrel:
 		STY		_tmpE4
 		INY
 		STY		_tmpE5
-		LDA		_obj_var9,X
+		LDA		_obj_energy,X
 		BNE		loc_62394
 		LDA		_tmpE6
 		STA		_obj_spr_idx,X
@@ -4541,7 +4532,7 @@ _obj_ehndl_grenader:
 		INY
 		INY
 		STY		_tmpE4
-		LDA		_obj_var9,X
+		LDA		_obj_energy,X
 		BNE		loc_62448
 		JMP		loc_624EB
 loc_62448:
@@ -4649,7 +4640,7 @@ _obj_ehndl_hanging_gunman:
 		STY		_tmpE4
 		INY
 		STY		_tmpE5
-		LDA		_obj_var9,X
+		LDA		_obj_energy,X
 		BEQ		loc_62565
 		LDA		_rand_seed
 		CMP		#$A
@@ -4723,7 +4714,7 @@ _obj_ehndl_walking_grenader:
 		STY		_tptr1+1
 		INY
 		STY		_tmpE4
-		LDA		_obj_var9,X
+		LDA		_obj_energy,X
 		BNE		loc_62581
 		JMP		loc_6262C
 loc_62581:
@@ -4818,7 +4809,7 @@ loc_6262C:
 
 ; =============== S U B	R O U T	I N E =======================================
 _obj_ehndl18_rifle_man_lvl2:
-		LDA		_obj_var9,X
+		LDA		_obj_energy,X
 		BNE		loc_6263B
 		LDA		#$B1
 		STA		_obj_spr_idx,X
@@ -4903,7 +4894,7 @@ _obj_ehndl0A_ninja:
 		STA		_snd_idx
 		JSR		_far_apu_mus_load_unsafe
 loc_626CC:
-		LDA		_obj_var9,X
+		LDA		_obj_energy,X
 		BNE		loc_6271B
 		LDA		_player_scroll_stop_override_tmp
 		BEQ		loc_626D9
@@ -5043,11 +5034,11 @@ loc_627DA:
 		LDA		_lvl_idx
 		CMP		#4
 		BNE		loc_627FB
-		LDA		_obj_var9,X
+		LDA		_obj_energy,X
 		CMP		#$50
 		BCS		loc_627FB
 		LDA		#$63
-		STA		_obj_var9,X
+		STA		_obj_energy,X
 		LDA		#0
 		STA		_obj_pal_idx,X
 		LDA		#3
@@ -5341,7 +5332,7 @@ _obj_ehndl15_walker_droid:
 		LDA		#$B
 		STA		_lvl_spr_chr_bank_up
 		STA		_lvl_spr_chr_bank_down
-		LDA		_obj_var9,X
+		LDA		_obj_energy,X
 		BNE		loc_62A1C
 		JMP		loc_62B48
 loc_62A1C:
@@ -6239,9 +6230,9 @@ loc_630AA:
 loc_630B0:
 		LDX		_tptr1+1
 		SEC
-		LDA		_obj_var9,Y
+		LDA		_obj_energy,Y
 		SBC		byte_63C22,X
-		STA		_obj_var9,Y
+		STA		_obj_energy,Y
 		STY		_last_enemy_hit
 		LDX		_tptr1
 		BCC		loc_630C6
@@ -6264,7 +6255,7 @@ loc_630D3:
 		LDA		_tptr1+1
 		STA		_obj_var1,Y
 		LDA		#0
-		STA		_obj_var9,Y
+		STA		_obj_energy,Y
 		LDA		#5
 		STA		_obj_var4,Y
 		LDA		#6
@@ -6981,17 +6972,6 @@ loc_63621:
 		INX
 		DEY
 		BNE		loc_63621
-		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-_delay256:
-		LDY		#5
-		LDX		#$99
-loc_6362D:
-		DEX
-		BNE		loc_6362D
-		DEY
-		BNE		loc_6362D
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================

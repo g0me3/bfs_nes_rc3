@@ -762,12 +762,8 @@ loc_44A05:
 
 ; =============== S U B	R O U T	I N E =======================================
 _sort_hiscore_test:
-		LDA		_score_hex
-		STA		_str_ptr							; erased in any case after this screen
-		LDA		_score_hex+1
-		STA		_str_ptr+1
 		LDA		#0
-		STA		_hex2dec_tile_delta
+		STA		_hex2str_tile_delta
 		STA		_hi_score_pos_count
 		STA		_hi_score_line_idx
 		LDX		#$E
@@ -775,9 +771,7 @@ loc_45A21:
 		STA		_score_cmp_buf,X
 		DEX
 		BPL		loc_45A21
-		LDX		#<[_score_cmp_buf]
-		LDY		#>[_score_cmp_buf]
-		JSR		_hex2str
+		U16TOS	_score_hex, _score_cmp_buf
 loc_45A3B:
 		LDY		_hi_score_pos_count					; read cur score line idx to test
 		CPY		#6
@@ -945,7 +939,7 @@ _nums_table:
 _event5_repair:
 		LDX		#1
 		JSR		_delay
-		LDA		_repair_cursor_spr_x_pos									; update cursor position
+		LDA		_repair_cursor_spr_x_pos				; update cursor position
 		STA		_spr_buf+4
 		CLC
 		ADC		#8
@@ -953,18 +947,12 @@ _event5_repair:
 		LDA		_repair_cursor_spr_y_pos
 		STA		_spr_buf+7
 		STA		_spr_buf+$B
-		LDA		#0
-		STA		_str_ptr
-		STA		_str_ptr+1
+		LDA		#$E6
+		STA		_hex2str_tile_delta
 		LDX		_repair_body_index_request
 		LDY		_repair_update_flag_list,X
 		LDA		_percents,Y
-		STA		_str_ptr
-		LDA		#$E6
-		STA		_hex2dec_tile_delta
-		LDX		#<[_repair_percent_disp_buf_tmp]
-		LDY		#>[_repair_percent_disp_buf_tmp]
-		JSR		_hex2str
+		U8TOS	_repair_percent_disp_buf_tmp
 		JSR		_read_pad
 		LDA		_pad
 		AND		#8
@@ -973,9 +961,8 @@ _event5_repair:
 		STA		_event_reload_idx
 		LDA		#7
 		JMP		_bios_msg_display_ex
-		RTS
 loc_44AB8:
-		LDA		_repair_tanks						; draw only single digit of tanks if more than 9, draw always 9
+		LDA		_repair_tanks							; draw only single digit of tanks if more than 9, draw always 9
 		CMP		#$A										; there were original bug, drawing % instead, since you doubtly
 		BCC		loc_44AC1								; obtain more than 10 at once and this case never tested
 		LDA		#9

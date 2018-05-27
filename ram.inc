@@ -212,9 +212,9 @@ _apu_pulsbyt1:		.BYTE	0,0,0,0
 
 		ORG	$500
 
-_tmp500:			.BYTE	0
-_tmp501:			.BYTE	0
-_tmp502:			.BYTE	0
+_lvl4_clock_delay:	.BYTE	0
+_lvl4_seconds_timer:.BYTE	0
+_lvl4_minutes_timer:.BYTE	0
 
 		TOBJ	_obj_var0
 		TOBJ	_obj_var1
@@ -225,7 +225,7 @@ _tmp502:			.BYTE	0
 		TOBJ	_obj_var6
 		TOBJ	_obj_var7
 		TOBJ	_obj_var8
-		TOBJ	_obj_var9
+		TOBJ	_obj_energy
 
 		ORG	$600
 
@@ -242,7 +242,7 @@ _tmp_buf2:
 _lvl_rooms_walked_count_unused:
 		.BYTE	0
 		.BYTE	0
-_hex2dec_tile_delta:
+_hex2str_tile_delta:
 		.BYTE	0
 _score_hex:
 		.BYTE	0,0
@@ -272,7 +272,7 @@ _lvl_spr_chr_bank_up_backup:
 _lvl_spr_chr_bank_down_backup:
 		.BYTE	0
 		.BYTE	0,0,0
-_hud_random_msg_timeout:
+_hud_msg_expose_time:
 		.BYTE	0,0
 		.BYTE	0
 _player_hor_move_anim_increment:

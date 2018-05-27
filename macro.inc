@@ -18,7 +18,7 @@ FAILURE_TRESHOLD		EQU	$18
 DEF_PERCENT_POWERUP		EQU	6
 DEF_PERCENT_REPAIR		EQU $A
 ACID_DAMAGE_VALUE		EQU	4
-BACK_DAMAGE_VALUE		EQU	2						; additional damage from regular gunmans if close up from back (no shot)
+BACK_DAMAGE_VALUE		EQU	2						; additional damage from regular gunmans if close up from back (no shoot)
 NINJA_DAMAGE_VALUE		EQU $E
 PROJ0_FAMAGE_VALUE		EQU 2
 PROJ1_FAMAGE_VALUE		EQU 4
@@ -77,6 +77,42 @@ _MUT	EQU	$FD
 _SCL	EQU	$FE
 _NXT	EQU	$FF
 
+; == HUD FONTS ==
+
+__	EQU	$0B
+_a	EQU	$0C
+_b	EQU	$0D
+_c	EQU	$0E
+_d	EQU	$0F
+_e	EQU	$10
+_f	EQU	$11
+_g	EQU	$12
+_h	EQU	$13
+_i	EQU	$14
+_j	EQU	$15
+_k	EQU	$16
+_l	EQU	$17
+_m	EQU	$18
+_n	EQU	$19
+_o	EQU	$1A
+_p	EQU	$1B
+_q	EQU	$1C
+_r	EQU	$1D
+_s	EQU	$1E
+_t	EQU	$1F
+_u	EQU	$20
+_v	EQU	$21
+_w	EQU	$22
+_x	EQU	$23
+_y	EQU	$24
+_z	EQU	$25
+_excl	EQU	$26
+_lq		EQU	$27
+_rq		EQU	$28
+_gt		EQU	$29
+_dot	EQU $2A
+_cur	EQU	$2B
+
 ; == STRUCT ==
 
 	MAC	TOBJ
@@ -124,6 +160,25 @@ _NXT	EQU	$FF
 		JSR		_printf
 	ENDM
 	
+	MAC	U8TOS
+		STA		_str_ptr
+		LDA		#0
+		STA		_str_ptr+1
+		LDX		#<[{1}]
+		LDY		#>[{1}]
+		JSR		_hex2str
+	ENDM
+
+	MAC	U16TOS
+		LDA		[{1}]
+		STA		_str_ptr
+		LDA		[{1}+1]
+		STA		_str_ptr+1
+		LDX		#<[{2}]
+		LDY		#>[{2}]
+		JSR		_hex2str
+	ENDM
+
 ; == DATA ==
 
 	MAC	STRING
