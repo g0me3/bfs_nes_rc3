@@ -31,7 +31,7 @@ copy /b bank0.bin+bank1.bin+bank2.bin+bank3.bin+bank4.bin+bank5.bin+bank6.bin+ba
 nesimage j !rc3 > NUL
 
 echo cleanup...
-rem for %%f in (*.bin) do del %%f
+for %%f in (*.bin) do del %%f
 
 echo done.
 pause 0

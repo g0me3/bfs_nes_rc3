@@ -654,4 +654,6 @@ _lvl2_attr10:
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 
+		ECHO "bank 2 free space", [SAFE_STUB_ORG-.]
+
 		SAFE_STUB

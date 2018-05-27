@@ -2,20 +2,6 @@
 		ORG $8000, $00
 
 ; =============== S U B	R O U T	I N E =======================================
-_j_nmi0:
-		JMP		_nmi0
-
-; =============== S U B	R O U T	I N E =======================================
-_j_exec_sub:
-		JMP		_exec_sub
-
-; =============== S U B	R O U T	I N E =======================================
-_asci_bios_msg_display_with_skip:
-		LDY		#0
-		STY		_asci_msg_skip_forbid
-		JMP		_asci_bios_msg_display
-
-; =============== S U B	R O U T	I N E =======================================
 _exec_sub:
 		ASL
 		TAX
@@ -28,6 +14,7 @@ _exec_sub:
 		LDA		#$70
 		STA		_star_field_center_pos_y
 		JMP		(_tmp_buf0)
+
 _subs_lib:
 		.WORD _sub0_intro_title
 		.WORD _sub1_repair_lab
@@ -93,7 +80,7 @@ loc_440A0:
 		LDA		#$81
 		STA		_PPU_CTRL
 		LDA		#$1D
-		JSR		_j_apu_mus_start
+		JSR		_apu_mus_start
 		LDA		#1
 		STA		_event_reload_idx
 		LDX		#$FF
@@ -111,7 +98,7 @@ loc_440C1:
 		BNE		loc_440C1
 		DEX
 		BNE		loc_440C1
-		JSR		_call_j_far_apu_play
+		JSR		_far_apu_play
 		PLA
 		TAX
 		DEX
@@ -125,8 +112,8 @@ loc_440C1:
 		STA		_event_reload_idx
 		LDA		#$FF
 		STA		byte_3B1
-		LDA		#8
-		STA		_ppu_scroll_x_override_redundant
+;		LDA		#8										; not actually used
+;		STA		_ppu_scroll_x_override_redundant
 		LDA		#$80
 		STA		_PPU_CTRL
 		JMP		_event_exec
@@ -233,7 +220,7 @@ _sub3_ending:
 		INX
 		STX		_spr_buf+$25
 		LDA		#$1F
-		JSR		_j_apu_mus_start
+		JSR		_apu_mus_start
 		LDA		#$81
 		STA		_PPU_CTRL
 		JMP		_event_exec
@@ -261,7 +248,7 @@ _sub1_repair_lab:
 		STA		_repair_cur_body_index
 		STA		_repair_body_index_request
 		LDA		#$1E
-		JSR		_j_apu_mus_start
+		JSR		_apu_mus_start
 		LDA		_cur_head_percent
 		STA		_cur_head_percent_backup
 		LDA		_cur_body_percent
@@ -340,7 +327,7 @@ loc_442E2:
 		BNE		loc_442E2
 loc_442ED:
 		LDA		#$20
-		JSR		_j_apu_mus_start
+		JSR		_apu_mus_start
 		LDA		#$81
 		STA		_PPU_CTRL
 		JMP		_event_exec
@@ -558,7 +545,7 @@ loc_4445A:
 		LDA		_delays_list_hi,X
 		STA		_delay_counter
 loc_4448B:
-		JSR		_call_j_far_apu_play
+		JSR		_far_apu_play
 		JMP		_event_exec
 loc_44491:
 		LDA		_disp_spr0hit_use
@@ -571,7 +558,7 @@ loc_4449A:
 		DEX
 		BNE		loc_4449A
 		JSR		_read_pad
-		JSR		_call_j_far_apu_play
+		JSR		_far_apu_play
 		LDA		#1
 		STA		_logo_skip_forbid_flag
 		JMP		_event_exec
@@ -583,7 +570,7 @@ loc_444B1:
 		BNE		loc_444B1
 		DEX
 		BNE		loc_444B1
-		JSR		_call_j_far_apu_play
+		JSR		_far_apu_play
 		JSR		_read_pad
 		LDY		_title_menu_idx
 		LDX		byte_44651,Y
@@ -741,11 +728,11 @@ loc_445E7:
 		STA		_apu_sound_enable
 		BEQ		loc_44615
 		LDA		#$1D
-		JSR		_j_apu_mus_start
+		JSR		_apu_mus_start
 		JMP		_wait_for_midscreen_change
 loc_44615:
 		LDA		#0
-		JSR		_j_apu_mus_start
+		JSR		_apu_mus_start
 _wait_for_midscreen_change:
 		BIT		_PPU_STATUS
 		BMI		loc_44623
@@ -794,7 +781,7 @@ loc_44661:
 		BNE		loc_44661
 		DEX
 		BNE		loc_44661
-		JSR		_call_j_far_apu_play
+		JSR		_far_apu_play
 		JSR		_read_pad
 		LDA		_pad
 		CMP		byte_3B2
@@ -896,12 +883,14 @@ loc_4472B:
 		STA		byte_3D7
 		STA		_delay_counter
 		JMP		loc_446C7
+		
 _lvl0_intro_log_lib:
 		.WORD _lvl0_intro_log0
 		.WORD _lvl0_intro_log1
 		.WORD _lvl0_intro_log2
+		
 _lvl0_intro_log0:
-		.BYTE	  3, $F,  $D, $D,  1, $E,  4,$24,  3, $F,  $D,$FE,  $C, $F,  1,  4
+		.BYTE	  3, $F, $D, $D,  1, $E,  4,$24,  3, $F, $D,$FE, $C, $F,  1,  4
 		.BYTE	  0,  2,  9, $F,$13,$FE, $D,  5, $D, $F,$12,$19,  0,$13,  5,$14
 		.BYTE	$FE,$13,$19,$13,$14,  5, $D,  0,$13,$14,  1,$14,$15,$13,$FE, $F
 		.BYTE	 $B,$24,$FE,$FC,$FB,  3,$12,  9, $D,  5,  0,  9, $E,  0,$10,$12
@@ -916,7 +905,7 @@ _lvl0_intro_log1:
 		.BYTE	 $E,  4,  0,  3,  8,  1, $C, $D,  5,$12,$13,  0,  2, $C,$16,  4
 		.BYTE	$24,$FE,$FC,$FB,$FF
 _lvl0_intro_log2:
-		.BYTE	  9,  0,  1, $D,  0, $F,  $E,  0,  $D,$19,  0,$17,  1,$19,  0, $C
+		.BYTE	  9,  0,  1, $D,  0, $F, $E,  0, $D,$19,  0,$17,  1,$19,  0, $C
 		.BYTE	  5,$17,  9,$13,$24,$24,$24,$FE,$FC,$FA
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -1011,7 +1000,7 @@ loc_4487B:
 		LSR
 		STA		$BFFF
 loc_448B8:
-		JSR		_call_j_far_apu_play
+		JSR		_far_apu_play
 		JMP		_event_exec
 loc_448BE:
 		LDA		#0
@@ -1025,8 +1014,8 @@ loc_448BE:
 		STA		_event_reload_idx
 		LDA		#$FF
 		STA		byte_3B1
-		LDA		#8
-		STA		_ppu_scroll_x_override_redundant
+;		LDA		#8										; not actually used
+;		STA		_ppu_scroll_x_override_redundant
 		LDA		#2
 		STA		_screen_idx
 		JSR		_screen_display
@@ -1040,7 +1029,7 @@ loc_448BE:
 		LDA		#$80
 		STA		_PPU_CTRL
 		LDA		#$1D
-		JSR		_j_apu_mus_start
+		JSR		_apu_mus_start
 		LDA		#1
 		STA		byte_3B2
 		STA		byte_3D3
@@ -1084,7 +1073,7 @@ loc_44943:
 		STA		_PPU_CTRL
 loc_44965:
 		JSR		_star_field_animate
-		JSR		_call_j_far_apu_play
+		JSR		_far_apu_play
 		JSR		_read_pad
 		LDX		_hi_score_line_idx
 		LDA		_hi_score_ram_ofs_list,X
@@ -1206,8 +1195,8 @@ loc_44A1C:
 		STA		_tmp_score_hex_value
 		LDA		#$E6
 		STA		_dec_score_chr_ofs_delta
-		LDX		#<[byte_3C8]
-		LDY		#>[byte_3C8]
+		LDX		#<[_repair_cur_percent_disp_buf_tmp]
+		LDY		#>[_repair_cur_percent_disp_buf_tmp]
 		JSR		_hex2str_hiscore
 		LDA		#$9A
 		STA		_spr_buf+$E0
@@ -1241,7 +1230,7 @@ loc_44AB8:
 loc_44AC1:
 		CLC
 		ADC		#$E6
-		STA		byte_3CE
+		STA		_cur_repair_tanks_number_tile_tmp
 		LDA		_pad
 		AND		#1
 		CMP		byte_3B2
@@ -1307,7 +1296,7 @@ loc_44B2B:
 		JSR		_repair_cursor_input
 		JSR		_repair_cursor_animate
 		JSR		_dpad_convert
-		JSR		_call_j_far_apu_play
+		JSR		_far_apu_play
 		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -1319,7 +1308,7 @@ loc_44B3E:
 		BNE		loc_44B3E
 		DEX
 		BNE		loc_44B3E
-		JSR		_call_j_far_apu_play
+		JSR		_far_apu_play
 		JSR		_star_field_animate
 		JSR		_read_pad
 		LDA		_pad
@@ -1384,7 +1373,7 @@ loc_44BAA:
 		BNE		loc_44BCA
 		RTS
 loc_44BCA:
-		JSR		_call_j_far_apu_play
+		JSR		_far_apu_play
 		LDY		byte_3B5
 		LDA		(_text_data_tmp_ptr),Y
 		CMP		#$FD
@@ -1392,7 +1381,7 @@ loc_44BCA:
 		LDA		#$FF
 		STA		_asci_msg_skip_forbid
 		INC		byte_3B5
-		JMP		_j_even_exec
+		JMP		_event_exec
 loc_44BE1:
 		CMP		#$F9
 		BNE		loc_44BE8
@@ -1423,17 +1412,19 @@ _j_even_exec:
 		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
-_asci_msg_next_screen_cmd_unused:
-		INC		byte_3B4
-		LDA		#0
-		STA		byte_3D7
-		STA		byte_3B5
-		INC		_screen_idx
-		LDA		_screen_idx
-		JSR		_screen_display
-		LDA		#$81
-		STA		_PPU_CTRL
-		JMP		_j_even_exec
+; probably used for debugging
+;
+;_asci_msg_next_screen_cmd_unused:
+;		INC		byte_3B4
+;		LDA		#0
+;		STA		byte_3D7
+;		STA		byte_3B5
+;		INC		_screen_idx
+;		LDA		_screen_idx
+;		JSR		_screen_display
+;		LDA		#$81
+;		STA		_PPU_CTRL
+;		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
 _asci_msg_scroll:
@@ -1444,7 +1435,7 @@ _asci_msg_scroll:
 		INC		byte_3B5
 		LDA		#0
 		STA		byte_3D7
-		JMP		_j_even_exec
+		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
 _asci_msg_delay:
@@ -1458,7 +1449,7 @@ _asci_msg_delay:
 		LDA		#0
 		STA		byte_3D7
 		STA		_delay_counter
-		JMP		_j_even_exec
+		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
 _asci_msg_buf_clear:
@@ -1471,7 +1462,7 @@ loc_44C65:
 		INC		byte_3B5
 		LDA		#0
 		STA		byte_3D7
-		JMP		_j_even_exec
+		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
 _asci_msg_repair_menu_select_input:
@@ -1492,12 +1483,12 @@ _asci_msg_repair_menu_select_input:
 		LDA		_cur_repair_tanks
 		STA		_pl_bckp_repair_tanks,X
 		INC		byte_3B5
-		JMP		_j_even_exec
+		JMP		_event_exec
 loc_44CA9:
 		LDA		_pad
 		AND		#2
 		BNE		loc_44CB3
-		JMP		_j_even_exec
+		JMP		_event_exec
 loc_44CB3:
 		LDA		_cur_head_percent_backup
 		STA		_cur_head_percent
@@ -1749,10 +1740,10 @@ _repair_mode_dequeue:
 		LDA		_repair_body_index_request
 		ASL
 		TAX
-		LDA		off_45404,X
+		LDA		_repair_small_frame_txt_lib,X
 		STA		_obj_flags._player
 		INX
-		LDA		off_45404,X
+		LDA		_repair_small_frame_txt_lib,X
 		STA		_obj_flags._enemy
 		LDY		#0
 loc_44F6E:
@@ -1765,11 +1756,11 @@ loc_44F6E:
 		STA		_PPU_ADDR
 		LDA		#$25
 		STA		_PPU_ADDR
-		LDA		byte_3CA
+		LDA		_repair_cur_percent_disp_buf_tmp+2
 		STA		_PPU_DATA
-		LDA		byte_3CB
+		LDA		_repair_cur_percent_disp_buf_tmp+3
 		STA		_PPU_DATA
-		LDA		byte_3CC
+		LDA		_repair_cur_percent_disp_buf_tmp+4
 		STA		_PPU_DATA
 		LDA		#$F0
 		STA		_PPU_DATA
@@ -1784,7 +1775,7 @@ loc_44F6E:
 		LDX		#$44
 		STX		_PPU_ADDR
 		STA		_PPU_DATA
-		LDA		byte_3CE
+		LDA		_cur_repair_tanks_number_tile_tmp
 		STA		_PPU_DATA
 		LDA		_generic_nmi_over_counter
 		AND		#1
@@ -1800,7 +1791,7 @@ loc_44FC6:
 		STA		_PPU_ADDR
 		LDX		#0
 loc_44FDB:
-		LDA		_repair_tlm0,Y
+		LDA		_repair_small_frames_lib,Y
 		STA		_PPU_DATA
 		INY
 		INX
@@ -1812,7 +1803,7 @@ loc_44FDB:
 		STA		_PPU_ADDR
 		LDX		#0
 loc_44FF3:
-		LDA		_repair_tlm0,Y
+		LDA		_repair_small_frames_lib,Y
 		STA		_PPU_DATA
 		INY
 		INX
@@ -1824,7 +1815,7 @@ loc_44FF3:
 		STA		_PPU_ADDR
 		LDX		#0
 loc_4500B:
-		LDA		_repair_tlm0,Y
+		LDA		_repair_small_frames_lib,Y
 		STA		_PPU_DATA
 		INY
 		INX
@@ -1836,7 +1827,7 @@ loc_4500B:
 		STA		_PPU_ADDR
 		LDX		#0
 loc_45023:
-		LDA		_repair_tlm0,Y
+		LDA		_repair_small_frames_lib,Y
 		STA		_PPU_DATA
 		INY
 		INX
@@ -1848,7 +1839,7 @@ loc_45023:
 		STA		_PPU_ADDR
 		LDX		#0
 loc_4503B:
-		LDA		_repair_tlm0,Y
+		LDA		_repair_small_frames_lib,Y
 		STA		_PPU_DATA
 		INY
 		INX
@@ -1860,7 +1851,7 @@ loc_4503B:
 		STA		_PPU_ADDR
 		LDX		#0
 loc_45053:
-		LDA		_repair_tlm0,Y
+		LDA		_repair_small_frames_lib,Y
 		STA		_PPU_DATA
 		INY
 		INX
@@ -1914,7 +1905,7 @@ loc_450A8:
 		STA		_PPU_ADDR
 		LDX		#4
 loc_450B7:
-		LDA		_tlm_repair_head_lib,Y
+		LDA		_ovl_repair_head,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -1926,7 +1917,7 @@ loc_450B7:
 		STA		_PPU_ADDR
 		LDX		#4
 loc_450D0:
-		LDA		_tlm_repair_head_lib,Y
+		LDA		_ovl_repair_head,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -1937,7 +1928,7 @@ loc_450D0:
 		STA		_PPU_ADDR
 		LDX		#4
 loc_450E6:
-		LDA		_tlm_repair_head_lib,Y
+		LDA		_ovl_repair_head,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -1948,7 +1939,7 @@ loc_450E6:
 		STA		_PPU_ADDR
 		LDX		#4
 loc_450FC:
-		LDA		_tlm_repair_head_lib,Y
+		LDA		_ovl_repair_head,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -1977,7 +1968,7 @@ loc_4511C:
 		STA		_PPU_ADDR
 		LDX		#3
 loc_4512B:
-		LDA		_tlm_repair_larm_lib0,Y
+		LDA		_ovl_repair_rarm0,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -1988,7 +1979,7 @@ loc_4512B:
 		STA		_PPU_ADDR
 		LDX		#3
 loc_45141:
-		LDA		_tlm_repair_larm_lib0,Y
+		LDA		_ovl_repair_rarm0,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -1999,7 +1990,7 @@ loc_45141:
 		STA		_PPU_ADDR
 		LDX		#3
 loc_45157:
-		LDA		_tlm_repair_larm_lib0,Y
+		LDA		_ovl_repair_rarm0,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2010,7 +2001,7 @@ loc_45157:
 		STA		_PPU_ADDR
 		LDX		#3
 loc_4516D:
-		LDA		_tlm_repair_larm_lib0,Y
+		LDA		_ovl_repair_rarm0,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2021,7 +2012,7 @@ loc_4516D:
 		STA		_PPU_ADDR
 		LDX		#3
 loc_45183:
-		LDA		_tlm_repair_larm_lib0,Y
+		LDA		_ovl_repair_rarm0,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2032,7 +2023,7 @@ loc_45183:
 		STA		_PPU_ADDR
 		LDX		#3
 loc_45199:
-		LDA		_tlm_repair_larm_lib0,Y
+		LDA		_ovl_repair_rarm0,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2054,44 +2045,95 @@ loc_451B8:
 		STA		_PPU_ADDR
 		LDA		#$77
 		STA		_PPU_ADDR
-		LDA		_tlm_repair_larm_lib1,Y
+		LDA		_ovl_repair_rarm1,Y
 		STA		_PPU_DATA
 		INY
 		LDA		#$20
 		STA		_PPU_ADDR
 		LDA		#$97
 		STA		_PPU_ADDR
-		LDA		_tlm_repair_larm_lib1,Y
+		LDA		_ovl_repair_rarm1,Y
 		STA		_PPU_DATA
 		INY
 		LDA		#$20
 		STA		_PPU_ADDR
 		LDA		#$B7
 		STA		_PPU_ADDR
-		LDA		_tlm_repair_larm_lib1,Y
+		LDA		_ovl_repair_rarm1,Y
 		STA		_PPU_DATA
 		INY
 		LDA		#$20
 		STA		_PPU_ADDR
 		LDA		#$D7
 		STA		_PPU_ADDR
-		LDA		_tlm_repair_larm_lib1,Y
+		LDA		_ovl_repair_rarm1,Y
 		STA		_PPU_DATA
 		INY
 		LDA		#$20
 		STA		_PPU_ADDR
 		LDA		#$F7
 		STA		_PPU_ADDR
-		LDA		_tlm_repair_larm_lib1,Y
+		LDA		_ovl_repair_rarm1,Y
 		STA		_PPU_DATA
 		INY
 		LDA		#$21
 		STA		_PPU_ADDR
 		LDA		#$17
 		STA		_PPU_ADDR
-		LDA		_tlm_repair_larm_lib1,Y
+		LDA		_ovl_repair_rarm1,Y
 		STA		_PPU_DATA
-		RTS
+;
+; experimental re-enable the left palm hand damage display for repair lab
+; no doubt it looks creepy and weid, so they decided to remove it at all
+;
+;		LDA		_cur_arms_percent
+;		CMP		#$B
+;		BCC		loc_451160
+;		CMP		#$15
+;		BCC		loc_4511A0
+;		LDY		#0
+;		BEQ		loc_4511C0
+;loc_451160:
+;		LDY		#$20
+;		BNE		loc_4511C0
+;loc_4511A0:
+;		LDY		#$10
+;loc_4511C0:
+;		BIT		_PPU_STATUS
+;		LDA		#$21
+;		STA		_PPU_ADDR
+;		LDA		#$18
+;		STA		_PPU_ADDR
+;		LDX		#4
+;loc_4512B0:
+;		LDA		_ovl_repair_larm,Y
+;		STA		_PPU_DATA
+;		INY
+;		DEX
+;		BNE		loc_4512B0
+;		LDA		#$21
+;		STA		_PPU_ADDR
+;		LDA		#$38
+;		STA		_PPU_ADDR
+;		LDX		#4
+;loc_451410:
+;		LDA		_ovl_repair_larm,Y
+;		STA		_PPU_DATA
+;		INY
+;		DEX
+;		BNE		loc_451410
+;		LDA		#$21
+;		STA		_PPU_ADDR
+;		LDA		#$58
+;		STA		_PPU_ADDR
+;		LDX		#4
+;loc_451570:
+;		LDA		_ovl_repair_larm,Y
+;		STA		_PPU_DATA
+;		INY
+;		DEX
+;		BNE		loc_451570
+;		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
 _repair_ppu_body_upgrade_display:
@@ -2115,7 +2157,7 @@ loc_45233:
 		STA		_PPU_ADDR
 		LDX		#4
 loc_45242:
-		LDA		_tlm_repair_body_lib,Y
+		LDA		_ovl_repair_body,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2127,7 +2169,7 @@ loc_45242:
 		STA		_PPU_ADDR
 		LDX		#4
 loc_4525B:
-		LDA		_tlm_repair_body_lib,Y
+		LDA		_ovl_repair_body,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2139,7 +2181,7 @@ loc_4525B:
 		STA		_PPU_ADDR
 		LDX		#4
 loc_45274:
-		LDA		_tlm_repair_body_lib,Y
+		LDA		_ovl_repair_body,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2151,7 +2193,7 @@ loc_45274:
 		STA		_PPU_ADDR
 		LDX		#4
 loc_4528D:
-		LDA		_tlm_repair_body_lib,Y
+		LDA		_ovl_repair_body,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2180,7 +2222,7 @@ loc_452AD:
 		STA		_PPU_ADDR
 		LDX		#8
 loc_452BC:
-		LDA		_tlm_repair_legs_lib,Y
+		LDA		_ovl_repair_legs,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2191,7 +2233,7 @@ loc_452BC:
 		STA		_PPU_ADDR
 		LDX		#8
 loc_452D2:
-		LDA		_tlm_repair_legs_lib,Y
+		LDA		_ovl_repair_legs,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2202,7 +2244,7 @@ loc_452D2:
 		STA		_PPU_ADDR
 		LDX		#8
 loc_452E8:
-		LDA		_tlm_repair_legs_lib,Y
+		LDA		_ovl_repair_legs,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2213,7 +2255,7 @@ loc_452E8:
 		STA		_PPU_ADDR
 		LDX		#8
 loc_452FE:
-		LDA		_tlm_repair_legs_lib,Y
+		LDA		_ovl_repair_legs,Y
 		STA		_PPU_DATA
 		INY
 		DEX
@@ -2224,24 +2266,27 @@ loc_452FE:
 		STA		_PPU_ADDR
 		LDX		#8
 loc_45314:
-		LDA		_tlm_repair_legs_lib,Y
+		LDA		_ovl_repair_legs,Y
 		STA		_PPU_DATA
 		INY
 		DEX
 		BNE		loc_45314
+;
+; portion of code to display extra missing legs tilemap in repair lab
+; original resource data is 8x6 tiles, but only 8x5 is used, restored
+;
+;		LDA		#$22
+;		STA		_PPU_ADDR
+;		LDA		#$12
+;		STA		_PPU_ADDR
+;		LDX		#8
+;loc_4532B:
+;		LDA		_ovl_repair_legs,Y
+;		STA		_PPU_DATA
+;		INY
+;		DEX
+;		BNE		loc_4532B
 		RTS
-_unused_0:
-		LDA		#$22
-		STA		_PPU_ADDR
-		LDA		#$12
-		STA		_PPU_ADDR
-		LDX		#8
-loc_4532B:
-		LDA		_tlm_repair_legs_lib,Y
-		STA		_PPU_DATA
-		INY
-		DEX
-		BNE		loc_4532B
 
 ; =============== S U B	R O U T	I N E =======================================
 _nmi0_common:
@@ -2253,7 +2298,7 @@ _nmi0_common:
 		LDA		_disp_extra_ctrl
 		BEQ		loc_4535A
 		LDA		#$A8
-		ORA		_nmi_ppu_ctrl_override_redundant
+;		ORA		_nmi_ppu_ctrl_override_redundant
 		STA		_PPU_CTRL
 		INC		_generic_nmi_over_counter
 		LDA		_irq_regs_backup
@@ -2337,19 +2382,19 @@ loc_453E8:
 		STA		_PPU_ADDR
 loc_453F2:
 		LDA		#$88
-		ORA		_nmi_ppu_ctrl_override_redundant
+;		ORA		_nmi_ppu_ctrl_override_redundant
 		STA		_PPU_CTRL
 		INC		_generic_nmi_over_counter
 		LDA		_irq_regs_backup
 		LDX		_irq_regs_backup+1
 		LDY		_irq_regs_backup+2
 		RTI
-off_45404:
-		.WORD byte_477A1
-		.WORD byte_477A5
-		.WORD byte_477AD
-		.WORD byte_477A5
-		.WORD byte_477A9
+_repair_small_frame_txt_lib:
+		.WORD _repair_small_frame_txt0
+		.WORD _repair_small_frame_txt1
+		.WORD _repair_small_frame_txt3
+		.WORD _repair_small_frame_txt1
+		.WORD _repair_small_frame_txt2
 _hi_score_ppu_ofs_list:
 		.WORD $2151
 		.WORD $2191
@@ -2379,7 +2424,7 @@ loc_45427:
 ; =============== S U B	R O U T	I N E =======================================
 _nmi0_scroll_reload:
 		BIT		_PPU_STATUS
-		LDA		_ppu_scroll_x_override_redundant
+;		LDA		_ppu_scroll_x_override_redundant		; see, overrided
 		LDA		#0
 		STA		_PPU_SCROLL
 		LDA		_disp_extra_shift
@@ -2387,7 +2432,7 @@ _nmi0_scroll_reload:
 		LDA		#$E0
 loc_4544C:
 		STA		_PPU_SCROLL
-		INC		_nmi0_scroll_reload_counter_redundant
+;		INC		_nmi0_scroll_reload_counter_redundant
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -2675,10 +2720,10 @@ _disp_pal_lib:
 		.WORD _pal0_ocean
 		.WORD _pal1_probe
 		.WORD _pal2_title
-		.WORD _pal3_hiscore
-		.WORD _pal3_hiscore
-		.WORD _pal3_hiscore
-		.WORD _pal3_hiscore
+		.WORD _pal3456_frame
+		.WORD _pal3456_frame
+		.WORD _pal3456_frame
+		.WORD _pal3456_frame
 		.WORD _pal7_ending
 		.WORD _pal8_repair
 byte_457D6:
@@ -2858,7 +2903,7 @@ _disp_spr_send:
 		LDA		#$FF
 		STA		_obj_flags._enemy
 		LDA		#0
-		STA		byte_3CF
+		STA		_disp_spr_send_tmp
 loc_45979:
 		LDX		#0
 loc_4597B:
@@ -2868,9 +2913,9 @@ loc_4597B:
 		STA		_player_jump_or_fall_flag
 		CMP		#$FF
 		BNE		loc_45992
-		LDA		byte_3CF
+		LDA		_disp_spr_send_tmp
 		EOR		#$80
-		STA		byte_3CF
+		STA		_disp_spr_send_tmp
 		JMP		loc_459D4
 loc_45992:
 		LDA		_player_jump_or_fall_flag
@@ -2883,7 +2928,7 @@ loc_45992:
 		AND		#$3F
 		CLC
 		ADC		byte_457D6,X
-		BIT		byte_3CF
+		BIT		_disp_spr_send_tmp
 		BPL		loc_459AC
 		ADC		#$34
 loc_459AC:
@@ -3007,13 +3052,6 @@ locret_45A7A:
 		RTS
 _chars_table:
 		.BYTE	 $F,$1B,$1C,$1D,$1E,$1F,$20,$21,$22,$23
-_unused_hi_score:
-		.BYTE	  1,  0,  2,  0,  0,  7,$24,  8,  1,$12,$12,  9,$13, $F,  $E
-		.BYTE	  0,  7,  5,  3,  0,$13,$24, $E,  9,  3, $F, $C,  0,  0,  0
-		.BYTE	  0,  7,  0,  0,  0,$13,$24,  3,$12, $F,$17,  0,  0,  0,  0
-		.BYTE	  0,  4,  0,  6,  5,  8,$24,  2,  9, $E, $E,$13,  0,  0,  0
-		.BYTE	  0,  0,  8,  0,  0, $A,$24,$14,  5, $C,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  4,  5, $A,$24,  2, $F, $E,  1,$12,  0,  0,  0
 
 ; =============== S U B	R O U T	I N E =======================================
 _hi_score_display:
@@ -3244,9 +3282,9 @@ locret_45CAF:
 _get_cursor_allow_list_ptr:
 		LDA		#0
 		STA		_obj_hcoll._enemy+2
-		LDX		byte_3C2
-		LDA		byte_45D7E,X
-		CLC
+;		LDX		_repair_redundant_idx					; sone unknown redundant variable, probably
+;		LDA		byte_45D7E,X							; meant to be used when 2-player mode is used
+;		CLC
 		LDA		_repair_cur_body_index
 		ASL
 		ASL
@@ -3265,23 +3303,24 @@ _repair_cursor_animate:
 		BNE		loc_45CD4
 		RTS
 loc_45CD4:
-		INC		byte_3C1
-		LDA		byte_3C1
+		INC		_repair_cursor_animate_tmp
+		LDA		_repair_cursor_animate_tmp
 		CMP		#2
 		BEQ		loc_45CDF
 		RTS
 loc_45CDF:
 		LDA		#0
-		STA		byte_3C1
-		LDX		byte_3C2
-		LDA		byte_45D7E,X
-		CLC
-		ADC		_repair_body_index_request
+		STA		_repair_cursor_animate_tmp
+;		LDX		_repair_redundant_idx					; second part of dummy redundant variable
+;		LDA		byte_45D7E,X							; presumably for 2-players repair mode screen
+;		CLC
+;		ADC		_repair_body_index_request
+		LDA		_repair_body_index_request
 		ASL
 		TAX
-		LDA		word_45DDF,X
+		LDA		_repair_cursor_anim_data,X
 		STA		word_3BA
-		LDA		word_45DDF+1,X
+		LDA		_repair_cursor_anim_data+1,X
 		STA		word_3BA+1
 		LDA		byte_3B8
 		CMP		word_3BA
@@ -3344,8 +3383,9 @@ loc_45D6A:
 		STA		_repair_cur_body_index
 locret_45D7D:
 		RTS
-byte_45D7E:
-		.BYTE	0
+
+;byte_45D7E:
+;		.BYTE	0
 
 ; =============== S U B	R O U T	I N E =======================================
 _hex2str_hiscore:
@@ -3390,128 +3430,125 @@ _repair_cursor_allow_table:
 		.BYTE	  0,  3,  4,  1
 		.BYTE	  0,$FF,  4,  2
 		.BYTE	  2,$FF,$FF,  1
-word_45DDF:
+_repair_cursor_anim_data:
 		.WORD $20A0
 		.WORD $5888
 		.WORD $40A8
 		.WORD $48C0
 		.WORD $80CB
-_pal3_hiscore:
-		.BYTE	 $F,$17,$27,$30, $F,  0,$10,$20, $F,$12,$22,$30, $F, $A,$2A, $F
-		.BYTE	 $F,  7,$17,$20, $F,  0,$10,$20, $F,$12,$22,$30, $F,$21,$10,$20
-_pal2_title:
-		.BYTE	 $F,$27,$26,$30, $F,$11,$21,$30, $F,$27,$38,$30, $F,$27,$36,$30
-		.BYTE	 $F,$27,$36,$30, $F,$27,$38,$30, $F,$16,$26, $F, $F,$21,$10,$20
-_pal7_ending:
-		.BYTE	 $F,$27,$36,$30, $F,$11,$21,$30, $F,$27,$38,$30, $F,$21,$10,$20
-		.BYTE	 $F,$27,$36,$30, $F,$11,$21,$30, $F,$27,$38,$30, $F,$21,$10,$20
-_pal1_probe:
-		.BYTE	 $F,$16,$26, $F, $F, $F, $F, $F, $F, $F, $F, $F, $F,$12,$22,$32
-		.BYTE	 $F,$16,$26, $F, $F,$21,$22,$32, $F,$21,$22,$32, $F,$21,$22,$32
+
+; displays tilemaps
+;
 _pal0_ocean:
 		.BYTE	 $F,  0,$10,$20, $F,  1,$11,$21, $F,  2,$12,$10, $F,  3,$13,$23
 		.BYTE	 $F,$16,$26, $F, $F,  5,$15,$25, $F,  6,$16,$26, $F,  7,$17,$27
+_pal1_probe:
+		.BYTE	 $F,$16,$26, $F, $F, $F, $F, $F, $F, $F, $F, $F, $F,$12,$22,$32
+		.BYTE	 $F,$16,$26, $F, $F,$21,$22,$32, $F,$21,$22,$32, $F,$21,$22,$32
+_pal2_title:
+		.BYTE	 $F,$27,$26,$30, $F,$11,$21,$30, $F,$27,$38,$30, $F,$27,$36,$30
+		.BYTE	 $F,$27,$36,$30, $F,$27,$38,$30, $F,$16,$26, $F, $F,$21,$10,$20
+_pal3456_frame:
+		.BYTE	 $F,$17,$27,$30, $F,  0,$10,$20, $F,$12,$22,$30, $F, $A,$2A, $F
+		.BYTE	 $F,  7,$17,$20, $F,  0,$10,$20, $F,$12,$22,$30, $F,$21,$10,$20
+_pal7_ending:
+		.BYTE	 $F,$27,$36,$30, $F,$11,$21,$30, $F,$27,$38,$30, $F,$21,$10,$20
+		.BYTE	 $F,$27,$36,$30, $F,$11,$21,$30, $F,$27,$38,$30, $F,$21,$10,$20
 _pal8_repair:
 		.BYTE	 $F,  8,$18,$2B, $F,  0,$10,$20, $F, $B,$1B,$2B, $F, $C,$1C,$2C
 		.BYTE	 $F,  0,$10,$20, $F,  6,$16,$26, $F, $B,$1B,$2B, $F, $C,$1C,$2C
+
+; displays attributes, even the size of uploaded data is always $40 bytes, the
+; attributes size here is only $38 maximum for each display, some of them are
+; arranged to have common data for optimal stogare, the last 8 bytes are sending
+; garbage, including the first 8 bytes of the first tilemap
+;
 _atr0_ocean:
-		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3F, $F, $F, $F, $F, $F,$FF
-		.BYTE	$FF,$88,$AA,$AA,$AA,$AA,$AA,$CC,$FF,$34,  5,  5,  5,  5,  5,$FC
-		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+		.BYTE	$FF,$3F, $F, $F, $F, $F, $F,$FF
+		.BYTE	$FF,$88,$AA,$AA,$AA,$AA,$AA,$CC
+		.BYTE	$FF,$34,  5,  5,  5,  5,  5,$FC
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
 _atr2_title:
-		.BYTE	$55,$55,$55,$55,$55,$55,$55,$55,$76,$59,$DA,$5A,$55,$CE,$77,$59
-		.BYTE	$FF,$55,$DD,$55,$55,$8C,$AF,$EC,$FF,$D5,$55,$55,$55,$5D,$53,$DD
-		.BYTE	$FF,$55,$55,$55,$55,$55,$55,$55,$FF,$FF,$77,$55,$55,$55,$D5,$FD
+		.BYTE	$55,$55,$55,$55,$55,$55,$55,$55
+		.BYTE	$76,$59,$DA,$5A,$55,$CE,$77,$59
+		.BYTE	$FF,$55,$DD,$55,$55,$8C,$AF,$EC
+		.BYTE	$FF,$D5,$55,$55,$55,$5D,$53,$DD
+		.BYTE	$FF,$55,$55,$55,$55,$55,$55,$55
+		.BYTE	$FF,$FF,$77,$55,$55,$55,$D5,$FD
 		.BYTE	$55,$55,$55,$55,$55,$55,$55,$55
 _atr5_lewis:
-		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$AF,$AB,$AF,$AB,$AE,$AF,$AE,$AF
-		.BYTE	$EE,$FF,$FF,$55,$55,$FF,$FF,$BB,$EE,$FF,$FF,$11,$44,$DF,$FF,$BB
-		.BYTE	$EE,$FF,$F5,$F5,$F5,$F5,$FF,$BB,$AE,$AF,$AF,$AF,$AF,$AF,$AF,$AB
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+		.BYTE	$AF,$AB,$AF,$AB,$AE,$AF,$AE,$AF
+		.BYTE	$EE,$FF,$FF,$55,$55,$FF,$FF,$BB
+		.BYTE	$EE,$FF,$FF,$11,$44,$DF,$FF,$BB
+		.BYTE	$EE,$FF,$F5,$F5,$F5,$F5,$FF,$BB
+		.BYTE	$AE,$AF,$AF,$AF,$AF,$AF,$AF,$AB
 _atr6_robocop:
-		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$AF,$AB,$AF,$AB,$AE,$AF,$AE,$AF
-		.BYTE	$EE,$FF,$9B,$A6,$A5,$DD,$FF,$BB,$EE,$FF,$A9,$A8,$AA,$DD,$FF,$BB
-		.BYTE	$EE,$FF,$FA,$FA,$FA,$FD,$FF,$BB,$AE,$AF,$AF,$AF,$AF,$AF,$AF,$AB
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+		.BYTE	$AF,$AB,$AF,$AB,$AE,$AF,$AE,$AF
+		.BYTE	$EE,$FF,$9B,$A6,$A5,$DD,$FF,$BB
+		.BYTE	$EE,$FF,$A9,$A8,$AA,$DD,$FF,$BB
+		.BYTE	$EE,$FF,$FA,$FA,$FA,$FD,$FF,$BB
+		.BYTE	$AE,$AF,$AF,$AF,$AF,$AF,$AF,$AB
 _atr7_ending:
-		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$BF,$AF,$AF,$AF,$FF,$FF,$DF,$FF
-		.BYTE	$AA,$AA,$AA,$AA,$32,$4C,$55,$CD,$AA,$AA,$AA,$AA,$5A,$54,  5,$58
-		.BYTE	$AA,$AA,$AA,$AA,$55,$55,$55,$55,$AA,$AA,$AA,$AA,$55,$FF,$FF,$FF
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+		.BYTE	$BF,$AF,$AF,$AF,$FF,$FF,$DF,$FF
+		.BYTE	$AA,$AA,$AA,$AA,$32,$4C,$55,$CD
+		.BYTE	$AA,$AA,$AA,$AA,$5A,$54,  5,$58
+		.BYTE	$AA,$AA,$AA,$AA,$55,$55,$55,$55
+		.BYTE	$AA,$AA,$AA,$AA,$55,$FF,$FF,$FF
 		.BYTE	  0,  0,  0,  0,$FF,$FF,$FF,$FF
 _atr3_hiscore:
-		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$AF,$AB,$AF,$AB,$AE,$AF,$AE,$AF
-		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB,$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB
-		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB,$AE,$AF,$AF,$AF,$AF,$AF,$AF,$AB
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+		.BYTE	$AF,$AB,$AF,$AB,$AE,$AF,$AE,$AF
+		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB
+		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB
+		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB
+		.BYTE	$AE,$AF,$AF,$AF,$AF,$AF,$AF,$AB
 _atr4_frame:
-		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$AF,$AB,$AF,$AB,$AE,$AF,$AE,$AF
-		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB,$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB
-		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB,$AE,$AF,$AF,$AF,$AF,$AF,$AF,$AB
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+		.BYTE	$AF,$AB,$AF,$AB,$AE,$AF,$AE,$AF
+		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB
+		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB
+		.BYTE	$EE,$FF,$FF,$FF,$FF,$FF,$FF,$BB
+		.BYTE	$AE,$AF,$AF,$AF,$AF,$AF,$AF,$AB
 _atr1_probe:
-		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
-		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+		.BYTE	$FF,$FF,$FF,$FF,$FF,$FF,$FF,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0
 _atr8_repair:
-		.BYTE	$FF, $C,  3,  3,$FF,$FF,$C0,$F0,$3F,  0,  0,$C0,$FF,$FF,$BA,$EA
-		.BYTE	  0,$5C,$9F,$FA,$FF,$FF,$FF,$AF,  5,  5,  5,$DD,$EF,$FF,$BB,$EA
-		.BYTE	  0,  0,  0,$DD,$BA,$EF,$FF,$FF,$FF,$FF,  0,$DD,$FF,$FE,$FE,$FF
+		.BYTE	$FF, $C,  3,  3,$FF,$FF,$C0,$F0
+		.BYTE	$3F,  0,  0,$C0,$FF,$FF,$BA,$EA
+		.BYTE	  0,$5C,$9F,$FA,$FF,$FF,$FF,$AF
+		.BYTE	  5,  5,  5,$DD,$EF,$FF,$BB,$EA
+		.BYTE	  0,  0,  0,$DD,$BA,$EF,$FF,$FF
+		.BYTE	$FF,$FF,  0,$DD,$FF,$FE,$FE,$FF
 		.BYTE	$AF,$2F,$A0, $D,$AF,$8F,$AF,$8F
+
 _tlm0_ocean:
-		.BYTE	$81,  1,$7F,  0,$67,  0,$88,  2,  3,  4,  5,  6,  7,  8,  9,  4
-		.BYTE	 $A,$88, $B, $C, $D, $E, $F,$10,$11,$12, $A,  0,$98,$13,$14,$15
-		.BYTE	$16,$17,$18,$19,$16,$17,$18,$1A,$16,$1B,$18,$19,$16,$17,$18,$1C
-		.BYTE	$1D,$1E,$1F,$20,$21,  8,  0,$98,$22,$23,$24,$25,$26,$27,$28,$25
-		.BYTE	$26,$29,$2A,$2B,$2C,$2D,$28,$25,$26,$2E,$2F,$30,$31,$32,$33,$34
-		.BYTE	  8,  0,$98,$35,$36,$37,$38,$39,$3A,$3B,$38,$39,$3C,$3D,$3E,$3F
-		.BYTE	$40,$3B,$38,$39,$41,$42,$43,$44,$45,$46,$47,  8,  0,$98,$48,$49
-		.BYTE	$4A,$4B,$4C,$4D,$4E,$4B,$4C,$4F,$50,$51,$52,$53,$54,$4B,$4C,$4D
-		.BYTE	$55,$56,$57,$58,$59,$5A,  8,  0,$98,$5B,$5C,$5D,$5E,$5F,$60,$61
-		.BYTE	$5E,$5F,$60,$61,$5E,$62,$63,$61,$5E,$5F,$64,$65,$66,$67,$68,$69
-		.BYTE	$6A,  8,  0,$98,$6B,$6C,$6D,$6E,$6F,$70,$71,$72,$6F,$70,$71,$72
-		.BYTE	$6F,$70,$71,$72,$6F,$73,$74,$75,$76,$77,$78,$79, $A,  0,$88,$7A
-		.BYTE	$7B,$7C,$7D,$7E,$7F,$80,$81,  4,$82,$88,$83,$84,$85,$86,$87,$88
-		.BYTE	$89,$8A,$7F,  0,$7F,  0,$7F,  0,$FF,$FF
+		INCBIN	"tlm\tlm0.pak"		
+_tlm1_probe:
+		INCBIN	"tlm\tlm1.pak"		
 _tlm2_title:
-		.BYTE	$F2,  1,  2,  3,  4,  5,  6,  7,  8,  9,  6,  7, $A, $B,  6,  7
-		.BYTE	 $C, $D, $E, $F,$10,$11,$12,  7,  8,  9,  6,  7, $A,$13,$14,$15
-		.BYTE	$16,$17,$18,$19,$1A,$1B,$1C,$1D,$1E,$1F,$20,$1D,$21,$22,$1C,$1D
-		.BYTE	$23,$24,$25,$26,$27,$28,$1C,$1D,$1E,$1F,$20,$1D,$29,$2A,$2B,$2C
-		.BYTE	$2D,$2E,$2F,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$3A,$33,$34
-		.BYTE	$35,$3B,$3C,  0,$3D,$3E,$33,$34,$3F,$40,$41,$42,$43,  0,$44,$45
-		.BYTE	$46,$47,$48,$49,$4A,$4B,$4C,$4D,$4E,$4F,$50,$51,$52,$53,$4C,$4D
-		.BYTE	$54,$55,$56,  2,  0,$87,$57,$4C,$58,$59,$5A,$5B,$5C,  2,  0,$9D
-		.BYTE	$5D,$5E,$5F,$47,$60,$61,$62,$63,$64,$65,$66,$67,$68,$65,$69,$6A
-		.BYTE	$6B,$65,$6C,$6D,$6E,$6F,$70,$71,$72,$73,$74,$75,$76,  2,  0,$A4
-		.BYTE	$77,$78,$79,$7A,$7B,$7C,$7D,$7E,$7F,$80,$81,$82,$83,$84,$81,$85
-		.BYTE	$86,$87,$88,$89,$8A,$8B,$8C,$8D,$8E,$8F,$90,$91,$92,$93,$94,$95
-		.BYTE	$96,$97,$98,$99,  2,  0,$85,$9A,$9B,$9C,$9D,$9E,  6,  0,$93,$9F
-		.BYTE	$A0,$A1,$A2,$A3,  0,$A4,$A5,$A6,  0,$A7,$A8,$A9,$AA,$AB,$AC,$AD
-		.BYTE	$AE,$AF,  2,  0,$87,$B0,$B1,$B2,$B3,$B4,$B5,$B6,  4,  0,$93,$B7
-		.BYTE	$B8,$B9,$BA,$BB,$BC,$BD,$BE,$BF,$C0,$C1,$C2,$C3,$C4,$C5,$C6,  0
-		.BYTE	$C7,$C8,  4,  0,$85,$C9,$CA,$CB,$CC,$CD,  4,  0,$89,$CE,$CF,$D0
-		.BYTE	$D1,$D2,$D3,$D4,$D5,$D6,  6,  0,$81,$D7,  7,  0,$86,$D8,$D9,$DA
-		.BYTE	$DB,$DC,$DD,  3,  0,$88,$DE,$DF,$E0,$E1,$E2,$E3,$E4,$E5,  7,  0
-		.BYTE	$81,$E6,  7,  0,$82,$E7,$E8,  2,  0,$82,$E9,$EA,  3,  0,$8F,$EB
-		.BYTE	$EC,$ED,$EE,  0,$EF,$F0,$F1,$F2,  0,$F3,$F4,$F5,$F6,$F7,  8,  0
-		.BYTE	$86,  1,  2,  0,  3,  4,  5,  4,  0,$8F,  6,  7,  8,  9, $A, $B
-		.BYTE	  0, $C, $D, $E, $F,$10,$11,$12,$13,  7,  0,$8B,$14,$15,$16,$17
-		.BYTE	$18,$19,$1A,$1B,$1C,$1D,$1E,  2,  0,$83,$1F,$20,$21,  2,  0,$87
-		.BYTE	$22,$23,$24,$25,$26,$27,$28,  8,  0,$98,$29,  0,$2A,$2B,$2C,$2D
-		.BYTE	$2E,$2F,$30,$31,$32,$33,$34,$35,$36,$37,  0,$38,$39,$3A,$3B,  0
-		.BYTE	$3C,$3D,  7,  0,$82,$3E,$3F,  2,  0,$8E,$40,$41,$42,$43,$44,$45
-		.BYTE	$46,$47,$48,$49,$4A,$4B,$4C,$4D,  3,  0,$84,$4E,$4F,  0,$50,  7
-		.BYTE	  0,$82,$51,$52,  2,  0,$96,$53,$54,$55,$56,$57,$58,$59,$5A,$5B
-		.BYTE	$49,$5C,$5D,$5E,$5F,$60,$61,  0,$62,$63,$64,$65,$66,  6,  0,$8D
-		.BYTE	$67,$68,$69,  0,$6A,$6B,$6C,$6D,$6E,$6F,$70,$71,$72,  2,$49,$8B
-		.BYTE	$73,$74,$75,$76,$77,$78,$79,$7A,$7B,$7C,$7D,  6,  0,$81,$7E,  2
-		.BYTE	  0,$98,$7F,$80,$81,$82,$83,$84,  0,$85,  0,$86,$87,$88,$89,$8A
-		.BYTE	$8B,$8C,$8D,$8E,$8F,$90,  0,$91,$92,$93,  5,  0,$87,$94,$95,$96
-		.BYTE	$97,$98,$99,$9A,  2,  0,$92,$9B,$9C,  0,$9D,$9E,$9F,$A0,$A1,$A2
-		.BYTE	$A3,$A4,$A5,$A6,$A7,  0,$A8,$A9,$AA,  6,  0,$83,$AB,$AC,$AD,  2
-		.BYTE	  0,$95,$AE,$AF,  0,$B0,$B1,  0,$B2,$B3,$B4,$B5,$B6,$B7,$B8,$B9
-		.BYTE	$BA,$BB,$BC,$BD,$BE,$BF,$C0, $B,  0,$94,$C1,$C2,  0,$C3,$C4,$C5
-		.BYTE	$C6,$C7,$C8,$C9,$CA,$CB,$CC,$CD,$CE,  0,$CF,$D0,$D1,$D2, $C,  0
-		.BYTE	$8F,$D3,$D4,$D5,$D6,$D7,$D8,  0,$D9,$DA,$DB,$DC,$DD,$DE,$DF,$E0
-		.BYTE	$11,  0,$8F,$E1,$E2,$E3,$E4,$E5,  0,$E6,$E7,$E8,$E9,$EA,$EB,$EC
-		.BYTE	$ED,$EE,$11,  0,$88,$EF,$F0,$F1,$F2,$61,$F3,$F4,$F5,$18,  0,$88
-		.BYTE	$F6,$F7,$F8,$F9,$FA,$FB,$FC,$FD,$7F,  0,$7F,  0,$FF,$FF
+		INCBIN	"tlm\tlm2.pak"		
+_tlm3_hiscore:
+		INCBIN	"tlm\tlm3.pak"		
+_tlm4_frame:
+		INCBIN	"tlm\tlm4.pak"		
+_tlm5_lewis:
+		INCBIN	"tlm\tlm5.pak"		
+_tlm6_robocop:
+		INCBIN	"tlm\tlm6.pak"		
+_tlm7_ending:
+		INCBIN	"tlm\tlm7.pak"		
+_tlm8_repair:
+		INCBIN	"tlm\tlm8.pak"		
+
 _spr2_title:
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
@@ -3540,243 +3577,36 @@ _spr2_title:
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-_tlm5_lewis:
-		.BYTE	$7F,  0,$28,  0,$81,$27,  7,  0,$82,$28,$29,  7,  0,$81,$27, $E
-		.BYTE	  0,$81,$2A,  2,  0,$81,$2B,  2,$2C,$86,$2D,$2E,$2F,$30,$31,$32
-		.BYTE	  2,$2C,$81,$33,  2,  0,$81,$2A,  8,  0,$87,$34,$35,$36,$37,$38
-		.BYTE	$39,$3A,  3,$3B,$8A,$3C,$3D,$3E,$3F,$40,$41,$42,$43,$44,$45,  3
-		.BYTE	$3B,$87,$3A,$46,$47,$48,$49,$4A,$4B,  2,  0,$81,$4C, $B,  0,$86
-		.BYTE	$4D,$4E,$4F,$50,$51,$52, $B,  0,$81,$53,  2,  0,$81,$54, $B,  0
-		.BYTE	$86,$55,$56,$57,$58,$59,$5A, $B,  0,$81,$5B,  2,  0,$81,$5C, $A
-		.BYTE	  0,$87,$5D,$5E,$5F,$60,$61,$62,$63, $B,  0,$81,$64,  2,  0,$81
-		.BYTE	$5C, $A,  0,$88,$65,$66,$67,$68,$69,$6A,$6B,$6C, $A,  0,$81,$64
-		.BYTE	  2,  0,$81,$5C, $B,  0,$87,$6D,$6E,$6F,$70,$71,$72,$73, $A,  0
-		.BYTE	$81,$64,  2,  0,$81,$74, $B,  0,$86,$75,$76,$77,$78,$79,$7A, $B
-		.BYTE	  0,$84,$7B,  0,$7C,$7D, $B,  0,$86,$7E,$7F,$80,$81,$82,$83, $B
-		.BYTE	  0,$84,$84,$85,$86,$87, $A,  0,$89,$88,$89,$8A,$8B,$8C,$8D,$8E
-		.BYTE	$8F,$90,  9,  0,$84,$91,$92,  0,$93,  8,  0,$8E,$94,$95,$96,$97
-		.BYTE	$98,$99,$9A,$9B,$9C,$9D,$9E,$9F,$A0,$A1,  6,  0,$81,$A2,  2,  0
-		.BYTE	$81,$5C,  7,  0,$8F,$A3,$A4,$A5,$A6,$A7,$A8,$A9,$AA,$AB,$AC,$AD
-		.BYTE	$AE,$AF,$B0,$B1,  6,  0,$81,$64,  2,  0,$81,$5C,$1C,  0,$81,$64
-		.BYTE	  2,  0,$81,$5C,$1C,  0,$81,$64,  2,  0,$81,$B2,$1C,  0,$81,$B3
-		.BYTE	  2,  0,$81,$B4,$1C,  0,$81,$B5,  2,  0,$84,$B6,$B7,$B8,$B9,  3
-		.BYTE	$BA,$90,$BB,$BC,$BD,$BE,$BF,$C0,$C1,$C2,$C3,$C4,$C5,$C6,$C7,$C8
-		.BYTE	$C9,$CA,  3,$CB,$84,$CC,$CD,$CE,$CF, $B,  0,$81,$D0,  2,$D1,$86
-		.BYTE	$D2,$D3,$D4,$D5,$D6,$D7,  2,$D1,$81,$D8,$7F,  0,$7F,  0,$FF,$FF
-_tlm6_robocop:
-		.BYTE	$1A,  0,$26,  0,$8D,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,$5A,  0,$81,$27,  7,  0,$82,$28,$29,  7,  0,$81,$27, $E
-		.BYTE	  0,$81,$2A,  2,  0,$81,$2B,  2,$2C,$86,$2D,$2E,$2F,$30,$31,$32
-		.BYTE	  2,$2C,$81,$33,  2,  0,$81,$2A,  8,  0,$87,$34,$35,$36,$37,$38
-		.BYTE	$39,$3A,  3,$3B,$8A,$3C,$3D,$3E,$3F,$40,$41,$42,$43,$44,$45,  3
-		.BYTE	$3B,$87,$3A,$46,$47,$48,$49,$4A,$4B,  2,  0,$81,$4C,$1C,  0,$81
-		.BYTE	$4D,  2,  0,$81,$4E,  8,  0,$85,$4F,$50,$51,$52,$53,  3,$54,$83
-		.BYTE	$55,$56,$57,  9,  0,$81,$58,  2,  0,$81,$59,  8,  0,$87,$5A,$5B
-		.BYTE	$5C,$5D,$5E,$5F,$60,  2,  0,$83,$5F,$61,$57,  8,  0,$81,$62,  2
-		.BYTE	  0,$81,$59,  6,  0,$87,$63,$64,$65,$66,$67,$68,$69,  2,  0,$82
-		.BYTE	$5F,$60,  2,  0,$81,$6A,  8,  0,$81,$62,  2,  0,$81,$59,  6,  0
-		.BYTE	$89,$6B,$6C,$6D,$6E,$6F,$70,$71,$72,$73, $D,  0,$81,$62,  2,  0
-		.BYTE	$81,$74,  6,  0,$8B,$75,$76,$77,$78,$79,$7A,$7B,$7C,$7D,$7E,$7F
-		.BYTE	  2,  0,$81,$80,  8,  0,$84,$81,  0,$82,$83,  7,  0,$8D,$84,$85
-		.BYTE	$86,$87,$88,$89,$8A,$8B,$8C,$8D,$8E,$8F,$90,  8,  0,$84,$91,$92
-		.BYTE	$93,$94,  6,  0,$8E,$95,$96,$97,$98,$99,$9A,$9B,$9C,$9D,$9E,$9F
-		.BYTE	$A0,$A1,$A2,  8,  0,$84,$A3,$A4,  0,$A5,  6,  0,$8E,$A6,$A7,$A8
-		.BYTE	$A9,$AA,$AB,$AC,$AD,$AE,$AF,$B0,$B1,$B2,$B3,  8,  0,$81,$B4,  2
-		.BYTE	  0,$81,$59,  7,  0,$8D,$B5,$B6,$B7,$B8,$B9,$BA,$BB,$BC,$BD,$BE
-		.BYTE	$BF,$C0,$C1,  8,  0,$81,$62,  2,  0,$81,$59,$1C,  0,$81,$62,  2
-		.BYTE	  0,$81,$59,$1C,  0,$81,$62,  2,  0,$81,$C2,$1C,  0,$81,$C3,  2
-		.BYTE	  0,$81,$C4,$1C,  0,$81,$C5,  2,  0,$84,$C6,$C7,$C8,$C9,  3,$CA
-		.BYTE	$90,$CB,$CC,$CD,$CE,$CF,$D0,$D1,$D2,$D3,$D4,$D5,$D6,$D7,$D8,$D9
-		.BYTE	$DA,  3,$DB,$84,$DC,$DD,$DE,$DF, $B,  0,$81,$E0,  2,$E1,$86,$E2
-		.BYTE	$E3,$E4,$E5,$E6,$E7,  2,$E1,$81,$E8,$7F,  0,$FF,$FF
-_tlm7_ending:
-		.BYTE	$40,  1,$81,  2,  2,  1,$89,  3,  4,  5,  6,  7,  8,  1,  9, $A
-		.BYTE	$14,  1,$81, $B,  2,  1,$81, $C,  3, $D,$88, $E, $F,$10,$11,$12
-		.BYTE	$13,$14,$15,  8,  1,$82,$16,$17,  7,  1,$84,$18,$19,  1,$1A,  3
-		.BYTE	 $D,$88,$1B,$1C,  0,$1D,$1E,$1F,$20,$21,  7,  1,$83,$22,$23,$24
-		.BYTE	  7,  1,$90,$25,$26,$27,$28,$29,$2A,$2B,$2C,$2D,  0,$2E,$2F,$30
-		.BYTE	$31,$32,$33,  5,  1,$84,$34,$35,$36,$24,  7,  1,$85,$37,$38,$39
-		.BYTE	  0,$3A,  2,  0,$85,$3B,  0,$3A,  0,$3B,  2,  0,$85,$3C,  0,$3D
-		.BYTE	$3E,$3F,  2,  1,$85,$40,$41,$36,$42,$43,  6,  1,$90,$44,  0,$45
-		.BYTE	$46,  0,$3A,$47,$48,$49,$4A,$47,$48,  0,$3A,$4B,$4C,  3,  0,$87
-		.BYTE	$4D,$4E,$4F,$41,$36,$50,$51,  4,  1,$96,$52,$53,$54,$55,$56,  0
-		.BYTE	$57,$58,$59,$5A,$5B,$5C,$5D,$5E,$5F,$60,$61,$62,$49,$4A,  0,$63
-		.BYTE	  2,  0,$84,$41,$64,$50,$51,  3,$43,$B3,$65,$66,$67,  0,$68,  0
-		.BYTE	$69,$6A,  0,$6B,$6C,$6D,$6E,$6F,$70,$71,$72,$73,$74,  0,$3A,  0
-		.BYTE	$75,$76,$77,$78,$79,$50,$51,$7A,$7B,$7C,$7D,$7E,$7F,$80,$81,$82
-		.BYTE	$83,$84,$85,$86,$87,$88,$89,$8A,$8B,$8C,$8D,$8E,$8F,  2,  0,$84
-		.BYTE	$90,$91,$92,$93,  2,  0,$98,$94,$95,$96,  0,$97,$98,$99,$9A,  0
-		.BYTE	$9B,$9C,$9D,$9E,$9F,$A0,$A1,$A2,$A3,$A4,$A5,$A6,$A7,$A8,$A9,  2
-		.BYTE	  0,$DF,$AA,$AB,$AC,$AD,$AE,$AF,$B0,$B1,$B2,$B3,$B4,$B5,$B6,$B7
-		.BYTE	$B8,$B9,$BA,$BB,$BC,$BD,$BE,$BF,$C0,$C1,$C2,$C3,$C4,$C5,$C6,$C7
-		.BYTE	$C8,$C9,$CA,$CB,$CC,$CD,$CE,$CF,$D0,$D1,$D2,$D3,$D4,$D5,$D6,$D7
-		.BYTE	$D8,$D9,$DA,$DB,$DC,$DD,$DE,$DF,$E0,$E1,$E2,$E3,$E4,$E5,$E6,$E7
-		.BYTE	$E8,$E9,$EA,$EB,$EC,  0,$ED,$EE,$EF,$F0,$F1,$F2,$F3,$F4,$F5,$F6
-		.BYTE	  1,  2,  3,  4,  5,  6,  7,  8,  9,  6, $A, $B, $C, $D,  6, $E
-		.BYTE	 $F,  3,  0,$8F,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$1A,$1B
-		.BYTE	$1C,$1D,$1E,  4,  6,$81,$1F,  6,  6,$95,$20,$21,$22,$23,$24,$25
-		.BYTE	$26,$27,$28,$29,$2A,$2B,$2C,  0,$2D,$2E,$2F,$30,$31,$32,$33, $C
-		.BYTE	  6,$8A,$34,$35,$36,$37,$38,$39,$3A,$3B,$3C,$3D,  5,  0,$86,$3E
-		.BYTE	$3F,$40,$41,$42,$43,  5,  6,$82,$44,$45,  3,  6,$87,$46,$47,$48
-		.BYTE	$49,$4A,$4B,$4C,  6,  0,$8D,$4D,$4E,$4F,$50,$51,$52,$53,$54,$55
-		.BYTE	  6,$56,$57,$58,  2,  6,$AA,$59,$5A,  6,$5B,$5C,$5D,$5E,$5F,$60
-		.BYTE	$61,$62,$63,$64,$65,$66,$67,$68,$69,$6A,$6B,$6C,$6D,$6E,$6F,$70
-		.BYTE	$71,$72,$73,$74,$75,$76,$77,$78,$79,$7A,$7B,$7C,$7D,$7E,$7F,  0
-		.BYTE	$80,  5,  0,$82,$81,$82,  3,  0,$96,$83,$84,$85,$86,$87,$88,$89
-		.BYTE	$8A,$8B,$8C,$8D,$8E,$8F,$90,$91,$92,$93,  0,$94,$95,$96,$97,  9
-		.BYTE	  0,$97,$98,$99,$9A,$9B,$9C,$9D,$9E,$9F,$A0,$A1,$A2,$A3,$A4,$A5
-		.BYTE	$A6,$A7,$A8,  0,$A9,$AA,$AB,$AC,$AD,  6,  0,$A5,$AE,$AF,$B0,$B1
-		.BYTE	$B2,$B3,$B4,  0,$B5,$B6,$B7,$B8,$B9,$BA,$BB,$BC,$BD,$BE,$BF,$C0
-		.BYTE	$C1,  0,$C2,$C3,$C4,$C5,$C6,  0,$C7,$C8,$C9,$CA,$CB,$CC,$CD,$CE
-		.BYTE	$CF,  3,  0,$9E,$9B,$D0,$D1,$D2,$D3,$D4,$D5,$D6,$D7,$D8,$D9,$DA
-		.BYTE	$DB,  0,$DC,$DD,$DE,$DF,$E0,$E1,$E2,$E3,$E4,$E5,$E6,$E7,$E8,$E9
-		.BYTE	$EA,$EB,  2,  0,$90,$B4,$EC,$ED,$EE,$ED,$EE,  0,$EF,  0,$F0,$F1
-		.BYTE	$F2,$F3,  0,$F4,$F5,  2,  0,$8C,$F6,$F7,$F8,$F9,$FA,$FB,$FC,$FD
-		.BYTE	$FE,$FE,$FE,$FE,$7F,  0,$7F,  0,$FF,$FF
-_tlm3_hiscore:
-		.BYTE	$7F,  0,$28,  0,$81,$27,  7,  0,$82,$28,$29,  7,  0,$81,$27, $E
-		.BYTE	  0,$81,$2A,  2,  0,$81,$2B,  2,$2C,$86,$2D,$2E,$2F,$30,$31,$32
-		.BYTE	  2,$2C,$81,$33,  2,  0,$81,$2A,  8,  0,$87,$34,$35,$36,$37,$38
-		.BYTE	$39,$3A,  3,$3B,$8A,$3C,$3D,$3E,$3F,$40,$41,$42,$43,$44,$45,  3
-		.BYTE	$3B,$87,$3A,$46,$47,$48,$49,$4A,$4B,  2,  0,$81,$4C,  9,  0,$8A
-		.BYTE	  8,  9,  7,  8,$13,  3, $F,$12,  5,$13,  9,  0,$81,$53,  2,  0
-		.BYTE	$81,$54,$1C,  0,$81,$5B,  2,  0,$81,$5C,  2,  0,$83,$1B,$24,  0
-		.BYTE	  7, $F,  3,  0,$84,  7,$24,  8,  1,  2,$12,$84,  9,$13, $F, $E
-		.BYTE	  3,  0,$81,$64,  2,  0,$81,$5C,$1C,  0,$81,$64,  2,  0,$81,$5C
-		.BYTE	  2,  0,$83,$1C,$24,  0,  7, $F,  3,  0,$87,$13,$24, $E,  9,  3
-		.BYTE	 $F, $C,  6,  0,$81,$64,  2,  0,$81,$74,$1C,  0,$84,$7B,  0,$7C
-		.BYTE	$7D,  2,  0,$83,$1D,$24,  0,  7, $F,  3,  0,$85, $A,$24,  2, $C
-		.BYTE	 $F,  2,  7,$81,$13,  5,  0,$84,$84,$85,$86,$87,$1C,  0,$84,$91
-		.BYTE	$92,  0,$93,  2,  0,$83,$1E,$24,  0,  7, $F,  3,  0,$85, $A,$24
-		.BYTE	  2, $C, $F,  2,  7,$81,$13,  5,  0,$81,$A2,  2,  0,$81,$5C,$1C
-		.BYTE	  0,$81,$64,  2,  0,$81,$5C,  2,  0,$83,$1F,$24,  0,  7, $F,  3
-		.BYTE	  0,$85, $A,$24,  2, $C, $F,  2,  7,$81,$13,  5,  0,$81,$64,  2
-		.BYTE	  0,$81,$5C,$1C,  0,$81,$64,  2,  0,$81,$B2,  2,  0,$83,$20,$24
-		.BYTE	  0,  7, $F,  3,  0,$85, $A,$24,  2, $C, $F,  2,  7,$81,$13,  5
-		.BYTE	  0,$81,$B3,  2,  0,$81,$B4,$1C,  0,$81,$B5,  2,  0,$84,$B6,$B7
-		.BYTE	$B8,$B9,  3,$BA,$90,$BB,$BC,$BD,$BE,$BF,$C0,$C1,$C2,$C3,$C4,$C5
-		.BYTE	$C6,$C7,$C8,$C9,$CA,  3,$CB,$84,$CC,$CD,$CE,$CF, $B,  0,$81,$D0
-		.BYTE	  2,$D1,$86,$D2,$D3,$D4,$D5,$D6,$D7,  2,$D1,$81,$D8,$7F,  0,$7F
-		.BYTE	  0,$FF,$FF
-_tlm4_frame:
-		.BYTE	$7F,  0,$28,  0,$81,$27,  7,  0,$82,$28,$29,  7,  0,$81,$27, $E
-		.BYTE	  0,$81,$2A,  2,  0,$81,$2B,  2,$2C,$86,$2D,$2E,$2F,$30,$31,$32
-		.BYTE	  2,$2C,$81,$33,  2,  0,$81,$2A,  8,  0,$87,$34,$35,$36,$37,$38
-		.BYTE	$39,$3A,  3,$3B,$8A,$3C,$3D,$3E,$3F,$40,$41,$42,$43,$44,$45,  3
-		.BYTE	$3B,$87,$3A,$46,$47,$48,$49,$4A,$4B,  2,  0,$81,$4C,$1C,  0,$81
-		.BYTE	$53,  2,  0,$81,$54,$1C,  0,$81,$5B,  2,  0,$81,$5C,$1C,  0,$81
-		.BYTE	$64,  2,  0,$81,$5C,$1C,  0,$81,$64,  2,  0,$81,$5C,$1C,  0,$81
-		.BYTE	$64,  2,  0,$81,$74,$1C,  0,$84,$7B,  0,$7C,$7D,$1C,  0,$84,$84
-		.BYTE	$85,$86,$87,$1C,  0,$84,$91,$92,  0,$93,$1C,  0,$81,$A2,  2,  0
-		.BYTE	$81,$5C,$1C,  0,$81,$64,  2,  0,$81,$5C,$1C,  0,$81,$64,  2,  0
-		.BYTE	$81,$5C,$1C,  0,$81,$64,  2,  0,$81,$B2,$1C,  0,$81,$B3,  2,  0
-		.BYTE	$81,$B4,$1C,  0,$81,$B5,  2,  0,$84,$B6,$B7,$B8,$B9,  3,$BA,$90
-		.BYTE	$BB,$BC,$BD,$BE,$BF,$C0,$C1,$C2,$C3,$C4,$C5,$C6,$C7,$C8,$C9,$CA
-		.BYTE	  3,$CB,$84,$CC,$CD,$CE,$CF, $B,  0,$81,$D0,  2,$D1,$86,$D2,$D3
-		.BYTE	$D4,$D5,$D6,$D7,  2,$D1,$81,$D8,$7F,  0,$7F,  0,$FF,$FF
-_tlm1_probe:
-		.BYTE	$7F,  0,$7F,  0,$2B,  0,$8F,$9C,$9D,$9E,$9F,$A0,$A1,$A2,$A3,$A4
-		.BYTE	$A5,$A6,$A7,$A8,$A9,$AA,$11,  0,$8F,$AB,$AC,$AD,$AE,$AF,$B0,$B1
-		.BYTE	$B2,$B3,$B4,$B5,$B6,$B7,$B8,$B9,$11,  0,$8F,$BA,$BB,$BC,$BD,$BE
-		.BYTE	$BF,$C0,$C1,$C2,$C3,$C4,$C5,$C6,$C7,$C8,$11,  0,$8F,$AB,$C9,$CA
-		.BYTE	$CB,$CC,$CD,$CE,$CF,$D0,$D1,$D2,$D3,$D4,$D5,$D6,$11,  0,$8F,$D7
-		.BYTE	$D8,$D9,$DA,$DB,$DC,$DD,$DE,$DF,$E0,$E1,$E2,$E3,$E4,$E5,$11,  0
-		.BYTE	$8F,$E6,$E7,$E8,$E9,$EA,$EB,$EC,$ED,$EE,$EF,$F0,$F1,$F2,$F3,$F4
-		.BYTE	$7F,  0,$7F,  0,$7F,  0,$7F,  0,$FF,$FF
-_tlm8_repair:
-		.BYTE	 $A,  0,$81,  1,  3,  0,$81,  2,  3,  0,$83,  3,  4,  5,  5,  0
-		.BYTE	$86,  6,  7,  0,  8,  9, $A,  5,  0,$81,  2,  4,  0,$81, $B,  3
-		.BYTE	  0,$81, $C,  3,  0,$84, $D,  0, $E, $F,  2,  0,$81,$10,  3,  0
-		.BYTE	$84,$11,$12,$13,$14,  5,  0,$81, $C,  2,  0,$87,$15,$16,$17,$18
-		.BYTE	$19,  0, $C,  2,  0,$85,$1A,$1B,$1C,$1D,$1E,  2,  0,$82,$1F,$20
-		.BYTE	 $B,  0,$8A, $C,  0,$21,$22,  0,  7,$23,$24,$25, $C,  2,  0,$87
-		.BYTE	$26,$27,$28,$29,$2A,$2B,$2C, $D,  0,$8A, $C,  0,  6,  0,  7,  0
-		.BYTE	  8,  9, $A, $C,  2,  0,$8D,$2D,$2E,$2F,$30,$31,$32,$33,$34,  0
-		.BYTE	$35,$1F,$20,$36,  6,  0,$83,$10, $C,$10,  3,  0,$92,$11,$12,$13
-		.BYTE	$14,$37,  0,$38,$39,$3A,$3B,$3C,$3D,$3E,$3F,$40,$41,$42,$36,  2
-		.BYTE	  0,$82,$43,$36,  4,  0,$82,$10, $C,  3,$10,  7,  0,$8E,$44,$45
-		.BYTE	$46,$47,$48,$49,$4A,$4B,$4C,  0,$4D,  0,$43,$36,  5,  0,  2,$10
-		.BYTE	$81, $C,  2,$10,  2,  0,$83,$35,$1F,$20,  3,  0,$8B,$4E,$4F,$50
-		.BYTE	$51,$52,$53,$54,$55,$56,  0,$57,  7,  0,  2,$10,$82,  0,$37, $A
-		.BYTE	  0,$8A,$58,$59,$5A,$5B,$5C,$5D,$5E,$5F,$60,$61,  7,  0,  2,$10
-		.BYTE	  9,  0,$90,$35,$1F,$20,  0,$62,$63,$64,$65,$66,$67,$68,$69,  0
-		.BYTE	$6A,$6B,$6C,  5,  0,$8B,$35,$1F,$20,  0,$6D,$6E,$6D,$6E,  0,$1F
-		.BYTE	$20,  4,  0,$8D,$6F,$70,$71,$72,$73,$74,$75,$76,$77,$78,$79,$7A
-		.BYTE	$7B,  8,  0,$84,  1,  2,  1,  2,  7,  0,$8A,  3,  4,  5,  6,  7
-		.BYTE	  8,  9, $A, $B, $C,  2,  0,$84, $D, $E, $F,$10, $D,$11,$81,$12
-		.BYTE	  3,  0,$8F,$13,$14,$15,$16,$17,$18,$19,$1A,$1B,$1C,$1D,$1E,$1F
-		.BYTE	$20,$21, $C,$22,$82,$23,$24,  4,  0,$8C,$25,$26,$27,$28,$29,  0
-		.BYTE	$2A,$2B,$2C,$2D,$2E,$2F,  2,  0, $A,$30,$84,$31,$32,$33,$24,  2
-		.BYTE	  0,$81,$34,  2,  0,$8A,$35,$36,$37,$38,  0,$39,$3A,$3B,$3C,$3D
-		.BYTE	  3,  0,$87,$3E,$3F,$40,$41,$42,$43,$44,  4,$45,$83,$46,$33,$24
-		.BYTE	  2,  0,$82,$47,$48,  2,  0,$86,$49,$4A,$4B,  0,$4C,$4D,  6,  0
-		.BYTE	$85,$45,$4E,$4F,$50,$51,  6,$45,$83,$52,$33,$24,  2,  0,$8B,$53
-		.BYTE	$54,  0,$55,$56,$57,$58,  0,$59,$5A,$5B,  5,  0,  4,$45,$81,$51
-		.BYTE	  6,$45,$83,$52,$33,$24,  5,  0,$84,$55,  0,$5C,$5D,  2,  0,$83
-		.BYTE	$5E,$5F,$60,  4,  0, $B,$45,$83,$52,$33,$24,  5,  0,$81,$55,  2
-		.BYTE	  0,$82,$63,$64,  2,  0,$82,$65,$3D,  4,  0,  8,$61,$81,$62,  2
-		.BYTE	$45,$83,$52,$33,$24,  7,  0,$84,$67,$68,$69,$6A, $F,  0,$81,$66
-		.BYTE	  2,$45,$83,$52,$33,$24,  7,  0,$84,$6C,  0,$6D,$6E, $F,  0,$81
-		.BYTE	$6B,  2,$45,$83,$52,$33,$24, $A,  0,$81,$6F, $F,  0,$81,$6B,  2
-		.BYTE	$45,$83,$52,$33,$24,$1A,  0,$81,$6B,  2,$45,$83,$52,$33,$24,$1A
-		.BYTE	  0,$81,$6B,  2,$45,$83,$52,$33,$24,$1A,  0,$81,$66,  2,$45,$83
-		.BYTE	$52,$33,$24,$7F,  0,$7F,  0,$FF,$FF
 _spr8_repair:
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,$81,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	$82,$83,  0,$44,$45,  0,  0,$86,$87,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	$88,$89,  0,  0,  0,  0,  0, $A,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	$8B,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,$8C,$8D,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,$8E,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,$8F,$90,$91,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$92,$93,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$94,$95,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$96,$97,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	$98,  0,  0,  0,  0,  0,$99,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	$9A,  0,  0,  0,  0,  0,$9B,$9C,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,$9D,$9E,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,$9F,$A0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,$A1,$A2,$A3,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,$A4,$A5,$A6,$A7,$A8,$A9,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,$AA,$AB,$AC,$AD,$AE,$AF,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,$B0,  0,$B1,$B2,$B3,$B4,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,$B5,$B6,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,$B7,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-_tlm_repair_head_lib:
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$81,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$82,$83,  0,$44,$45,  0,  0,$86,$87,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$88,$89,  0,  0,  0,  0,  0, $A,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8B,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8C,$8D,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8E,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$8F,$90,$91,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$92,$93,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$94,$95,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$96,$97,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$98,  0,  0,  0,  0,  0,$99,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$9A,  0,  0,  0,  0,  0,$9B,$9C,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$9D,$9E,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$9F,$A0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$A1,$A2,$A3,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$A4,$A5,$A6,$A7,$A8,$A9,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$AA,$AB,$AC,$AD,$AE,$AF,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$B0,  0,$B1,$B2,$B3,$B4,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$B5,$B6,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,$B7,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+
+_ovl_repair_head:
 		.BYTE	  3,  4,  5,  0
 		.BYTE	 $D,  0, $E, $F
 		.BYTE	$1B,$1C,$1D,$1E
@@ -3789,7 +3619,7 @@ _tlm_repair_head_lib:
 		.BYTE	$84,$85,$86,$7F
 		.BYTE	$1B,$1C,$87,$1E
 		.BYTE	$27,$28,$29,$2A
-_tlm_repair_larm_lib0:
+_ovl_repair_rarm0:
 		.BYTE	$38,$39,$3A
 		.BYTE	$44,$45,$46
 		.BYTE	$4E,$4F,$50
@@ -3808,7 +3638,7 @@ _tlm_repair_larm_lib0:
 		.BYTE	$95,$96,$5A
 		.BYTE	$97,$98,$8F
 		.BYTE	$6F,$99,$71
-_tlm_repair_larm_lib1:
+_ovl_repair_rarm1:
 		.BYTE	$2C
 		.BYTE	$33
 		.BYTE	$3F
@@ -3827,7 +3657,21 @@ _tlm_repair_larm_lib1:
 		.BYTE	$A0
 		.BYTE	$A1
 		.BYTE	$9D
-_tlm_repair_body_lib:
+; unused palm hand repair graphics tilemaps 4x4
+;_ovl_repair_larm:
+;		.BYTE	$60,$61,  0,  0
+;		.BYTE	  0,$6A,$6B,$6C
+;		.BYTE	$77,$78,$79,$7A
+;		.BYTE	  0,  0,  0,  0
+;		.BYTE	$B8,$B9,  0,  0
+;		.BYTE	  0,$BA,$6B,$6C
+;		.BYTE	$77,$78,$79,$7A
+;		.BYTE	  0,  0,  0,  0
+;		.BYTE	$B8,$B9,  0,  0
+;		.BYTE	  0,$BB,$BC,$6C
+;		.BYTE	$77,$78,$BD,$7A
+;		.BYTE	  0,  0,  0,  0
+_ovl_repair_body:
 		.BYTE	$3B,$3C,$3D,$3E
 		.BYTE	$47,$48,$49,$4A
 		.BYTE	$51,$52,$53,$54
@@ -3840,8 +3684,9 @@ _tlm_repair_body_lib:
 		.BYTE	$AF,$B0,$B1,$B2
 		.BYTE	$B3,$B4,$B5,$B6
 		.BYTE	$AB,$AC,$B7,$5E
-_tlm_repair_legs_lib:
-		.BYTE	  5,  6,  7,  8,  9,  $A, $B,  $C
+; 6th rows are unused
+_ovl_repair_legs:
+		.BYTE	  5,  6,  7,  8,  9, $A, $B, $C
 		.BYTE	$14,$15,$16,$17,$18,$19,$1A,$1B
 		.BYTE	$25,$26,$27,$28,$29,  0,$2A,$2B
 		.BYTE	  0,$35,$36,$37,$38,  0,$39,$3A
@@ -3859,62 +3704,52 @@ _tlm_repair_legs_lib:
 		.BYTE	  0,$35,$8A,$8B,$8C,  0,$8D,$8E
 		.BYTE	  0,  0,$49,$8F,$90,  0,$4C,$91
 		.BYTE	  0,  0,$56,$92,$93,  0,$59,$5A
-_tlm_repair_rarm_lib_unused:
-		.BYTE	$60,$61,  0,  0
-		.BYTE	  0,$6A,$6B,$6C
-		.BYTE	$77,$78,$79,$7A
-		.BYTE	  0,  0,  0,  0
-		.BYTE	$B8,$B9,  0,  0
-		.BYTE	  0,$BA,$6B,$6C
-		.BYTE	$77,$78,$79,$7A
-		.BYTE	  0,  0,  0,  0
-		.BYTE	$B8,$B9,  0,  0
-		.BYTE	  0,$BB,$BC,$6C
-		.BYTE	$77,$78,$BD,$7A
-		.BYTE	  0,  0,  0,  0
+
 byte_476DC:
 		.BYTE	$30,$90,$60,$90,  0
-_repair_tlm0:
+
+_repair_small_frames_lib:
 		.BYTE	  5,  6,  7,  8,  9, $A, $B, $C
 		.BYTE	$14,$15,$16,$17,$18,$19,$1A,$1B
 		.BYTE	$25,$26,$27,$28,$29,  0,$2A,$2B
 		.BYTE	  0,$35,$36,$37,$38,  0,$39,$3A
 		.BYTE	  0,  0,$49,$4A,$4B,  0,$4C,$4D
 		.BYTE	  0,  0,$56,$57,$58,  0,$59,$5A
-_repair_tlm1:
+
 		.BYTE	  0,  0,$94,$95,$96,  0,  0,  0
 		.BYTE	  0,  0,$97,  0,$98,$99,  0,  0
 		.BYTE	  0,$9A,$9B,$9C,$9D,$9E,  0,  0
 		.BYTE	  0,$9F,$A0,$A1,$A2,$A3,$A4,$A5
 		.BYTE	  0,$A6,$A7,$A8,$A9,$AA,$AB,$AC
 		.BYTE	$AD,$AE,$AF,$B0,$B1,$B2,$B3,$B4
-_repair_tlm2:
+
 		.BYTE	$A6,$A7,$A8,$A9,$AA,$AB,$AC,  0
 		.BYTE	$AE,$AF,$B0,$B1,$B2,$B3,$B4,  0
 		.BYTE	$B5,$B6,$B7,$B8,$B9,$BA,$BB,$BC
 		.BYTE	$BD,$BE,$BF,$C0,$C1,$C2,$C3,$C4
 		.BYTE	$C5,$C6,$C7,$C8,$C9,$CA,$CB,$CC
 		.BYTE	$CD,$CE,$CF,$D0,$D1,$D2,$D3,  0
-_repair_tlm3:
+
 		.BYTE	$D4,$B5,$B6,  0,$AC,  0,  0,  0
 		.BYTE	$D5,$BD,$BE,  0,$BB,  0,$D6,  0
 		.BYTE	$D7,$C5,$C6,  0,$C3,$D8,  0,  0
 		.BYTE	$D9,$CD,$CE,  0,$CB,$CC,$DA,  0
 		.BYTE	$DB,$DC,$DD,$DE,  0,  0,$DF,$E0
 		.BYTE	  3,  4,  5,  0,$E1,  0,$E2,$E3
-byte_477A1:
+
+_repair_small_frame_txt0:
 		.BYTE	$45,$F1,$F2,$F3
-byte_477A5:
+_repair_small_frame_txt1:
 		.BYTE	$F4,$F5,$F6,$F7
-byte_477A9:
+_repair_small_frame_txt2:
 		.BYTE	$45,$F8,$F9,$FA
-byte_477AD:
+_repair_small_frame_txt3:
 		.BYTE	$FB,$FC,$FD,$FE
 
 ; =============== S U B	R O U T	I N E =======================================
-_call_j_far_apu_play:
-		JSR		_j_far_apu_play
-		RTS
+_asci_bios_msg_display_with_skip:
+		LDY		#0
+		STY		_asci_msg_skip_forbid
 
 ; =============== S U B	R O U T	I N E =======================================
 _asci_bios_msg_display:
@@ -4098,9 +3933,6 @@ _asci_get_out_of_there:
 		.BYTE	$45,$54,$40,$4F,$55,$54,$40,$4F,$46,$40,$54,$48,$45,$52,$45,$64
 		.BYTE	$FE,$FE,$FC,$FA
 
-		; banks 6 and 7 has the RESET vector set to STUB address instead of
-		; system RESET address, as against first 4 banks. this doesn't matter,
-		; eighter wectorw will work here, but we have two byte difference from
-		; the original if using this common stub, which is not important at all.
+		ECHO "bank 5 free space", [SAFE_STUB_ORG-.]
 
 		SAFE_STUB

@@ -104,7 +104,7 @@ _lvl_door_enrty_delay:
 		.BYTE	0
 _ingame_sync_counter:
 		.BYTE	0
-_lvl1_player_pal_acid_lockup_redundant:
+_lvl1_player_pal_acid_lockup:
 		.BYTE	0
 _pad_tmp:
 		.BYTE	0
@@ -135,6 +135,16 @@ _unused_36:
 		TOBJ	_obj_lvl_y
 		TOBJ	_obj_hcoll
 		TOBJ	_obj_vcoll
+		
+; 0x00-0x20 - enemies (0x1A max is used)
+; 0x21 - fuel tank
+; 0x22 - smart bomb
+; 0x23 - repair item A
+; 0x24 - repair item B (for slot A)
+; 0x25 - fire power upgrade
+; 0x26 - powerup
+; 0x27 - missile upgrade
+
 		TOBJ	_obj_hndl_idx
 		TOBJ	_obj_unk
 
@@ -199,6 +209,9 @@ _unused_40:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0
+
+		ORG	$200
+
 _spr_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -216,14 +229,15 @@ _spr_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		
 _pal_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-_nmi_ppu_ctrl_override_redundant:
+;_nmi_ppu_ctrl_override_redundant:
 		.BYTE	0
-_ppu_scroll_x_override_redundant:
+;_ppu_scroll_x_override_redundant:
 		.BYTE	0
-_nmi0_scroll_reload_counter_redundant:
+;_nmi0_scroll_reload_counter_redundant:
 		.BYTE	0
 _star_field_rand_seed:
 		.BYTE	0,0,0,0,0
@@ -296,27 +310,19 @@ _dpad:
 byte_3BF:
 		.BYTE	0
 		.BYTE	0
-byte_3C1:
+_repair_cursor_animate_tmp:
 		.BYTE	0
-byte_3C2:
+;_repair_redundant_idx:
 		.BYTE	0
 _tmp3C3:
 		.BYTE	0,0,0
 _tmp_score_hex_value:
 		.BYTE	0,0
-byte_3C8:
+_repair_cur_percent_disp_buf_tmp:
+		.BYTE	0,0,0,0,0,0
+_cur_repair_tanks_number_tile_tmp:
 		.BYTE	0
-		.BYTE	0
-byte_3CA:
-		.BYTE	0
-byte_3CB:
-		.BYTE	0
-byte_3CC:
-		.BYTE	0
-		.BYTE	0
-byte_3CE:
-		.BYTE	0
-byte_3CF:
+_disp_spr_send_tmp:
 		.BYTE	0
 _disp_extra_ctrl:
 		.BYTE	0
@@ -347,41 +353,92 @@ _cur_body_percent_backup:
 _cur_legs_percent_backup:
 		.BYTE	0
 _cur_repair_tanks_backup:
+		.BYTE	0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.BYTE	0
+
+byte_1400:
+		.BYTE	0,0,0,0,0
+byte_1405:
+		.BYTE	0,0,0,0,0
+byte_140A:
+		.BYTE	0,0,0,0,0
+byte_140F:
+		.BYTE	0,0,0,0,0
+byte_1414:
+		.BYTE	0,0,0,0,0
+byte_1419:
+		.BYTE	0,0,0,0,0
+byte_141E:
+		.BYTE	0,0,0,0,0
+byte_1423:
+		.BYTE	0,0,0,0,0
+byte_1428:
+		.BYTE	0,0,0,0,0
+byte_142D:
+		.BYTE	0,0,0,0,0
+byte_1432:
+		.BYTE	0,0,0,0,0
+byte_1437:
+		.BYTE	0,0,0,0,0
+byte_143C:
+		.BYTE	0,0,0,0,0
+		.BYTE	0,0,0,0,0
+byte_1446:
+		.BYTE	0,0,0,0,0
+byte_144B:
+		.BYTE	0,0,0,0,0
+byte_1450:
+		.BYTE	0,0,0,0,0
+byte_1455:
+		.BYTE	0,0,0,0,0
+byte_145A:
+		.BYTE	0,0,0,0,0
+byte_145F:
+		.BYTE	0,0,0,0,0
+byte_1464:
+		.BYTE	0,0,0,0,0
+byte_1469:
+		.BYTE	0,0,0,0,0
+byte_146E:
+		.BYTE	0,0,0,0,0
+byte_1473:
+		.BYTE	0,0,0,0,0
+		.BYTE	0,0,0,0,0
+byte_147D:
+		.BYTE	0,0,0,0,0
+byte_1482:
+		.BYTE	0,0,0,0,0
+byte_1487:
+		.BYTE	0,0,0,0,0
+byte_148C:
+		.BYTE	0,0,0,0,0
+byte_1491:
+		.BYTE	0,0,0,0,0
+byte_1496:
+		.BYTE	0,0,0,0,0
+byte_149B:
+		.BYTE	0,0,0,0,0
+byte_14A0:
+		.BYTE	0,0,0,0,0
+byte_14A5:
+		.BYTE	0,0,0,0,0
+byte_14AA:
+		.BYTE	0,0,0,0,0
+byte_14AF:
+		.BYTE	0,0,0,0,0
+byte_14B4:
+		.BYTE	0,0,0,0,0
+		.BYTE	0,0,0,0,0
+		.BYTE	0,0,0,0,0
+byte_14C3:
+		.BYTE	0,0,0,0,0
+byte_14C8:
+		.BYTE	0,0,0,0,0
+
+		ORG	$600
+		
 _tmp_ptr0:
 		.BYTE	0,0
 _tmp_buf0:
@@ -466,9 +523,9 @@ _apu_load_tmp_Y:
 		.BYTE	0,0,0
 _game_over_flag:
 		.BYTE	0
-_end_of_the_level_flag:
+_special_boss_flood_object_flag:
 		.BYTE	0
-_end_of_the_level_delay:
+_special_boss_flood_object_count:
 		.BYTE	0
 		.BYTE	0
 byte_682:
@@ -635,86 +692,6 @@ _hi_score_pos_count:
 _hi_dec_tmp_buf:
 		.BYTE	0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0
-
-	ORG	$1400
-byte_1400:
-		.BYTE	0,0,0,0,0
-byte_1405:
-		.BYTE	0,0,0,0,0
-byte_140A:
-		.BYTE	0,0,0,0,0
-byte_140F:
-		.BYTE	0,0,0,0,0
-byte_1414:
-		.BYTE	0,0,0,0,0
-byte_1419:
-		.BYTE	0,0,0,0,0
-byte_141E:
-		.BYTE	0,0,0,0,0
-byte_1423:
-		.BYTE	0,0,0,0,0
-byte_1428:
-		.BYTE	0,0,0,0,0
-byte_142D:
-		.BYTE	0,0,0,0,0
-byte_1432:
-		.BYTE	0,0,0,0,0
-byte_1437:
-		.BYTE	0,0,0,0,0
-byte_143C:
-		.BYTE	0,0,0,0,0
-		.BYTE	0,0,0,0,0
-byte_1446:
-		.BYTE	0,0,0,0,0
-byte_144B:
-		.BYTE	0,0,0,0,0
-byte_1450:
-		.BYTE	0,0,0,0,0
-byte_1455:
-		.BYTE	0,0,0,0,0
-byte_145A:
-		.BYTE	0,0,0,0,0
-byte_145F:
-		.BYTE	0,0,0,0,0
-byte_1464:
-		.BYTE	0,0,0,0,0
-byte_1469:
-		.BYTE	0,0,0,0,0
-byte_146E:
-		.BYTE	0,0,0,0,0
-byte_1473:
-		.BYTE	0,0,0,0,0
-		.BYTE	0,0,0,0,0
-byte_147D:
-		.BYTE	0,0,0,0,0
-byte_1482:
-		.BYTE	0,0,0,0,0
-byte_1487:
-		.BYTE	0,0,0,0,0
-byte_148C:
-		.BYTE	0,0,0,0,0
-byte_1491:
-		.BYTE	0,0,0,0,0
-byte_1496:
-		.BYTE	0,0,0,0,0
-byte_149B:
-		.BYTE	0,0,0,0,0
-byte_14A0:
-		.BYTE	0,0,0,0,0
-byte_14A5:
-		.BYTE	0,0,0,0,0
-byte_14AA:
-		.BYTE	0,0,0,0,0
-byte_14AF:
-		.BYTE	0,0,0,0,0
-byte_14B4:
-		.BYTE	0,0,0,0,0
-		.BYTE	0,0,0,0,0
-		.BYTE	0,0,0,0,0
-byte_14C3:
-		.BYTE	0,0,0,0,0
-byte_14C8:
-		.BYTE	0,0,0,0,0
 
 	ORG $2000
 

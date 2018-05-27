@@ -5,14 +5,6 @@
 ; --------------------------------
 
 ; =============== S U B	R O U T	I N E =======================================
-_j_apu_load_chnl:
-		JMP		_apu_load_chnl
-
-; =============== S U B	R O U T	I N E =======================================
-_j_apu_play_chnl:
-		JMP		_apu_play_chnl
-
-; =============== S U B	R O U T	I N E =======================================
 _apu_load_chnl:
 		ASL
 		STA		byte_140F,X
@@ -650,14 +642,14 @@ _mus_lib1:
 		.WORD _mus3A_lib1
 		.WORD _mus3B_lib1
 word_50580:
-		.WORD   0, $202, $202, $202, $202, $202, $202, $202
-		.WORD  $202, $202, $202, $202, $202, $202, $202, $202
-		.WORD  $202,$7F7F, $202, $303, $404, $203, $203, $203
-		.WORD  $203, $303, $303, $303, $303, $303, $203, $203
-		.WORD  $203, $203, $203, $203, $203, $203, $202, $202
-		.WORD  $404, $202, $202, $202, $202, $202, $202, $202
-		.WORD  $202, $202, $202, $202,   0,  0, $101, $303
-		.WORD  $303, $303, $303, $202
+		.WORD      0, $202, $202, $202, $202, $202, $202, $202
+		.WORD   $202, $202, $202, $202, $202, $202, $202, $202
+		.WORD   $202,$7F7F, $202, $303, $404, $203, $203, $203
+		.WORD   $203, $303, $303, $303, $303, $303, $203, $203
+		.WORD   $203, $203, $203, $203, $203, $203, $202, $202
+		.WORD   $404, $202, $202, $202, $202, $202, $202, $202
+		.WORD   $202, $202, $202, $202,    0,    0, $101, $303
+		.WORD   $303, $303, $303, $202
 _mus_lib0_lo:
 		.BYTE	<[_mus00_lib0]
 		.BYTE	<[_mus01_lib0]
@@ -2544,9 +2536,6 @@ _spr_bbox_height_list:
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 
-		; banks 6 and 7 has the RESET vector set to STUB address instead of
-		; system RESET address, as against first 4 banks. this doesn't matter,
-		; eighter wectorw will work here, but we have two byte difference from
-		; the original if using this common stub, which is not important at all.
-		
+		ECHO "bank 6 free space", [SAFE_STUB_ORG-.]
+
 		SAFE_STUB

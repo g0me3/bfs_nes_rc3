@@ -2,22 +2,6 @@
 		ORG $C000, $00
 
 ; =============== S U B	R O U T	I N E =======================================
-_j_RESET:
-		JMP		_RESET
-
-; =============== S U B	R O U T	I N E =======================================
-_j_apu_mus_start:
-		JMP		_apu_mus_start
-
-; =============== S U B	R O U T	I N E =======================================
-_j_far_apu_play:
-		JMP		_far_apu_play
-
-; =============== S U B	R O U T	I N E =======================================
-_j_MAIN_LOOP:
-		JMP		_MAIN_LOOP
-
-; =============== S U B	R O U T	I N E =======================================
 _RESET:
 		SEI
 		LDA		_PPU_STATUS
@@ -27,10 +11,10 @@ _RESET:
 		STX		_ppu_ctrl_shadow
 		STX		_ppu_mask_shadow
 		STX		_APU_STATUS
-		LDY		_unused1B3
+;		LDY		_unused1B3								; newer get any non-zero value
 		TXA
 loc_60023:
-		STA		0,X
+		STA		$000,X
 		STA		$100,X
 		STA		$200,X
 		STA		$300,X
@@ -42,7 +26,7 @@ loc_60023:
 		BNE		loc_60023
 		DEX
 		TXS
-		STY		_unused1B3
+;		STY		_unused1B3
 		LDX		#$59
 loc_60044:
 		LDA		_def_score_tbl,X
@@ -59,7 +43,7 @@ loc_60044:
 		LDA		#0
 		STA		_nmi_hndl_idx
 		LDA		#0
-		JSR		_j_exec_sub
+		JSR		_exec_sub
 
 ; =============== S U B	R O U T	I N E =======================================
 _MAIN_LOOP:
@@ -100,6 +84,16 @@ _MAIN_GAME_START:
 		LDA		_pl_bckp_legs_percent,X
 		STA		_cur_legs_percent
 		LDA		_pl_bckp_repair_tanks,X
+; --
+; fix for starting explosion sprite appearance at the start 
+; of the level
+		CLC
+		LDA		_cur_head_percent
+		ADC		_cur_body_percent
+		ADC		_cur_arms_percent
+		ADC		_cur_legs_percent
+		STA		_cur_overal_armor_sum
+; --
 		STA		_cur_repair_tanks
 		LDA		_pl_bckp_score_hex_lo,X
 		STA		_cur_score_hex
@@ -203,7 +197,7 @@ _main_ingame_loop1:
 		STA		_nmi_hndl_idx
 		STA		_cur_lvl_state_idx
 		LDA		#2
-		JSR		_j_exec_sub
+		JSR		_exec_sub
 		LDA		_new_game_start_flag
 		BNE		loc_601BA
 		JSR		_all_player_vars_init
@@ -248,7 +242,7 @@ _player_backup:
 		LDA		#6
 		JSR		_asci_bios_msg_display_with_skip
 		LDA		#1
-		JSR		_j_exec_sub
+		JSR		_exec_sub
 		JMP		_MAIN_LOOP
 _game_complete:
 		LDY		#5
@@ -257,7 +251,7 @@ _game_complete:
 		LDA		#0
 		STA		_nmi_hndl_idx
 		LDA		#3
-		JSR		_j_exec_sub
+		JSR		_exec_sub
 		JSR		_player_vars_init_ex
 		JMP		_MAIN_LOOP
 
@@ -276,7 +270,7 @@ _repair_lab_handler:
 		LDA		#6
 		JSR		_asci_bios_msg_display_with_skip
 		LDA		#1
-		JSR		_j_exec_sub
+		JSR		_exec_sub
 		JMP		_MAIN_GAME_START
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -408,7 +402,7 @@ _lvl_vars_init:
 		STX		_pause_flag
 		STX		_player_explode_timer_tmp
 		STX		_player_sit_jump_flag
-		STX		_end_of_the_level_flag
+		STX		_special_boss_flood_object_flag
 		STX		_lvl_rooms_walked_count_unused
 		STX		byte_69D
 		STX		_lvl3_tank_weapon_disable_flag
@@ -479,7 +473,7 @@ loc_603BF:
 		LDA		#$1E
 		STA		_lvl_door_enrty_delay
 		LDA		#$14
-		STA		_end_of_the_level_delay
+		STA		_special_boss_flood_object_count
 		LDA		_PPU_STATUS
 		JSR		_lvl_obj_vars_init
 		LDA		_lvl_obj_num_at_start,Y
@@ -552,10 +546,6 @@ _delayX:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_unused_9:
-		RTS
-
-; =============== S U B	R O U T	I N E =======================================
 IRQ:
 		CLI
 		RTI
@@ -574,13 +564,23 @@ NMI:
 		STA		_tmp_ptr0+1
 		JMP		(_tmp_ptr0)
 
+_nmis_lib:
+		.WORD _nmi0	; nmi routine for intro is in bank 5, it should be set before start!
+		.WORD _nmi0
+		.WORD _nmi0
+		.WORD _nmi3
+		.WORD _nmi4
+		.WORD _nmi5
+
 ; =============== S U B	R O U T	I N E =======================================
+; general ingame nmi routine
+;
 _nmi5:
 		BIT		_PPU_STATUS
 		LDX		#0
 		STX		_PPU_MASK
 		STX		_ppu_mask_shadow
-		STX		_unused1B3
+;		STX		_unused1B3
 		STX		_PPU_CTRL
 		STX		_PPU_OAM_ADDR
 		LDA		#2
@@ -619,21 +619,21 @@ _nmi5:
 		ORA		_lvl_nt_value
 		ORA		#$80
 		STA		_ppu_ctrl_shadow
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused1B3
-		BIT		_unused4
+;		BIT		_unused1B3								; delay or something disabled?
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused1B3
+;		BIT		_unused4
 		LDX		_lvl_scroll_value
 		LDY		#5
 		STA		_PPU_CTRL
@@ -676,14 +676,7 @@ _nmi4:
 		JSR		_lvl_rooms_init_draw
 		INC		_nmi_hndl_idx
 		JMP		_nmi_on_exit
-_nmis_lib:
-		.WORD _j_nmi0
-		.WORD _j_nmi0
-		.WORD _j_nmi0
-		.WORD _nmi3
-		.WORD _nmi4
-		.WORD _nmi5
-
+		
 ; =============== S U B	R O U T	I N E =======================================
 _lvl_ppu_data_dequeue:
 		LDA		_cur_lvl_idx
@@ -1412,12 +1405,12 @@ loc_60C9E:
 		LDA		#$40
 		STA		_tmp_buf2+$12
 		STA		_tmp_buf2+$13
-		LDA		#0
-		STA		_pal_update_redundant
-		JMP		loc_60CD4
+;		LDA		#0
+;		STA		_pal_update_redundant
+		BNE		loc_60CD4
 loc_60CB5:
-		LDA		#$10
-		STA		_pal_update_redundant
+;		LDA		#$10
+;		STA		_pal_update_redundant
 		LDA		#$63
 		LDX		_cur_lvl_idx
 		CPX		#4
@@ -1455,8 +1448,8 @@ loc_60CF5:
 		STA		_tmp_buf2+$D,X
 		DEX
 		BPL		loc_60CF5
-		LDA		#$20
-		STA		_pal_update_redundant
+;		LDA		#$20
+;		STA		_pal_update_redundant
 		DEC		_smart_bomb_timer
 		BNE		locret_60D49
 		LDA		#$7F
@@ -1939,11 +1932,11 @@ loc_61167:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_level_skip_unused:
-		INC		_cur_lvl_idx
-		PLA
-		PLA
-		JMP		_level_complete
+;_level_skip_unused:
+;		INC		_cur_lvl_idx
+;		PLA
+;		PLA
+;		JMP		_level_complete
 
 ; =============== S U B	R O U T	I N E =======================================
 _main_ingame_handler:
@@ -2015,9 +2008,9 @@ loc_611FD:
 
 ; =============== S U B	R O U T	I N E =======================================
 _lvl_complete_test:
-		LDA		_end_of_the_level_delay
+		LDA		_special_boss_flood_object_count
 		BNE		locret_6122C
-		LDA		_end_of_the_level_flag
+		LDA		_special_boss_flood_object_flag
 		BEQ		locret_6122C
 		LDA		_obj_flags._enemy
 		ORA		_obj_flags._enemy+1
@@ -2142,7 +2135,7 @@ loc_612CA:
 		CPY		#$BC
 		BCC		loc_612F4
 		ORA		#$20
-		LDY		_lvl1_player_pal_acid_lockup_redundant
+		LDY		_lvl1_player_pal_acid_lockup
 		STY		_tmpE2
 		BNE		loc_612F2
 		LDY		#$D
@@ -2152,7 +2145,7 @@ loc_612F2:
 		LDX		#$7A
 loc_612F4:
 		LDY		_tmpE2
-		STY		_lvl1_player_pal_acid_lockup_redundant
+		STY		_lvl1_player_pal_acid_lockup
 		STA		_obj_flags._player
 		STX		_player_explode_spr_remove_reload
 		LDY		#1
@@ -3870,26 +3863,29 @@ byte_61F40:
 		.BYTE	  2,  4,  6, $B, $D, $F
 
 ; =============== S U B	R O U T	I N E =======================================
+; general level objects manager, read lists sequentialy from first to last,
+; never return back
+;
 _lvl_obj_manager:
-		LDA		_end_of_the_level_flag
-		BNE		loc_61F87
+		LDA		_special_boss_flood_object_flag			; test if we already reach the last level object
+		BNE		.do_wnd_level_enemy_flood
 		LDY		#0
-		LDA		(_lvl_obj_list_ptr),Y
-		CMP		#$FF
-		BEQ		loc_61F84
-		CMP		_player_tile_x
-		BEQ		_obj_add
+		LDA		(_lvl_obj_list_ptr),Y					; +0 read appear X tile idx
+		CMP		#$FF									; test for the last level object record
+		BEQ		.set_end_level_flag						; jump if true
+		CMP		_player_tile_x							; player X tile to appera test, do not add
+		BEQ		_obj_add								; until player is reach this tile
 		RTS
-loc_61F59:
+.special_transition_objects:
 		CMP		#$FF
-		BNE		loc_61F6A
-		LDY		#2
+		BNE		.pal_object								; there are two types of such objects
+		LDY		#2										; object type FF start here (bank object)
 		LDA		(_lvl_obj_list_ptr),Y
-		STA		_lvl_phase_bg_chr_banks_list
+		STA		_lvl_phase_bg_chr_banks_list			; change the bg chr data bank number for long levels
 		STA		_lvl_phase_bg_chr_banks_list+1
 		STA		_lvl_phase_bg_chr_banks_list+2
-		JMP		loc_6208F
-loc_61F6A:
+		JMP		.advance_obj_ptr_and_break
+.pal_object:											; object type FE start here
 		LDY		#2
 		LDA		(_lvl_obj_list_ptr),Y
 		ASL
@@ -3899,133 +3895,136 @@ loc_61F6A:
 		TAY
 		LDX		#0
 loc_61F75:
-		LDA		byte_63C4D,Y
+		LDA		_lvl2_transition_pal_lib,Y
 		STA		_ingame_bg_pal_buf,X
 		INY
 		INX
 		CPX		#$10
 		BCC		loc_61F75
-		JMP		loc_6208F
-loc_61F84:
-		INC		_end_of_the_level_flag
-loc_61F87:
-		LDA		_end_of_the_level_delay
+		JMP		.advance_obj_ptr_and_break
+.set_end_level_flag:
+		INC		_special_boss_flood_object_flag			; when end of the enemy list, set flag
+.do_wnd_level_enemy_flood:
+		LDA		_special_boss_flood_object_count		; and wait for all enemies are disappear
 		BNE		loc_61F8D
-		RTS
+		RTS												; this means the end of the level
 loc_61F8D:
-		LDX		#2
+		LDX		#2										; only two enemies at a time on the screen
 loc_61F8F:
-		LDA		_obj_flags,X
+		LDA		_obj_flags,X							; wait for free slot
 		BEQ		loc_61F97
 		DEX
 		BNE		loc_61F8F
 		RTS
 loc_61F97:
-		LDA		_cur_lvl_idx
-		ASL
+		LDA		_cur_lvl_idx							; enemy type is selecting by the level number
+		ASL												; from the table, one of two randomly selected at a time
 		STA		_tmpE4
 		LDA		_rand_seed
 		AND		#1
 		ORA		_tmpE4
 		TAY
-		LDA		byte_63C43,Y
+		LDA		_end_of_level_enemy_table,Y
 		STA		_tmpE4
 		LDY		_cur_lvl_idx
-		LDA		#$70
-		STA		_tmpE2+1
+		LDA		#$70									; base position of the screen to appear
+		STA		_tmpE2+1								; y
 		LDA		#$50
-		STA		_tmpE6
-		LDA		byte_63C3E,Y
-		STA		_tmpE7
+		STA		_tmpE6									; low x
+		LDA		_end_of_level_enemy_appear_pos_x,Y		; hi x is different for every level
+		STA		_tmpE7									
 		LDY		#$A
-		LDA		_rand_seed
-		BMI		loc_61FBF
+		LDA		_rand_seed								; select appearance side delta
+		BMI		loc_61FBF								; $0A - left side, $88 - right side
 		LDY		#$88
 loc_61FBF:
-		STY		_tmpE2
-		DEC		_end_of_the_level_delay
-		JMP		loc_6200B
+		STY		_tmpE2									
+		DEC		_special_boss_flood_object_count		; decrease enemies counter, do insert
+		JMP		.insert_object
 
 ; =============== S U B	R O U T	I N E =======================================
+; common enemy insert routine, used my the enemy lvl manager or by the
+; lvl init routine to fill all enemies that should be already on the screen
+;
 _obj_add:
 		LDY		#1
-		LDA		(_lvl_obj_list_ptr),Y
-		BMI		loc_61F59
-		LDA		_obj_lvl_x_lo._player
+		LDA		(_lvl_obj_list_ptr),Y					; test for a special object for transition
+		BMI		.special_transition_objects				; between different parts of the level
+		LDA		_obj_lvl_x_lo._player					; x position is relative to player's pos
 		STA		_tmpE6
 		LDA		_obj_lvl_x_hi._player
 		STA		_tmpE7
 		LDY		#3
-		LDA		(_lvl_obj_list_ptr),Y
+		LDA		(_lvl_obj_list_ptr),Y					; +3 read x delta
 		STA		_tmpE2
 		DEY
-		LDA		(_lvl_obj_list_ptr),Y
+		LDA		(_lvl_obj_list_ptr),Y					; +2 read y
 		STA		_tmpE2+1
 		DEY
-		LDA		(_lvl_obj_list_ptr),Y
+		LDA		(_lvl_obj_list_ptr),Y					; +1 read object handler
 		STA		_tmpE4
 		CMP		#$21
 		BCS		loc_61FF5
-		LDX		#3
+		LDX		#3										; object handlers from $00 to $20 are enemies 
 loc_61FEB:
-		LDA		_obj_flags,X
-		BEQ		loc_6200B
+		LDA		_obj_flags,X							; look for free slot to add
+		BEQ		.insert_object
 		DEX
 		BNE		loc_61FEB
-		JMP		loc_6208F
+		JMP		.advance_obj_ptr_and_break				; if no empty slots, skip enemy and do next one
 loc_61FF5:
 		CMP		#$28
-		BCC		loc_62001
+		BCC		loc_62001								; object 28 is a special spr0hit object		
 		LDX		#$C
 		STA		_obj_hndl_idx,X
 		TAY
-		JMP		loc_6202C
+		JMP		.obj_pos_x_calc
 loc_62001:
 		CMP		#$24
-		BNE		loc_62009
-		LDX		#$A
-		BNE		loc_6200B
+		BNE		loc_62009				
+		LDX		#$A										; $24 is misc object slot
+		BNE		.insert_object
 loc_62009:
-		LDX		#$B
-loc_6200B:
-		LDA		_tmpE4
+		LDX		#$B										; $21, $22, $23, $25, $26 and $27 are bonuses
+.insert_object:
+		LDA		_tmpE4									; write object handle
 		STA		_obj_hndl_idx,X
 		TAY
 		LDA		_tmpE2+1
 		CLC
 		ADC		#$40
-		STA		_obj_lvl_y,X
-		LDA		_obj_pal_lib,Y
+		STA		_obj_lvl_y,X							; write object Y pos
+		LDA		_obj_pal_lib,Y							; palette and sprite indexes are in the global object table
 		STA		_obj_pal_idx,X
 		LDA		_obj_spr_lib,Y
 		STA		_obj_spr_idx,X
 		LDA		byte_63BD0,Y
 		STA		_tmp3C3,X
-		LDA		_obj_initi_flags_lib,Y
+		LDA		_obj_init_flags_lib,Y					; as well as sprites
 		STA		_obj_flags,X
-loc_6202C:
-		LDA		_cur_lvl_idx
-		CMP		#3
-		BNE		loc_62042
+.obj_pos_x_calc:
+		LDA		_cur_lvl_idx							; level object appears on the right side in all levels
+		CMP		#3										; except fourth, wich is reversed, then from the right side
+		BNE		.obj_gen_pos_x_calc
 		SEC
 		LDA		_tmpE6
-		SBC		#$84
+		SBC		#$84									; adjust appear position
 		STA		_obj_lvl_x_lo,X
 		LDA		_tmpE7
 		SBC		#0
 		STA		_obj_lvl_x_hi,X
-		JMP		loc_6204F
-loc_62042:
+		JMP		.obj_pos_delta_aplly
+.obj_gen_pos_x_calc:
 		CLC
 		LDA		_tmpE6
-		ADC		#$8E
+		ADC		#$8E									; adjust appear position
 		STA		_obj_lvl_x_lo,X
 		LDA		_tmpE7
 		ADC		#0
 		STA		_obj_lvl_x_hi,X
-loc_6204F:
-		LDA		_tmpE2
-		BMI		loc_62062
+.obj_pos_delta_aplly:
+		LDA		_tmpE2									; extra delta shift for the object
+		BMI		loc_62062								; can be positive or negative
 		ASL
 		CLC
 		ADC		_obj_lvl_x_lo,X
@@ -4048,7 +4047,7 @@ loc_62062:
 		SBC		#0
 		STA		_obj_lvl_x_hi,X
 loc_62077:
-		LDA		#0
+		LDA		#0										; init misc vars
 		STA		_star_field_data1+$B,X
 		STA		_obj_unk,X
 		STA		_star_field_data1+$25,X
@@ -4057,7 +4056,7 @@ loc_62077:
 		STA		_chr1_bank_shadow,X
 		LDA		#1
 		STA		_star_field_data0+$19,X
-loc_6208F:
+.advance_obj_ptr_and_break:
 		CLC
 		LDA		_lvl_obj_list_ptr
 		ADC		#4
@@ -4099,12 +4098,12 @@ _obj_enemy_ai_handlers_lib:
 		.WORD _obj_ehndl09_bomb_thrower2
 		.WORD _obj_ehndl0A_ninja
 		.WORD _obj_ehndl0B_hiding_barrel_lvl1
-		.WORD _obj_ehndl0C_unused
+		.WORD 0	; _obj_ehndl0C_unused
 		.WORD _obj_ehndl0D_regular_gunman2
 		.WORD _obj_ehndl0E_regular_gunman3
 		.WORD _obj_ehndl0F_grenader2
 		.WORD _obj_ehndl10_hanging_gunman0
-		.WORD _obj_ehndl13_hanging_gunman1
+		.WORD 0 ; _obj_ehndl13_hanging_gunman1
 		.WORD _obj_ehndl10_hanging_gunman0
 		.WORD _obj_ehndl13_hanging_gunman1
 		.WORD _obj_ehndl14_walking_grenader0
@@ -4471,10 +4470,10 @@ _obj_ehndl0B_hiding_barrel_lvl1:
 		BNE		_obj_ehndl_hiding_barrel
 
 ; =============== S U B	R O U T	I N E =======================================
-_obj_ehndl0C_unused:
-		LDA		#$67
-		LDY		#$6D
-		BNE		_obj_ehndl_hiding_barrel
+;_obj_ehndl0C_unused:
+;		LDA		#$67
+;		LDY		#$6D
+;		BNE		_obj_ehndl_hiding_barrel
 
 ; =============== S U B	R O U T	I N E =======================================
 _obj_ehndl02_hiding_barrel_lvl0:
@@ -5841,7 +5840,7 @@ loc_62D0A:
 		BCS		loc_62D18
 		JMP		loc_62D94
 loc_62D18:
-		LDA		_end_of_the_level_flag
+		LDA		_special_boss_flood_object_flag
 		BEQ		loc_62D3B
 		LDY		#3
 loc_62D1F:
@@ -7017,7 +7016,7 @@ _ingame_pal_update:
 		STA		_PPU_ADDR
 		LDA		#0
 		STA		_PPU_ADDR
-		LDX		_pal_update_redundant
+;		LDX		_pal_update_redundant					; overrided here by zero, never used
 		LDX		#0
 		LDY		#$10
 loc_635EF:
@@ -7292,7 +7291,7 @@ loc_637B5:
 		TAX
 		INY
 		LDA		(_ptr0),Y
-		JSR		_j_apu_load_chnl
+		JSR		_apu_load_chnl
 		LDY		_apu_load_tmp_Y
 		INY
 		INY
@@ -7300,6 +7299,7 @@ loc_637B5:
 		BNE		loc_637B5
 locret_637CC:
 		RTS
+		
 _snt00_title_mus:
 		.BYTE	  0,  0,  1,  0,  2,  0,  3,  0
 		.BYTE	  0,  1,  3,  2,$FF,$FF,$FF,$FF
@@ -7351,13 +7351,13 @@ _snd26_lvl4_mus:
 ; =============== S U B	R O U T	I N E =======================================
 _apu_play_prg_safe:
 		LDX		#0
-		JSR		_j_apu_play_chnl
+		JSR		_apu_play_chnl
 		LDX		#1
-		JSR		_j_apu_play_chnl
+		JSR		_apu_play_chnl
 		LDX		#2
-		JSR		_j_apu_play_chnl
+		JSR		_apu_play_chnl
 		LDX		#3
-		JSR		_j_apu_play_chnl
+		JSR		_apu_play_chnl
 		LDX		_cur_lvl_idx
 		LDY		_lvl_prg_bank_list,X
 		JSR		_mmc1_prg
@@ -7445,17 +7445,24 @@ _tlm_default_hud:
 		.BYTE	  0,  0,  0,$E5,$E5,$E5,  0,  0,$E6,$E7,$E8,$E9,$EA,$EB,$EC,$ED,$EE,$EF,$F0,$F1,$F2,$F3,$F4,$F5,$AA,$AB,$AC,$AD,$AE,$36,$36,  0
 		.BYTE	  0,$27,$29, $B, $C, $B,$1E, $C,$18,$1B,$17,$10, $B,$18,$10,$1E,$1E, $C,$12,$10,$2A,$28,  0,$2B,  0,  0,  0,  0,  0,  0,  0,  0
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+
+; hud attributes fo every single level, mostly the same except levels 3-5
 _attr_hud_def_lib:
-		.BYTE	$AF,$AF,$3F, $F,$CF,$FF,$EF,$FF,$A5,$A5,$A3,$A8,$A2,$AC,$A5,$A5
-		.BYTE	 $F, $F,$3F, $F,$CF,$FF,$EF,$FF,$A5,$A5,$A3,$A8,$A2,$AC,$A5,$A5
-		.BYTE	$AF,$AF,$3F, $F,$CF,$FF,$EF,$FF,$A5,$A5,$A3,$A8,$A2,$AC,$A5,$A5
-		.BYTE	$AF,$AF,$3F, $F,$CF,$FF,$EF,$FF,$A5,$A5,$A3,$A8,$A2,$AC,$A5,$A5
-		.BYTE	$AF,$AF,$3F, $F,$CF,$FF,$EF,$FF,$A5,$A5,$A3,$A8,$A2,$AC,$A5,$A5
+		.BYTE	$AF,$AF,$3F, $F,$CF,$FF,$EF,$FF
+		.BYTE	$A5,$A5,$A3,$A8,$A2,$AC,$A5,$A5
+		.BYTE	 $F, $F,$3F, $F,$CF,$FF,$EF,$FF
+		.BYTE	$A5,$A5,$A3,$A8,$A2,$AC,$A5,$A5
+		.BYTE	$AF,$AF,$3F, $F,$CF,$FF,$EF,$FF
+		.BYTE	$A5,$A5,$A3,$A8,$A2,$AC,$A5,$A5
+		.BYTE	$AF,$AF,$3F, $F,$CF,$FF,$EF,$FF
+		.BYTE	$A5,$A5,$A3,$A8,$A2,$AC,$A5,$A5
+		.BYTE	$AF,$AF,$3F, $F,$CF,$FF,$EF,$FF
+		.BYTE	$A5,$A5,$A3,$A8,$A2,$AC,$A5,$A5
 _obj_spr_lib:
 		.BYTE	$3A,$44,$30,$54,$48,$3E,$4C,$34,$54,$50,$5A,$69,$6D,$71,$77,$83
 		.BYTE	$65,$67,$65,$67,$7D,$88,$12,$B7,$B1,$AD,$12,  0,  0,  0,  0,  0
 		.BYTE	  0,$AC,  1,  2,$59,  1,  2,  1,  0
-_obj_initi_flags_lib:
+_obj_init_flags_lib:
 		.BYTE	  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1
 		.BYTE	  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0
 		.BYTE	  0,  1,  1,  1,  1,  1,  1,  1,$21
@@ -7479,28 +7486,41 @@ _body_targets_list:
 		.BYTE	  2,  0,  1
 _lvl_prg_bank_list:
 		.BYTE	  0,  1,  2,  3,  4
-byte_63C3E:
+_end_of_level_enemy_appear_pos_x:
 		.BYTE	  9,  5, $E,  5,  5
-byte_63C43:
+_end_of_level_enemy_table:
 		.BYTE	  0,  5,  0,  0,  3,  8,  0,  0,  0,  0
-byte_63C4D:
+_lvl2_transition_pal_lib:
 		.BYTE	 $F,$18,$1B,$2B, $F,  6,$16,$26, $F,$18,$28,$38, $F,$12,$22,$32
 		.BYTE	 $F, $C,$1C,$2C, $F,  6,$16,$26, $F,$18,$28,$38, $F,$12,$22,$32
 		.BYTE	 $F,$22,$18,$29, $F,$18,$29,$39, $F,$18,$28,$38, $F,$12,$22,$32
-		.BYTE	  0,  1,  1,  0,  0,  0
+; unknown unused data
+;		.BYTE	  0,  1,  1,  0,  0,  0
+
+; --
+; original final version of hi-score table
+;_def_score_tbl:
+;		.BYTE	  0,  0,  2,  0,  0,  7,$24,  8,  1,$12,$12,  9,$13, $F, $E
+;		.BYTE	  0,  0,  1,  0,  0,$13,$24, $E,  9,  3, $F, $C,  0,  0,  0
+;		.BYTE	  0,  0,  0,  8,  0,$13,$24,  3,$12, $F,$17,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  6,  0, $A,$24,  2, $F, $E,  1,$12,  0,  0,  0
+;		.BYTE	  0,  0,  0,  4,  0, $A,$24,$14,  5, $C,  0,  0,  0,  0,  0
+;		.BYTE	  0,  0,  0,  1,  0,  8,$24,  2,  9, $E, $E,$13,  0,  0,  0
+; --
+; older unused version of hi-score table from bank 5 used now instead
 _def_score_tbl:
-		.BYTE	  0,  0,  2,  0,  0,  7,$24,  8,  1,$12,$12,  9,$13, $F, $E
-		.BYTE	  0,  0,  1,  0,  0,$13,$24, $E,  9,  3, $F, $C,  0,  0,  0
-		.BYTE	  0,  0,  0,  8,  0,$13,$24,  3,$12, $F,$17,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  6,  0, $A,$24,  2, $F, $E,  1,$12,  0,  0,  0
-		.BYTE	  0,  0,  0,  4,  0, $A,$24,$14,  5, $C,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  1,  0,  8,$24,  2,  9, $E, $E,$13,  0,  0,  0
+		.BYTE	  1,  0,  2,  0,  0,  7,$24,  8,  1,$12,$12,  9,$13, $F, $E
+		.BYTE	  0,  7,  5,  3,  0,$13,$24, $E,  9,  3, $F, $C,  0,  0,  0
+		.BYTE	  0,  7,  0,  0,  0,$13,$24,  3,$12, $F,$17,  0,  0,  0,  0
+		.BYTE	  0,  4,  0,  6,  5,  8,$24,  2,  9, $E, $E,$13,  0,  0,  0
+		.BYTE	  0,  0,  8,  0,  0, $A,$24,$14,  5, $C,  0,  0,  0,  0,  0
+		.BYTE	  0,  0,  0,  4,  5, $A,$24,  2, $F, $E,  1,$12,  0,  0,  0
+
+		ECHO "bank 7 free space", [SYS_STUB_ORG-.]
 
 		ORG	SYS_STUB_ORG, $00
 RESET:
 		SAFE_STUB0
-		SAFE_STUB1
-		SAFE_STUB2
 
 		ORG	SYS_VECTOR_ORG, $00
 

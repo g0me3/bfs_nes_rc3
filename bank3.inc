@@ -665,4 +665,6 @@ _lvl3_attr10:
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 
+		ECHO "bank 3 free space", [SAFE_STUB_ORG-.]
+
 		SAFE_STUB
