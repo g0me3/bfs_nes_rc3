@@ -27,6 +27,9 @@ PROJ3_FAMAGE_VALUE		EQU $14
 
 ; == ENUMS ==
 
+APU_MUS_ENABLE			EQU	1
+APU_SND_ENABLE			EQU 2
+
 ; == BIOS FONT ==
 
 _	EQU	$00
@@ -187,6 +190,11 @@ _cur	EQU	$2B
 .1	EQU	.
 	ENDM
 
+	MAC	SOUND
+SND_{1}		EQU	[[.-_sound_lib]>>3]
+	.BYTE	{2},{3},{4},{5},{6},{7},{8},{9}
+	ENDM
+	
 ; == STUB ==
 
 	MAC	SAFE_STUB0

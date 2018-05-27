@@ -2,7 +2,7 @@
 		ORG $C000, $00
 
 ; =============== S U B	R O U T	I N E =======================================
-; be careful! dump loop routine may take different amount of clocks depending
+; be careful! dumb loop routine may take different amount of clocks depending
 ; on location in memory! normal operation is 5900 clocks, if jump cross page
 ; boundary, delay will be 7000 clocks!!!
 ;
@@ -53,19 +53,18 @@ loc_60044:
 		DEX
 		BNE		loc_60044
 		STX		_nmi_hndl_idx
-		LDA		#1
-		STA		_apu_music_enable
-		STA		_apu_sound_enable
+		LDA		#APU_MUS_ENABLE|APU_SND_ENABLE
+		STA		_apu_enable
 		LDY		#5
 		JSR		_mmc1_prg
 		JSR		_ppu_reinit
-		JSR		_attract_display
+		JSR		_attract_display						; copyrights, logos then jump to title
 
 ; =============== S U B	R O U T	I N E =======================================
 _MAIN_LOOP:
 		JSR		_ppu_reinit
 		LDA		#$23
-		STA		_rand_seed
+		STA		_rand_seed								; setup rng
 		LDA		#$4C
 		STA		_rand_seed+1
 		LDA		#$E6
@@ -74,8 +73,8 @@ _MAIN_LOOP:
 		STA		_rand_seed+3
 		LDA		#0
 		STA		_hud_msg_idx
-		STA		_lvl2_smart_bomb_flag
-		STA		_lvl4_destruction_counter
+		STA		_lvl2_smart_bomb_flag					; init special livel folags
+		STA		_lvl4_cur_pass_char_idx
 		LDA		#2
 		STA		_hud_msg_expose_time+1
 		STA		_player_damage_blink_timer
@@ -96,10 +95,10 @@ _GAME_START:
 		STA		_ppu_mask_shadow_mask
 		LDA		#3
 		STA		_nmi_hndl_idx							; set the nmi routine to game init
-		LDX		_lvl_idx
+		LDX		_lvl_idx								; set the lvl data bank
 		LDY		_lvl_prg_bank_list,X
 		JSR		_mmc1_prg
-		JSR		_lvl_vars_init
+		JSR		_lvl_vars_init							; read level data from external banks
 		LDA		#0
 		STA		_nmi_is_over_flag
 		STA		_pause_flag
@@ -110,6 +109,8 @@ _GAME_START:
 		LDA		#$F										; as well as load delay timer (60/4 = 15)
 		STA		_lvl4_seconds_timer
 		STA		_lvl4_clock_delay
+		LDA		#$FF
+		STA		_pad_block_mask
 .ingame_init_loop0:
 		LDA		_nmi_is_over_flag						; wait for next nmi, first will clear screen
 		BEQ		.ingame_init_loop0						; second will draw the level itself
@@ -179,6 +180,7 @@ _MAIN_INGAME_LOOP:
 		JMP		_MAIN_LOOP
 ; --------------------------------
 _LEVEL_COMPLETE:
+		INC		_lvl_idx
 		LDA		_lvl_idx								; test if the game is complete
 		CMP		#5
 		BEQ		.game_complete
@@ -280,23 +282,17 @@ _player_overall_armor_calc:
 		STA		_overal_armor_sum
 		ROR		_overal_armor_sum+1						; / 2
 		ROR		_overal_armor_sum
-;		ROR		_overal_armor_sum+1
-;		ROR		_overal_armor_sum
 		LDA		_overal_armor_sum						; return value
 		RTS
 		
 ; =============== S U B	R O U T	I N E =======================================
 _player_vars_init:
 		LDA		#0
-;		LDA		#4
 		STA		_lvl_idx
-;		LDA		#0
 		STA		_score_hex
 		STA		_score_hex+1
-;		LDA		#2
 		STA		_weapon0_idx
 		STA		_weapon1_idx
-;		LDA		#0
 		STA		_weapon_type
 		LDA		#DEF_PERCENT_VALUE
 		STA		_percents.head
@@ -309,76 +305,48 @@ _player_vars_init:
 		STA		_continues
 		JSR		_player_overall_armor_calc
 		JSR		_player_percents_backup
-		JSR		_ppu_pal_clear
-		RTS
+		JMP		_ppu_pal_clear
 
 ; =============== S U B	R O U T	I N E =======================================
-_failure_test_handler:
-		DEC		_failure_duration_period
-		BPL		.do_failure_test
-		LDA		#$64
-		STA		_failure_duration_period
-		LDA		#0
-		STA		_failure_mode
-		LDA		_rand_seed
+_read_pads:
+		LDY		#1
+		STY		_PAD0_REG
+		DEY
+		STY		_PAD0_REG
+		LDY		#8
+loc_6125A:
+		PHA
+		LDA		_PAD0_REG
+		STA		_pad_data
+		LSR
+		ORA		_pad_data
+		LSR
+		PLA
+		ROL
+		DEY
+		BNE		loc_6125A
+		LDY		_pad_last								; backup prev input
+		STY		_pad_data
+		STA		_pad_last								; save new input
+		LDA		_pad_block_mask							; test for special mask case
+		BNE		loc_61250								; if 0 then swap left and right
+		LDA		_pad_last
 		AND		#3
 		TAX
-		LDA		_percents,X
-		CMP		#FAILURE_TRESHOLD
-		BCS		.no_failure
-		LDA		_rand_seed
-		CMP		#$14
-		BCS		.no_failure
-		INX
-		STX		_failure_mode
-locret_602D5:
-		RTS
-.no_failure:
-		LDA		_hud_msg_idx
-		CMP		#$16
-		BCC		locret_602D5
-		LDA		#0
-		JMP		_hud_msg_set_request_ex
-.do_failure_test:
-		LDA		_failure_mode
-		BNE		loc_602E8
-		RTS
-loc_602E8:
-		CMP		#4
-		BNE		loc_602F5
-		LDA		_pads
-		AND		#$78
-		STA		_pads
-		JMP		loc_6031D
-loc_602F5:
-		CMP		#3
-		BNE		loc_60302
-		LDA		_pads
-		AND		#$BF
-		STA		_pads
-		JMP		loc_6031D
-loc_60302:
-		CMP		#2
-		BNE		loc_6030F
-		LDA		_pads
-		AND		#$7B
-		STA		_pads
-		JMP		loc_6031D
-loc_6030F:
-		LDA		_pads
-		AND		#3
-		TAX
-		LDA		_pads
+		LDA		_pad_last
 		AND		#$FC
-		ORA		_failure_dpad_swap_table,X
-		STA		_pads
-loc_6031D:
-		LDA		_failure_mode
-		CLC
-		ADC		#$15
-		JSR		_hud_msg_set_request
+		ORA		_dpad_swap_list,X
+		JMP		loc_61251
+loc_61250:
+		AND		_pad_last								; mask last data with block value
+loc_61251:
+		STA		_pad_last								; save again filtered value
+		EOR		_pad_data								; do edge calcs
+		AND		_pad_last
+		STA		_pad_edge
 		RTS
-_failure_dpad_swap_table:
+
+_dpad_swap_list:
 		.BYTE	  0,  2,  1,  3
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -386,7 +354,7 @@ _lvl_vars_init:
 		SEI
 		LDX		#0
 		STX		_lvl_bg_chr_treshold+1
-		STX		_player_scroll_stop_override_tmp
+		STX		_player_scroll_stop_flag
 		STX		_obj_shuffle_mode
 		STX		_game_over_flag
 		STX		_pause_flag
@@ -457,7 +425,7 @@ loc_603BF:
 		STA		_lvl_spr_chr_bank_down
 		STA		_lvl_spr_chr_bank_down_backup
 		LDA		#$FF
-		STA		_pal_blink_flag
+		STA		_pal_blink_timer
 		LDA		#$1E
 		STA		_lvl_bonus_portal_delay
 		LDA		#$14
@@ -472,16 +440,17 @@ loc_603FB:
 		DEC		_tmpE5
 		BNE		loc_603FB
 loc_60402:
-		LDA		#0
+		LDA		#SND_SILENCE
 		STA		_snd_idx
 		JSR		_far_apu_mus_load_unsafe				; mute all current sounds
-		CLC
-		LDA		_lvl_idx							; calc level bg music index
-		ADC		#$22
+		LDY		_lvl_idx
+		LDA		_lvl_mus_list,Y
 		STA		_snd_idx
 		JSR		_far_apu_mus_load_unsafe				; load level bg music
-		JSR		_ppu_reinit
-		RTS
+		JMP		_ppu_reinit
+		
+_lvl_mus_list:
+		.BYTE	SND_MLEVEL0,SND_MLEVEL1,SND_MLEVEL2,SND_MLEVEL3,SND_MLEVEL4
 
 ; =============== S U B	R O U T	I N E =======================================
 ; used only from bank 5 routines, changes bank to 6 and restores it back to 5
@@ -490,8 +459,7 @@ _far_apu_mus_load_prg5_safe:
 		STA		_snd_idx
 		JSR		_far_apu_mus_load_unsafe
 		LDY		#5
-		JSR		_mmc1_prg
-		RTS
+		JMP		_mmc1_prg
 
 ; =============== S U B	R O U T	I N E =======================================
 ; used only from bank 5 routines, changes bank to 6 and restores it back to 5
@@ -501,8 +469,7 @@ _far_apu_play_prg5_safe:
 		JSR		_mmc1_prg
 		JSR		_apu_play
 		LDY		#5
-		JSR		_mmc1_prg
-		RTS
+		JMP		_mmc1_prg
 
 ; =============== S U B	R O U T	I N E =======================================
 _ppu_reinit:
@@ -865,7 +832,7 @@ loc_6072F:
 		LSR
 		CLC
 		ADC		#$F6
-		LDY		_lvl4_destruction_counter
+		LDY		_lvl4_cur_pass_char_idx
 		CPY		#$C
 		BCC		loc_6073D
 		LDA		#$49
@@ -877,7 +844,7 @@ loc_6073F:
 		STA		_tmp_buf0+$A,X
 		DEX
 		BPL		loc_6073F
-		LDA		_lvl4_destruction_counter
+		LDA		_lvl4_cur_pass_char_idx
 		CMP		#$C
 		BCC		loc_60757
 		LDA		_hud_msg_cursor_blink_timer
@@ -885,7 +852,7 @@ loc_6073F:
 loc_60757:
 		LDX		#0
 loc_60759:
-		CPX		_lvl4_destruction_counter
+		CPX		_lvl4_cur_pass_char_idx
 		BEQ		loc_60769
 		LDA		_lvl4_pass_chars_list,X
 		STA		_tmp_buf0+2,X
@@ -893,7 +860,7 @@ loc_60759:
 		CPX		#$C
 		BCC		loc_60759
 loc_60769:
-		LDA		byte_686
+		LDA		_player_back_standing_flag
 		BEQ		loc_607AA
 		DEC		byte_684
 		BNE		loc_607AA
@@ -903,19 +870,15 @@ loc_60769:
 		STA		byte_685
 		LDA		#$64
 		STA		byte_684
-		INC		_lvl4_destruction_counter
-		LDY		_lvl4_destruction_counter
+		INC		_lvl4_cur_pass_char_idx
+		LDY		_lvl4_cur_pass_char_idx
 		CPY		#$D
 		BCS		loc_60797
-		LDA		_lvl4_pass_chars_list,Y
-		SEC
-		SBC		#$F6
-		CLC
-		ADC		#$13
+		LDA		_lvl4_pass_snd_list,Y
 		STA		_snd_idx
 loc_60797:
 		LDY		#$B
-		LDA		_lvl4_destruction_counter
+		LDA		_lvl4_cur_pass_char_idx
 		CMP		#$C
 		BCC		loc_607A2
 		LDY		#$C
@@ -923,30 +886,32 @@ loc_607A2:
 		TYA
 		JSR		_hud_msg_set_request
 loc_607AA:
-		LDA		_lvl4_destruction_counter
+		LDA		_lvl4_cur_pass_char_idx
 		CMP		#$C
 		BCC		locret_607D5
-		DEC		byte_697
+		DEC		_lvl4_pass_done_snd_delay
 		BPL		locret_607D5
 		LDA		#$A
-		STA		byte_697
-		INC		byte_698
-		LDY		byte_698
+		STA		_lvl4_pass_done_snd_delay
+		INC		_lvl4_pass_done_snd_pos
+		LDY		_lvl4_pass_done_snd_pos
 		CPY		#$C
 		BCC		loc_607C7
 		LDY		#0
 loc_607C7:
-		STY		byte_698
-		LDA		_lvl4_pass_chars_list,Y
-		SEC
-		SBC		#$F6
-		CLC
-		ADC		#$13
+		STY		_lvl4_pass_done_snd_pos
+		LDA		_lvl4_pass_snd_list,Y
 		STA		_snd_idx
 locret_607D5:
 		RTS
 _lvl4_pass_chars_list:
-		.BYTE	$FF,$FA,$FB,$F7,$F9,$F8,$FD,$FE,$FC,$F6,$FF,$F9,$F6,$F6,$F6
+		.BYTE	$FF,$FA,$FB,$F7
+		.BYTE	$F9,$F8,$FD,$FE
+		.BYTE	$FC,$F6,$FF,$F9
+_lvl4_pass_snd_list:
+		.BYTE	SND_PASSBP9,SND_PASSBP4,SND_PASSBP5,SND_PASSBP1
+		.BYTE	SND_PASSBP3,SND_PASSBP2,SND_PASSBP7,SND_PASSBP8
+		.BYTE	SND_PASSBP6,SND_PASSBP0,SND_PASSBP9,SND_PASSBP3
 ; --------------------------------
 .regular_lvl_handler:
 		CMP		#3
@@ -1174,7 +1139,7 @@ loc_6093B:
 loc_6094A:
 		LDA		#0										; fill the rest with zeroes
 loc_60950:
-		CPY		#$1B
+		CPY		#$1C
 		BEQ		loc_6095B								; check for end of buffer first
 		STA		_tmp_buf2,Y								; write if any
 		INY
@@ -1359,12 +1324,12 @@ loc_60CF5:
 		DEC		_smart_bomb_timer
 		BNE		locret_60D49
 		LDA		#$7F
-		STA		_pal_blink_flag
+		STA		_pal_blink_timer
 		LDA		#0
 		STA		_lvl2_smart_bomb_flag
 		LDA		#$E
 		JSR		_hud_msg_set_request_ex
-		LDA		#4
+		LDA		#SND_BIGBOOM
 		STA		_snd_idx
 		LDA		_obj_x_hi._player
 		CMP		#$E
@@ -1869,56 +1834,93 @@ loc_61167:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
+_failure_test_handler:
+		DEC		_failure_duration_period
+		BPL		locret_602D5
+		LDA		#$64
+		STA		_failure_duration_period
+		LDA		_rand_seed
+		AND		#3
+		TAX
+		LDA		_percents,X
+		CMP		#FAILURE_TRESHOLD
+		BCS		.no_failure
+		LDA		_rand_seed
+		CMP		#$14
+		BCS		.no_failure
+		LDA		_pad_block_masks_list,X
+		STA		_pad_block_mask
+		TXA
+		CLC
+		ADC		#$16
+		JMP		_hud_msg_set_request
+.no_failure:
+		LDA		#$FF
+		STA		_pad_block_mask
+		LDA		_hud_msg_idx
+		CMP		#$16
+		BCC		locret_602D5
+		LDA		#0
+		JMP		_hud_msg_set_request_ex
+locret_602D5:
+		RTS
+
+_pad_block_masks_list:
+		.BYTE	  0,$7B,$BF,$78
+
+; =============== S U B	R O U T	I N E =======================================
 _main_ingame_handler:
 		LDA		#$FF
 		STA		_snd_idx
 		STA		_ppu_mask_shadow_mask
-		JSR		_read_pads
-		JSR		_failure_test_handler
-		INC		_ingame_sync_counter
-		LDA		_pause_flag
-		BEQ		loc_611A0
-		LDA		_pads
-		AND		#$20
-		BNE		loc_6118F
+		JSR		_failure_test_handler					; test failure event, set mask for pad block
+		JSR		_read_pads								; start main frame, read pards first
+		INC		_ingame_sync_counter					; increase frame counter
+		LDA		_pause_flag								; skip pause handler
+		BEQ		.no_paused_handler						; pause has its own branch
+		LDA		_pad_edge
+; --
+		AND		#$20									; DEBUG level skip
+		BEQ		loc_6118F								; dev leftover, hold Select on pause to skip this
+		LDA		#1
+		STA		_game_over_flag							
+; --
 loc_6118F:
-		LDA		_pads
+		LDA		_pad_edge
 		AND		#$10
-		BEQ		loc_611B8
-		AND		_pads+2
-		BNE		loc_611B8
+		BEQ		.skip_ingame_handlers1					; unpause with Start
 		LDA		#0
-		STA		_pause_flag
-		JMP		loc_611B8
-loc_611A0:
-		JSR		_lvl_obj_collision_test
-		JSR		_obj_misc_collision_test
-		JSR		_lvl_generic_input_control
+		STA		_pause_flag								; remove pause flag
+		JMP		.skip_ingame_handlers1
+.no_paused_handler:
+		JSR		_lvl_obj_collision_test					; common ingame handlers, part 1 collisions, scroll/sprite/obj managers
+		JSR		_far_obj_misc_collision_test_lvl_prg_safe
+		JSR		_player_input_control
 		LDA		_obj_y._player
 		AND		#$F0
 		STA		_player_y_meta16_tile_tmp
 		JSR		_lvl_scroll_handlers
-		JSR		_obj_spr_manager
-		JSR		_lvl_obj_manager
-loc_611B8:
-		LDA		_lvl_idx
-		CMP		#4
-		BNE		loc_611C4
+		JSR		_far_spr_manager_lvl_prg_safe		; set bank 6, return back lvl bank
+		JSR		_lvl_obj_manager						; read far data from lvl prg bank
+.skip_ingame_handlers1:
+		LDA		_lvl_idx								; one more special check for level 4
+		CMP		#4										; only level 4 has no sprite0hit chr data change
+		BNE		.spr0hit_wait								; you don't need to wait for the spr0hit flag raised
 		LDA		_PPU_STATUS
-		JMP		loc_611CB
-loc_611C4:
-		LDA		_PPU_STATUS
+		JMP		.spr0hit_skip							; so just skip the loop
+.spr0hit_wait:
+		LDA		_PPU_STATUS								; in any other cases, wait for spr0hit
 		AND		#$C0
-		BEQ		loc_611C4
-loc_611CB:
-		LDA		_lvl_spr_chr_bank_down
+		BEQ		.spr0hit_wait
+.spr0hit_skip:
+		LDA		_lvl_spr_chr_bank_down					; change bottom sprite chr bank to draw lower enemies
 		JSR		_mmc1_chr1
-		JSR		_obj_hidden_portal_test_and_bonus_animate
+		JSR		_obj_hidden_portal_test_and_bonus_animate	; one more any time test routine, working on pause either
 		LDY		#6
 		JSR		_mmc1_prg
-		LDA		_pause_flag
-		BNE		loc_611FD
-		JSR		_hud_update_ppu_data
+		LDA		_pause_flag								; the rest o
+		BNE		.skip_ingame_handlers2
+		JSR		_hud_update_ppu_data					; graphics update routines, main ai handlers, misc objects handlers
 		JSR		_obj_enemy_ai_manager
 		JSR		_obj_position_adjust
 		JSR		_player_bullets_animate
@@ -1926,32 +1928,32 @@ loc_611CB:
 		JSR		_obj_obj_collision_tests
 		JSR		_lvl_bg_chr_switch
 		JSR		_player_damage_blink
-		JSR		_far_apu_snd_load_unsafe
-		JSR		_lvl_complete_test
+		JSR		_far_apu_snd_load_unsafe				; start queued in previous ai handlers sound effects
+		JSR		_lvl_flood_boss_complete_test
 		JSR		_bg_pal_blink_handler
-loc_611FD:
+.skip_ingame_handlers2:
 		JSR		_apu_play								; jump directly to bank 6, it is already set here
 		LDX		_lvl_idx								; restore back current level data bank
 		LDY		_lvl_prg_bank_list,X
-		JSR		_mmc1_prg
-		RTS
+		JMP		_mmc1_prg
 
 ; =============== S U B	R O U T	I N E =======================================
-_lvl_complete_test:
+_lvl_flood_boss_complete_test:
 		LDA		_special_boss_flood_object_count
-		BNE		locret_6122C
-		LDA		_special_boss_flood_object_flag
-		BEQ		locret_6122C
-		LDA		_obj_flags._enemy
+		BNE		locret_6122C							; enemies not over yet
+		LDA		_special_boss_flood_object_flag			; and they are used at all, means there is an end of
+		BEQ		locret_6122C							; enemy list reached for thie level (FF)
+		LDA		_obj_flags._enemy						; test for last enemies die
 		ORA		_obj_flags._enemy+1
 		ORA		_obj_flags._enemy+2
 		BNE		locret_6122C
-		LDA		_game_over_flag
+		LDA		_game_over_flag							; finally game over flag haven't set yet.
 		BNE		locret_6122C
-		LDA		_overal_armor_sum
+		LDA		_overal_armor_sum						; and player still alive
 		BEQ		locret_6122C
-		INC		_lvl_idx
+		PLA												; do break and exit from the main loop
 		PLA
+		PLA												; we in the TWO jsr's under the main loop, so need two more PLA's
 		PLA
 		JMP		_LEVEL_COMPLETE
 locret_6122C:
@@ -1959,17 +1961,17 @@ locret_6122C:
 
 ; =============== S U B	R O U T	I N E =======================================
 _bg_pal_blink_handler:
-		LDA		_pal_blink_flag
-		BPL		loc_6123A
-		LDA		_ingame_bg_pal_buf
+		LDA		_pal_blink_timer
+		BPL		loc_6123A								; if timer counting, do full pal xoring
+		LDA		_ingame_bg_pal_buf						; or just write the clamped max color
 		AND		#$30
-		BNE		loc_6123A
+		BNE		loc_6123A								; if not a zero
 		RTS
 loc_6123A:
-		DEC		_pal_blink_flag
+		DEC		_pal_blink_timer						; decrease timer
 		LDY		#$F
 loc_6123F:
-		LDA		_ingame_bg_pal_buf,Y
+		LDA		_ingame_bg_pal_buf,Y					; do palette data xoring
 		EOR		#$30
 		STA		_ingame_bg_pal_buf,Y
 		DEY
@@ -1977,523 +1979,448 @@ loc_6123F:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_read_pads:
-		LDA		_pads
-		STA		_pads+2									; old input
-		LDY		#1
-		STY		_PAD0_REG
-		DEY
-		STY		_PAD0_REG
-		LDY		#8
-loc_6125A:
-		PHA
-		LDA		_PAD0_REG
-		STA		_pad_data
-		LSR
-		ORA		_pad_data
-		LSR
-		PLA
-		ROL
-		DEY
-		BNE		loc_6125A
-		STA		_pads									; old input
-		LDY		_pad_last								; new input
-		STY		_pad_data
-		STA		_pad_last
-		EOR		_pad_data
-		AND		_pad_last
-		STA		_pad_edge
-		RTS
-
-
-; =============== S U B	R O U T	I N E =======================================
-_lvl_generic_input_control:
-		LDA		_obj_y._player
+_player_input_control:
+		LDA		_obj_y._player							; test for instant death first in level pits
 		CMP		#$F0
-		BCS		loc_6127C
+		BCS		.no_pit									; all Y positions between E0 and F0 are deadly, others don't
 		CMP		#$E0
-		BCC		loc_6127C
+		BCC		.no_pit
 		LDA		#$FF
-		STA		_game_over_flag
+		STA		_game_over_flag							; death flag, instant game over
 		RTS
-loc_6127C:
+.no_pit:
 		LDA		_lvl_idx
 		CMP		#2
-		BNE		loc_61285
-		JMP		_jetpack_input_control
-loc_61285:
-		LDA		_lvl4_destruction_counter
+		BNE		.walk_control							; hardwired for level 3 only
+		JMP		_jetpack_control
+; --------------------------------
+.walk_control:
+		LDA		_lvl4_cur_pass_char_idx					; hack to keep robocop stay after password in level 5 is entered
 		CMP		#$C
-		BCC		loc_61290
+		BCC		loc_61290								; check for the numbers entered first
 		LDA		#8
-		STA		_pads
+		STA		_pad_last								; if positive, force pads to Up
 loc_61290:
 		LDA		#0
-		STA		byte_686
-		LDA		_overal_armor_sum
-		BNE		loc_612A6
+		STA		_player_back_standing_flag				; disableturn back flag, it not needed on the regular levels
+		LDA		_overal_armor_sum						; check for death animation sequence
+		BNE		.lvl1_scroll_adjust_test
 		LDA		#0
-		STA		_pads
-		LDA		_player_sit_jump_flag
-		BNE		loc_612A6
-		JSR		_player_explosion_anim
-		RTS
-loc_612A6:
-		LDA		_player_scroll_stop_override_tmp
+		STA		_pad_last								; disable input
+		LDA		_player_sit_jump_flag					; test if in mid air, so wait for landing
+		BNE		.lvl1_scroll_adjust_test
+		JMP		_player_explosion_anim					; and BOOOOM
+; ------------------------
+.lvl1_scroll_adjust_test:
+		LDA		_player_scroll_stop_flag				; used for special ninja case to stop scrolling
 		CMP		#2
-		BNE		loc_612CA
+		BNE		.acid_test
 		LDA		_obj_x_hi._player
-		CMP		_lvl_stop_sctoll_room_idx
-		BEQ		loc_612C6
+		CMP		_lvl_stop_sctoll_room_idx				; regular stop scroll test
+		BEQ		.stop_scroll
 		LDX		_player_wnd_scroll_counter
 		CPX		#$74
-		BCC		loc_612C6
+		BCC		.stop_scroll							; walk until X = $74 without scroll
 		DEC		_player_wnd_scroll_counter
-		LDA		_pads
+		LDA		_pad_last								; maskout left-right movement keys, and do scroll increase
 		AND		#$FC
-		STA		_pads
-		JSR		loc_615FD
-		JMP		loc_612CA
-loc_612C6:
+		STA		_pad_last
+		JSR		_scroll_inc
+		JMP		.acid_test
+.stop_scroll:
 		LDA		#0
-		STA		_player_scroll_stop_override_tmp
-loc_612CA:
-		LDY		#0
-		STY		_tptr1
+		STA		_player_scroll_stop_flag
+; ------------------------
+.acid_test:
+		LDY		#0										; other special level test case a lot of them!
+		STY		_tptr1									; clear tmp flags
 		LDX		#0
-		LDA		_obj_flags._player
+		LDA		_obj_flags._player						; remove special player flag
 		AND		#$DF
-		LDY		_lvl_idx
+		LDY		_lvl_idx								; check for particular level
 		CPY		#1
-		BNE		loc_612F4
-		LDY		_obj_y._player
+		BNE		.no_acid_test							; special level 2 acid test
+		LDY		_obj_y._player							; check for particular Y pos
 		CPY		#$DC
-		BCS		loc_612F4
+		BCS		.no_acid_test							; acid is at Y $BC-$DC
 		CPY		#$BC
-		BCC		loc_612F4
-		ORA		#$20
-		LDY		_lvl1_player_pal_acid_lockup
-		STY		_tptr1
-		BNE		loc_612F2
-		LDY		#$D
+		BCC		.no_acid_test
+		ORA		#$20									; special player flag raise, 20
+		LDY		_lvl1_player_pal_acid_lockup			; lock flag
+		STY		_tptr1									; pal value
+		BNE		.skip_acid_sound						; first pass here lock = 0, start sound
+		LDY		#SND_ACIDHIS							; further passes lock isn't zero, no more sound start
 		STY		_snd_idx
 		STY		_tptr1
-loc_612F2:
-		LDX		#$7A
-loc_612F4:
-		LDY		_tptr1
+.skip_acid_sound:
+		LDX		#$7A									; hide player's foot under the acid value
+.no_acid_test:
+		LDY		_tptr1									; write tmp, lock and pal values
 		STY		_lvl1_player_pal_acid_lockup
-		STA		_obj_flags._player
-		STX		_player_explode_spr_remove_reload
-		LDY		#1
-		LDA		_pads
-		AND		#3
-		STA		_tptr1
-		LDA		_pads+2
-		AND		#3
-		CMP		_tptr1
+		STA		_obj_flags._player						; write player flags
+		STX		_player_spr_out_reload					; position of player sprite to remove
+; ------------------------
+		LDY		#1										; left/right movement starts here
+		LDA		_pad_edge								; edge triggers increment #8
+		AND		#3										; or 1 otherwise (actual movement test not here)
 		BEQ		loc_6130E
 		LDY		#8
 loc_6130E:
 		STY		_player_hor_move_anim_increment
-		LDA		byte_656
-		BEQ		loc_6131C
-		DEC		byte_656
-		JMP		loc_6132D
-loc_6131C:
-		LDY		#0
-		LDA		_player_bullet_shot_state
-		CMP		#$A
-		BNE		loc_61326
-		LDY		#5
-loc_61326:
-		STY		_player_bullet_shot_state
-		LDA		#$10
-		STA		byte_656
-loc_6132D:
-		LDA		_player_sit_jump_flag
-		AND		#1
-		BNE		loc_61336
-		JMP		loc_613C4
-loc_61336:
-		LDA		_player_explode_spr_remove_reload
-		BNE		loc_61346
-		LDA		_player_jump_or_fall_flag
-		BEQ		loc_61346
-		LDA		_pads
-		AND		#$FC
-		ORA		_player_jump_or_fall_flag
-		STA		_pads
-loc_61346:
+; ------------------------
+		LDA		_player_shoot_state_timer				; read shoot timer (init value 0)
+		BEQ		.do_shot_state_change
+		DEC		_player_shoot_state_timer				; clock every 16 frames (1/4 of sec)
+		JMP		.mid_air_animations
+.do_shot_state_change:
+		JSR		_player_shot_anim_phase_change
+; ------------------------
+.mid_air_animations:
+		LDA		_player_sit_jump_flag					; if mid-air (1), then adjust hor controls
+		AND		#1										; (2) for landing or sit-down state, dosn't matter here
+		BNE		.do_mid_air_anims
+		JMP		.sit_down_state
+.do_mid_air_anims:
+		LDA		_player_spr_out_reload					; only in acid and while exploding
+		BNE		.no_hor_move_lock
+		LDA		_player_edge_fall_flag					; set to 1 only if slip from the obstacles
+		BEQ		.no_hor_move_lock						; clear to 0 if jump
+		LDA		_pad_last								; prevent the mid-air horizontal movement
+		AND		#$FC									; control in that case, do only forced
+		ORA		_player_edge_fall_flag					; left or right movenet according to fall direction
+		STA		_pad_last
+.no_hor_move_lock:
 		LDA		#0
 		STA		_player_diagonal_fire_delta
-		LDY		_player_bullet_shot_state
+		LDY		_player_anim_phase_offset				; check if we fire in mid-air
 		CPY		#$A
 		BNE		loc_61352
-		LDA		#1
+		LDA		#1										; adjust mid-air frame
 loc_61352:
 		CLC
-		ADC		#$23
+		ADC		#$23									; set mid-air sprite idx (base $23 + 0 to 1)
 		STA		_obj_spr_idx._player
-		LDA		_obj_var1
-		BPL		loc_6135F
-		JMP		loc_61514
-loc_6135F:
-		LDA		_lvl_idx
+		LDA		_obj_y_velocity._player					; check the y movement direction
+		BPL		.mid_air_landing
+		JMP		.misc_controls						; do nothing more here
+; ------------------------
+.mid_air_landing:
+		LDA		_lvl_idx								; special check for level 2 falling case
 		CMP		#1
-		BNE		loc_61388
-		LDA		_obj_y._player
+		BNE		.regular_landing						; test for Y $BC-$D2 range, stop player
+		LDA		_obj_y._player							; at the $BC, do not let it fall down further
 		CMP		#$D2
-		BCS		loc_61388
+		BCS		.regular_landing
 		CMP		#$BC
-		BCC		loc_61388
+		BCC		.regular_landing
 		LDA		#$BC
-		STA		_obj_y._player
-		LDA		_obj_hcoll._player
-		ORA		#1
+		STA		_obj_y._player							; lock Y position, update collision flags
+		LDA		_obj_hcoll._player						; there are no collision data for acid
+		ORA		#1										; it will threaded as pit otherwise
 		STA		_obj_hcoll._player
 		STA		_obj_vcoll._player
 		LDA		#0
-		STA		_obj_var1
-		STA		_obj_var2
-		STA		_player_sit_jump_flag
-		JMP		loc_613CD
-loc_61388:
+		STA		_obj_y_velocity._player					; clear Y velocity
+		STA		_obj_y_velosity_target._player
+		STA		_player_sit_jump_flag					; complete stop
+		JMP		.sit_down_state_chenge_test
+.regular_landing:
 		LDA		#0
-		STA		_player_explode_spr_remove_reload
-		LDA		_obj_y._player
+		STA		_player_spr_out_reload
+		LDA		_obj_y._player							; test for general direction of Y movement
 		AND		#$F0
 		STA		_tptr1
-		LDA		_player_y_meta16_tile_tmp
-		CMP		_tptr1
-		BCC		loc_6139B
-		JMP		loc_61514
-loc_6139B:
-		LDA		_obj_vcoll._player
+		LDA		_player_y_meta16_tile_tmp				; last saven Y tile less than cur Y tile pos
+		CMP		_tptr1									; then we going down
+		BCC		.collision_landing_test
+		JMP		.misc_controls						; do nothing more here
+.collision_landing_test:
+		LDA		_obj_vcoll._player						; test for collision with ground or obstacles
 		ORA		_obj_hcoll._player
 		AND		#1
-		BNE		loc_613A6
-		JMP		loc_61514
-loc_613A6:
-		LDA		_obj_y._player
+		BNE		.do_landing
+		JMP		.misc_controls						; if no, do nothing more
+.do_landing:
+		LDA		_obj_y._player							; stop at 16 px tile boundary
 		AND		#$F0
 		STA		_obj_y._player
 		LDA		#0
-		STA		_obj_var1
-		STA		_obj_var2
+		STA		_obj_y_velocity._player					; clear velocity
+		STA		_obj_y_velosity_target._player
 		LDA		#2
-		STA		_player_sit_jump_flag
+		STA		_player_sit_jump_flag					; set sit flag for landing animation
 		LDA		#8
-		STA		_obj_var6
-		LDA		#$C
+		STA		_obj_sit_state._player					; when landing set sit down anim counter to 8			
+		LDA		#SND_RBLAND2							; do landing sound
 		STA		_snd_idx
-		JMP		loc_61402
-loc_613C4:
+		JMP		.do_sit_anim_sprite
+; ------------------------
+.sit_down_state:
 		JSR		_lvl1_player_transporter_pos_adjust
 		LDA		_player_sit_jump_flag
 		AND		#2
-		BNE		loc_613D6
-loc_613CD:
-		LDA		_pads
+		BNE		.sit_down_already						; if we land, sit down state is forced here
+; ------------------------
+.sit_down_state_chenge_test:
+		LDA		_pad_last
 		CMP		#4
-		BEQ		loc_613F2
-		JMP		loc_6141F
-loc_613D6:
+		BEQ		.do_sit_down							; sit down button test
+		BNE		.start_fall_from_edge_test						
+; ------------------------
+.sit_down_already:
 		LDA		_obj_hcoll._player
 		ORA		_obj_vcoll._player
 		AND		#1
-		BEQ		loc_61427
-		LDA		_pads
+		BEQ		.start_fall_from_edge
+		LDA		_pad_last
 		AND		#4
-		BNE		loc_613F2
-		DEC		_obj_var6
-		BNE		loc_61402
-		LDA		_player_sit_jump_flag
+		BNE		.do_sit_down							; if down released
+		DEC		_obj_sit_state._player					; stand up time, rewind sit down states backward
+		BNE		.do_sit_anim_sprite
+		LDA		_player_sit_jump_flag					; clear sitdown flag
 		AND		#$FD
 		STA		_player_sit_jump_flag
-		JMP		loc_61514
-loc_613F2:
-		LDA		_player_sit_jump_flag
+		JMP		.misc_controls							; do normal land anim
+.do_sit_down:
+		LDA		_player_sit_jump_flag					; if Down is still pressed here, keep sit down state on
 		ORA		#2
 		STA		_player_sit_jump_flag
-		LDA		_obj_var6
+		LDA		_obj_sit_state._player
 		CMP		#9
-		BCS		loc_61402
-		INC		_obj_var6
-loc_61402:
-		LDA		_player_bullet_shot_state
+		BCS		.do_sit_anim_sprite						; do increase sitdown anim counter until 9
+		INC		_obj_sit_state._player
+; ------------------------
+.do_sit_anim_sprite:
+		LDA		_player_anim_phase_offset				; here we actually draw the sit down sprite if detected
 		CMP		#$A
-		PHP
+		PHP												; keed compare state flags
 		STY		_tptr1
-		LDA		_obj_var6
+		LDA		_obj_sit_state._player					; get sit down anim phase
 		LSR
 		LSR
 		PLP
 		ADC		#$26
-		STA		_obj_spr_idx._player
+		STA		_obj_spr_idx._player					; set sprite ($26 base + 0 to 2)
 		LDA		#0
-		STA		_player_diagonal_fire_delta
+		STA		_player_diagonal_fire_delta				; can't fire diagonally when seated
 		LDA		#$1A
-		STA		byte_657
-		JMP		loc_61514
-loc_6141F:
+		STA		_player_shot_pos_delta					; set Y delta for shot position adjust if any
+		JMP		.misc_controls
+; ------------------------
+.start_fall_from_edge_test:
 		LDA		_obj_hcoll._player
 		ORA		_obj_vcoll._player
 		AND		#1
-		BNE		loc_61445
-loc_61427:
+		BNE		.stand_still							; in mid-air test for obstacle occurs
+; ------------------------
+.start_fall_from_edge:
 		LDA		#8
-		STA		_obj_var2
-		LDA		_player_sit_jump_flag
+		STA		_obj_y_velosity_target._player			
+		LDA		_player_sit_jump_flag					; set mid-air flag
 		ORA		#1
 		STA		_player_sit_jump_flag
 		LDA		#$F0
-		STA		_player_y_meta16_tile_tmp
+		STA		_player_y_meta16_tile_tmp				; init base tile to land
 		LDY		#2
-		LDA		_obj_flags._player
+		LDA		_obj_flags._player						; get player face direction
 		AND		#$40
 		BEQ		loc_61440
 		LDY		#1
 loc_61440:
-		STY		_player_jump_or_fall_flag
-		JMP		loc_61514
-loc_61445:
+		STY		_player_edge_fall_flag					; set fall edge flag left or right accordingly
+		JMP		.misc_controls							; leave the rest to the other logic
+; ------------------------
+.stand_still:
 		LDA		#0
-		STA		_player_sit_jump_flag
+		STA		_player_sit_jump_flag					; clear mid-air flag
 		LDA		#$A
-		STA		byte_657
+		STA		_player_shot_pos_delta					; set base position for shooting ($A)
 		LDA		#0
-		STA		_player_diagonal_fire_delta
-		LDA		_pads
+		STA		_player_diagonal_fire_delta				; default direction
+		LDA		_pad_last
 		AND		#$8F
-		BNE		loc_61464
-		STA		_player_hor_move_anim_timer
+		BNE		.up_press_test							; test if any d-pad button of jump pressed
+		STA		_player_hor_move_anim_timer				; if no, then just stand
 		CLC
 		LDA		#$18
-		ADC		_player_bullet_shot_state
+		ADC		_player_anim_phase_offset				; default stand sprite
 		STA		_obj_spr_idx._player
-		JMP		loc_61514
-loc_61464:
-		LDA		_pads
+		JMP		.misc_controls
+.up_press_test:
+		LDA		_pad_last
 		AND		#$83
-		BNE		loc_614DA
-		LDA		_pads
+		BNE		loc_614DA								; check for jump and/or movement
+		LDA		_pad_last								; if no, up test is possible
 		AND		#8
-		BEQ		loc_614B8
-		LDA		_lvl_hidden_portal_detected
-		BEQ		loc_6149C
+		BEQ		.stand_ready_for_sit_down				; check if Up is pressed
+		LDA		_lvl_hidden_portal_detected				; check if a hidden portal under the foot
+		BEQ		.stand_ready_to_fire_up
 		LDA		#$25
-		STA		_obj_spr_idx._player
+		STA		_obj_spr_idx._player					; change sprite idx to show player's back
 		LDA		_lvl_idx
 		CMP		#4
-		BNE		loc_61487
+		BNE		.do_stand_delay							; do not raise this flag in any level except 5
 		LDA		#1
-		STA		byte_686
-		JMP		locret_6149B
-loc_61487:
-		DEC		_lvl_bonus_portal_delay
+		STA		_player_back_standing_flag				; level 5 pass entry flag
+		RTS												; shorter to ret, than branch then ret in any cases
+.do_stand_delay:
+		DEC		_lvl_bonus_portal_delay					; any other level than 5 will count stand time
 		BPL		locret_6149B
-		INC		_lvl_state_idx
+		INC		_lvl_state_idx							; then switch the next level part
 		PLA
 		PLA
-		LDA		_lvl_idx
-		CMP		#3
-		BEQ		loc_61498
+		PLA												; two more needed to not to damage stack
+		PLA
+		LDA		_lvl_idx								; special check for level 4, do not switch level data
+		CMP		#3										; but go to the repair lab
+		BEQ		.j_lvl3_bonus_repair_lab
 		JMP		_GAME_START
-loc_61498:
+.j_lvl3_bonus_repair_lab:
 		JMP		_lvl3_bonus_repair_lab
 locret_6149B:
 		RTS
-loc_6149C:
+; ------------------------
+.stand_ready_to_fire_up:
 		LDA		#$FC
 		STA		_player_diagonal_fire_delta
-		LDA		_player_bullet_shot_state
+		LDA		_player_anim_phase_offset
 		CMP		#$A
 		LDA		#0
-		ADC		#$2A
-		STA		_obj_spr_idx._player
+		ADC		#$2A									; stand fire up base sprite $2A +0 to 1 according to shot mode
+		STA		_obj_spr_idx._player					
 		LDA		#$FD
-		STA		byte_657
-		LDA		_pads
+		STA		_player_shot_pos_delta
+		LDA		_pad_last								; block hor movenets
 		AND		#$FC
-		STA		_pads
-		JMP		loc_61514
-loc_614B8:
-		LDA		_pads
+		STA		_pad_last
+		JMP		.misc_controls
+; ------------------------
+.stand_ready_for_sit_down:
+		LDA		_pad_last
 		AND		#4
-		BEQ		loc_614DA
+		BEQ		loc_614DA								; test for down is pressed
 		LDA		#4
-		STA		_player_diagonal_fire_delta
-		LDA		_player_bullet_shot_state
+		STA		_player_diagonal_fire_delta				; we got here if no jump or movement keys are pressed
+		LDA		_player_anim_phase_offset				; this allows to shot diagonally down
 		CMP		#$A
 		LDA		#0
 		ADC		#$2C
-		STA		_obj_spr_idx._player
+		STA		_obj_spr_idx._player					; base sprite $2C for diagonal down +0 to 1 anim phases
 		LDA		#$20
-		STA		byte_657
-		LDA		_pads
+		STA		_player_shot_pos_delta
+		LDA		_pad_last								; block hor movements as well
 		AND		#$FC
-		STA		_pads
-		JMP		loc_61514
+		STA		_pad_last
+		JMP		.misc_controls
+; ------------------------
 loc_614DA:
-		LDA		_player_hor_move_anim_timer
+		LDA		_player_hor_move_anim_timer				; walk or stand sprites set
 		AND		#$1F
 		LSR
 		LSR
 		LSR
 		CLC
 		ADC		#$14
-		ADC		_player_bullet_shot_state
+		ADC		_player_anim_phase_offset				; base $14
 		STA		_obj_spr_idx._player
-		LDA		_pads
+		LDA		_pad_last
 		AND		#$80
-		BEQ		loc_61514
+		BEQ		.misc_controls							; test for jump button
 		LDA		#8
-		STA		_obj_var2
+		STA		_obj_y_velosity_target._player			; target velocity is positive - go down
 		LDA		#$FB
-		STA		_obj_var1
+		STA		_obj_y_velocity._player					; start velocity negative - go up, so we can do up/down calcs
 		LDA		#5
-		STA		_obj_var3
+		STA		_obj_var3._player
 		LDA		#4
-		STA		_obj_var4
-		LDA		_player_sit_jump_flag
+		STA		_obj_var4._player
+		LDA		_player_sit_jump_flag					; yep, jump flag raised
 		ORA		#1
 		STA		_player_sit_jump_flag
 		LDA		#$27
-		STA		_obj_spr_idx._player
+		STA		_obj_spr_idx._player					; jump sprite fixed
 		LDA		#$F0
-		STA		_player_y_meta16_tile_tmp
+		STA		_player_y_meta16_tile_tmp				; base for collision test
 		LDA		#0
-		STA		_player_jump_or_fall_flag
-loc_61514:
-		LDA		_pads
-		AND		#$40
-		BEQ		loc_6152C
-		LDA		_player_bullet_shot_state
-		CMP		#$A
-		BEQ		loc_6152C
-		LDA		#5
-		STA		_player_bullet_shot_state
-		LDA		#$10
-		STA		byte_656
-		JSR		_player_fire_control
-loc_6152C:
-		LDA		_pads
-		AND		#$10
-		BEQ		loc_6153A
-		AND		_pads+2
-		BNE		loc_6153A
-		LDA		#1
-		STA		_pause_flag
-loc_6153A:
-		LDA		_pads
-		AND		#$20
-		BEQ		loc_61552
-		AND		_pads+2
-		BNE		loc_61552
-		LDA		_weapon_type
-		EOR		#1
-		AND		#1
-		STA		_weapon_type
-		LDA		#$21
-		STA		_snd_idx
-loc_61552:
-		LDA		_player_explode_spr_remove_reload		; tmp var to indicate acid damage flag
-		BEQ		loc_61560
+		STA		_player_edge_fall_flag					; we not falling from the edges, so no need to block hor movements
+; ------------------------
+.misc_controls:
+		JSR		_non_movement_controls
+		LDA		_player_spr_out_reload					; tmp var to indicate acid damage flag
+		BEQ		.additional_special_lvl_ctrl_test		; can be non zero here if we in acid
 		LDA		#3
-		STA		_body_target_idx
+		STA		_body_target_idx						; do damage to legs then
 		LDA		#ACID_DAMAGE_VALUE
 		JSR		_player_damage_apply
-loc_61560:
-		LDA		_player_sit_jump_flag
+.additional_special_lvl_ctrl_test:
+		LDA		_player_sit_jump_flag					; nothing to do here if we sit down, just skip
 		AND		#2
-		BEQ		loc_61567
+		BEQ		.additional_special_lvl_controls
 		RTS
-loc_61567:
-		LDA		_lvl_idx
-		CMP		#4
-		BNE		loc_61570
-		JMP		loc_6160D
-loc_61570:
+; ------------------------
+.additional_special_lvl_controls:
+		LDA		_lvl_idx								
 		CMP		#3
-		BNE		loc_61577
-		JMP		_left_move_test
-loc_61577:
-		LDA		_pads
+		BNE		loc_61570
+		JMP		.lvl3_hor_move_controls
+loc_61570:
+		CMP		#4
+		BNE		.common_hor_move_controls
+		JMP		.lvl4_hor_move_controls
+; ------------------------
+.common_hor_move_controls:
+		LDA		_pad_last
 		AND		#2
-		BEQ		loc_615A5
+		BEQ		.common_right_move_test					; move to the left
 		LDA		_obj_flags._player
 		AND		#$BF
-		STA		_obj_flags._player
-		LDA		_obj_hcoll._player
+		STA		_obj_flags._player						; clear right flip flag
+		LDA		_obj_hcoll._player						; if no obstacle to the left
 		AND		#2
 		BNE		locret_615A4
-		LDA		_player_wnd_scroll_counter
+		LDA		_player_wnd_scroll_counter				; and not the left side of screen
 		BEQ		locret_615A4
 		DEC		_player_wnd_scroll_counter
-		SEC
-		LDA		_obj_x_lo._player
-		SBC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		SBC		#0
-		STA		_obj_x_hi._player
-		CLC
-		LDA		_player_hor_move_anim_timer
-		ADC		_player_hor_move_anim_increment
-		STA		_player_hor_move_anim_timer
+		JSR		_player_x_pos_dec						; move left
+		JSR		_player_hor_animation					; do animation timers
 locret_615A4:
 		RTS
-loc_615A5:
-		LDA		_pads
+.common_right_move_test:
+		LDA		_pad_last
 		AND		#1
 		BEQ		locret_6160C
-		LDA		_obj_flags._player
+		LDA		_obj_flags._player						; set right flip flag
 		ORA		#$40
 		STA		_obj_flags._player
-		LDA		_obj_hcoll._player
+		LDA		_obj_hcoll._player						; if no obstacles to the right
 		AND		#4
 		BNE		locret_6160C
-		CLC
-		LDA		_player_hor_move_anim_timer
-		ADC		_player_hor_move_anim_increment
-		STA		_player_hor_move_anim_timer
-		LDA		_player_scroll_stop_override_tmp
+		JSR		_player_hor_animation					; do animation timers
+		LDA		_player_scroll_stop_flag				; test if stop scroll set
 		CMP		#1
 		BEQ		loc_615D1
-		LDA		_obj_x_hi._player
+		LDA		_obj_x_hi._player						; check for last room number
 		CMP		_lvl_stop_sctoll_room_idx
-		BCC		loc_615E7
-		LDA		_obj_x_lo._player
+		BCC		loc_615E7								; not yet, go further without restrictions
+		LDA		_obj_x_lo._player						; test for cure player x pos (center of the screen)
 		CMP		#$74
 		BCC		loc_615E7
 loc_615D1:
-		LDA		_player_wnd_scroll_counter
-		CMP		#$E6
-		BCS		locret_6160C
-		INC		_player_wnd_scroll_counter
-		CLC
-		LDA		_obj_x_lo._player
-		ADC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		ADC		#0
-		STA		_obj_x_hi._player
-		RTS
+		LDA		_player_wnd_scroll_counter				; special check for lvl 2 moving transporters
+		CMP		#$E6									; which is forcing the stoll to move right
+		BCS		locret_6160C							; if any transporters are go beyond the middle
+		INC		_player_wnd_scroll_counter				; of the last scrollable screen
+		JMP		_player_x_pos_inc
 loc_615E7:
-		CLC
-		LDA		_obj_x_lo._player
-		ADC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		ADC		#0
-		STA		_obj_x_hi._player
+		JSR		_player_x_pos_inc						; otherwise, do pos adjust as well as scroll pos adjust
 		LDA		_player_wnd_scroll_counter
 		CMP		#$74
-		BEQ		loc_615FD
+		BEQ		_scroll_inc
 		INC		_player_wnd_scroll_counter
+locret_6160C:
 		RTS
-loc_615FD:
+; ------------------------
+_scroll_inc:
 		CLC
 		LDA		_lvl_scroll_value
 		ADC		#1
@@ -2502,12 +2429,99 @@ loc_615FD:
 		ADC		#0
 		AND		#1
 		STA		_lvl_nt_value
-locret_6160C:
 		RTS
-loc_6160D:
-		LDA		_pads
+; ------------------------
+_player_x_pos_inc:
+		CLC
+		LDA		_obj_x_lo._player
+		ADC		#1
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
+		ADC		#0
+		STA		_obj_x_hi._player
+		RTS
+; ------------------------
+_player_x_pos_dec:
+		SEC
+		LDA		_obj_x_lo._player
+		SBC		#1
+		STA		_obj_x_lo._player
+		LDA		_obj_x_hi._player
+		SBC		#0
+		STA		_obj_x_hi._player
+		RTS
+; ------------------------
+_player_hor_animation:
+		CLC
+		LDA		_player_hor_move_anim_timer
+		ADC		_player_hor_move_anim_increment
+		STA		_player_hor_move_anim_timer
+		RTS
+; ------------------------
+.lvl3_hor_move_controls:
+		LDA		_pad_last								; mostly the same as common controls, but
+		AND		#2										; used to move in opposite direction
+		BEQ		.lvl3_right_move_test					; all the same, except there is no special
+		LDA		_obj_flags._player						; check for transporter
+		AND		#$BF
+		STA		_obj_flags._player
+		LDA		_obj_hcoll._player
 		AND		#2
-		BEQ		loc_61662
+		BNE		locret_619DB
+		JSR		_player_hor_animation					; do animation timers
+		LDA		_obj_x_hi._player
+		CMP		_lvl_stop_sctoll_room_idx
+		BNE		loc_619B6
+		LDA		_obj_x_lo._player
+		CMP		#$75
+		BCS		loc_619B6
+		LDA		_player_wnd_scroll_counter
+		BEQ		locret_619DB
+		DEC		_player_wnd_scroll_counter
+		JMP		_player_x_pos_dec
+loc_619B6:
+		JSR		_player_x_pos_dec
+		LDA		_player_wnd_scroll_counter
+		CMP		#$75
+		BCC		_scroll_dec
+		DEC		_player_wnd_scroll_counter
+locret_619DB:
+		RTS
+; ------------------------
+_scroll_dec:
+		SEC
+		LDA		_lvl_scroll_value
+		SBC		#1
+		STA		_lvl_scroll_value
+		LDA		_lvl_nt_value
+		SBC		#0
+		AND		#1
+		STA		_lvl_nt_value
+		RTS
+; ------------------------
+.lvl3_right_move_test:
+		LDA		_pad_last
+		AND		#1
+		BEQ		locret_61A0B
+		LDA		_obj_flags._player
+		ORA		#$40
+		STA		_obj_flags._player
+		LDA		_obj_hcoll._player
+		AND		#4
+		BNE		locret_61A0B
+		LDA		_player_wnd_scroll_counter
+		CMP		#$E6
+		BEQ		locret_61A0B
+		INC		_player_wnd_scroll_counter
+		JSR		_player_x_pos_inc
+		JSR		_player_hor_animation					; do animation timers
+locret_61A0B:
+		RTS
+; ------------------------
+.lvl4_hor_move_controls:
+		LDA		_pad_last								; level 5 is a small level with basic room scroll
+		AND		#2										; but the rest is exactly the same as common
+		BEQ		.lvl4_right_move_test
 		LDA		_obj_flags._player
 		AND		#$BF
 		STA		_obj_flags._player
@@ -2530,42 +2544,23 @@ loc_61632:
 		DEC		_player_wnd_scroll_counter
 		JMP		loc_6164C
 loc_6163D:
-		SEC
-		LDA		_lvl_scroll_value
-		SBC		#1
-		STA		_lvl_scroll_value
-		LDA		_lvl_nt_value
-		SBC		#0
-		AND		#1
-		STA		_lvl_nt_value
+		JSR		_scroll_dec
 loc_6164C:
-		SEC
-		LDA		_obj_x_lo._player
-		SBC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		SBC		#0
-		STA		_obj_x_hi._player
-		CLC
-		LDA		_player_hor_move_anim_timer
-		ADC		_player_hor_move_anim_increment
-		STA		_player_hor_move_anim_timer
+		JSR		_player_x_pos_dec
+		JSR		_player_hor_animation					; do animation timers
 locret_61661:
 		RTS
-loc_61662:
-		LDA		_pads
+.lvl4_right_move_test:
+		LDA		_pad_last
 		AND		#1
-		BEQ		locret_616C3
+		BEQ		locret_61661
 		LDA		_obj_flags._player
 		ORA		#$40
 		STA		_obj_flags._player
 		LDA		_obj_hcoll._player
 		AND		#4
-		BNE		locret_616C3
-		CLC
-		LDA		_player_hor_move_anim_timer
-		ADC		_player_hor_move_anim_increment
-		STA		_player_hor_move_anim_timer
+		BNE		locret_61661
+		JSR		_player_hor_animation					; do animation timers
 		LDA		_obj_x_hi._player
 		CMP		#1
 		BCC		loc_6169E
@@ -2574,40 +2569,305 @@ loc_61662:
 		BCC		loc_6169E
 		LDA		_player_wnd_scroll_counter
 		CMP		#$E6
-		BCS		locret_616C3
+		BCS		locret_61661
 		INC		_player_wnd_scroll_counter
-		CLC
-		LDA		_obj_x_lo._player
-		ADC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		ADC		#0
-		STA		_obj_x_hi._player
-		RTS
+		JMP		_player_x_pos_inc
 loc_6169E:
-		CLC
-		LDA		_obj_x_lo._player
-		ADC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		ADC		#0
-		STA		_obj_x_hi._player
+		JSR		_player_x_pos_inc
 		LDA		_player_wnd_scroll_counter
 		CMP		#$74
 		BEQ		loc_616B4
 		INC		_player_wnd_scroll_counter
 		RTS
 loc_616B4:
-		CLC
-		LDA		_lvl_scroll_value
-		ADC		#1
-		STA		_lvl_scroll_value
-		LDA		_lvl_nt_value
-		ADC		#0
+		JMP		_scroll_inc
+
+; =============== S U B	R O U T	I N E =======================================
+_non_movement_controls:
+		LDA		_pad_last
+		AND		#$40
+		BEQ		.loc_61530								; also we can fire while jumping
+		JSR		_player_anim_fire_control
+.loc_61530:
+		LDA		_pad_edge								; test for pause is pressed
+		AND		#$10
+		BEQ		loc_6153A
+		LDA		#1
+		STA		_pause_flag
+loc_6153A:
+		LDA		_pad_edge								; or weapon is selecting
+		AND		#$20
+		BEQ		loc_61552
+		LDA		_weapon_type
+		EOR		#1
 		AND		#1
-		STA		_lvl_nt_value
-locret_616C3:
+		STA		_weapon_type
+		LDA		#SND_WCHANGE							; weapon change sound
+		STA		_snd_idx
+loc_61552:
 		RTS
+		
+; =============== S U B	R O U T	I N E =======================================
+_jetpack_control:
+		LDA		_overal_armor_sum
+		BNE		.jetpack_inputs							; full set of controls for the jet pack stage
+		LDA		#0
+		STA		_pad_last								; block input if dead
+		LDA		_player_sit_jump_flag					; and wait for landing if in flight mode
+		BNE		.jetpack_inputs
+		JMP		_player_explosion_anim
+.jetpack_inputs:
+		LDA		#$14
+		STA		_player_spr_out_reload
+		LDY		#1
+		LDA		_pad_edge
+		AND		#3
+		BEQ		loc_61760
+		LDY		#8
+loc_61760:
+		STY		_player_hor_move_anim_increment
+		LDA		_player_shoot_state_timer
+		BEQ		loc_6176E
+		DEC		_player_shoot_state_timer
+		JMP		loc_6177F
+loc_6176E:
+		JSR		_player_shot_anim_phase_change
+loc_6177F:
+		LDA		_player_sit_jump_flag
+		AND		#1
+		BNE		loc_61788
+		JMP		loc_61834
+loc_61788:
+		LDA		#0
+		STA		_player_diagonal_fire_delta
+		LDY		_player_anim_phase_offset
+		CPY		#$A
+		BNE		loc_61794
+		LDA		#1
+loc_61794:
+		STA		_tptr1
+		LDA		_pad_last
+		AND		#$80
+		STA		_tptr1+1
+		BEQ		loc_617CB
+		LDA		_lvl2_jetpack_fuel_tanks
+		BEQ		loc_617CB
+		DEC		_lvl2_jetpack_fuel_count
+		BNE		loc_617AB
+		DEC		_lvl2_jetpack_fuel_tanks
+loc_617AB:
+		LDA		_lvl2_jetpack_fuel_tanks
+		CMP		#2
+		BCS		loc_617BB
+		LDA		#$13
+		JSR		_hud_msg_set_request
+loc_617BB:
+		JSR		_lvl2_obj_jet_update
+		LDA		_obj_y_velosity_target._player
+		CMP		#$FD
+		BEQ		loc_617E1
+		DEC		_obj_y_velosity_target._player
+		JMP		loc_617E1
+loc_617CB:
+		LDA		_obj_flags._misc
+		BEQ		loc_617D7
+		LDA		#0
+		STA		_obj_flags._misc
+		LDA		#SND_SOUND0E
+		STA		_snd_idx
+loc_617D7:
+		LDA		_obj_y_velosity_target._player
+		CMP		#8
+		BEQ		loc_617E1
+		INC		_obj_y_velosity_target._player
+loc_617E1:
+		CLC
+		LDA		#$94
+		ADC		_tptr1
+		STA		_obj_spr_idx._player
+		LDA		#$C
+		STA		_obj_var4._player
+		LDA		_obj_y_velocity._player
+		BPL		loc_61805
+loc_617F2:
+		LDA		#8
+		STA		_obj_var4._player
+		LDA		_obj_y._player
+		CMP		#$3C
+		BCS		loc_61802
+		LDA		#0
+		STA		_obj_y_velocity._player
+loc_61802:
+		JMP		loc_6193B
+loc_61805:
+		BNE		loc_6180B
+		LDA		_tptr1+1
+		BNE		loc_617F2
+loc_6180B:
+		LDA		_obj_vcoll._player
+		ORA		_obj_hcoll._player
+		AND		#1
+		BNE		loc_61816
+		JMP		loc_6193B
+loc_61816:
+		LDA		_obj_y._player
+		AND		#$F0
+		STA		_obj_y._player
+		LDA		#0
+		STA		_obj_y_velocity._player
+		STA		_obj_y_velosity_target._player
+		LDA		#2
+		STA		_player_sit_jump_flag
+		LDA		#8
+		STA		_obj_sit_state._player
+		LDA		#SND_RBLAND1
+		STA		_snd_idx
+		JMP		loc_6186B
+loc_61834:
+		LDA		#0
+		STA		_obj_flags._misc
+		LDA		_player_sit_jump_flag
+		AND		#2
+		BNE		loc_61847
+		LDA		_pad_last
+		CMP		#4
+		BEQ		loc_6185B
+		JMP		loc_61888
+loc_61847:
+		LDA		_pad_last
+		AND		#4
+		BNE		loc_6185B
+		DEC		_obj_sit_state._player
+		BNE		loc_6186B
+		LDA		_player_sit_jump_flag
+		AND		#$FD
+		STA		_player_sit_jump_flag
+		JMP		loc_6193B
+loc_6185B:
+		LDA		_player_sit_jump_flag
+		ORA		#2
+		STA		_player_sit_jump_flag
+		LDA		_obj_sit_state._player
+		CMP		#9
+		BCS		loc_6186B
+		INC		_obj_sit_state._player
+loc_6186B:
+		LDA		_player_anim_phase_offset
+		CMP		#$A
+		PHP
+		STY		_tptr1
+		LDA		_obj_sit_state._player
+		LSR
+		LSR
+		PLP
+		ADC		#$A2
+		STA		_obj_spr_idx._player
+		LDA		#0
+		STA		_player_diagonal_fire_delta
+		LDA		#$1A
+		STA		_player_shot_pos_delta
+		JMP		loc_6193B
+loc_61888:
+		LDA		_obj_hcoll._player
+		ORA		_obj_vcoll._player
+		AND		#1
+		BNE		loc_618A2
+		LDA		#8
+		STA		_obj_y_velosity_target._player
+		LDA		_player_sit_jump_flag
+		ORA		#1
+		STA		_player_sit_jump_flag
+		LDA		#$F0
+		STA		_player_y_meta16_tile_tmp
+		JMP		loc_6193B
+loc_618A2:
+		LDA		#0
+		STA		_player_sit_jump_flag
+		LDA		#$A
+		STA		_player_shot_pos_delta
+		LDA		#0
+		STA		_player_diagonal_fire_delta
+		LDA		_pad_last
+		AND		#$8F
+		BNE		loc_618C8
+		STA		_player_hor_move_anim_timer
+		CLC
+		LDA		#$97
+		LDY		_player_anim_phase_offset
+		CPY		#$A
+		BNE		loc_618C3
+		CLC
+		ADC		#4
+loc_618C3:
+		STA		_obj_spr_idx._player
+		JMP		loc_6193B
+loc_618C8:
+		LDA		_pad_last
+		AND		#$83
+		BNE		loc_61912
+		LDA		_pad_last
+		AND		#8
+		BEQ		loc_618F0
+		LDA		#$FC
+		STA		_player_diagonal_fire_delta
+		LDA		_player_anim_phase_offset
+		CMP		#$A
+		LDA		#0
+		ADC		#$A6
+		STA		_obj_spr_idx._player
+		LDA		#$FD
+		STA		_player_shot_pos_delta
+		LDA		_pad_last
+		AND		#$FC
+		STA		_pad_last
+		JMP		loc_6193B
+loc_618F0:
+		LDA		_pad_last
+		AND		#4
+		BEQ		loc_61912
+		LDA		#4
+		STA		_player_diagonal_fire_delta
+		LDA		_player_anim_phase_offset
+		CMP		#$A
+		LDA		#0
+		ADC		#$A8
+		STA		_obj_spr_idx._player
+		LDA		#$20
+		STA		_player_shot_pos_delta
+		LDA		_pad_last
+		AND		#$FC
+		STA		_pad_last
+		JMP		loc_6193B
+loc_61912:
+		LDA		_player_hor_move_anim_timer
+		AND		#$1F
+		LSR
+		LSR
+		LSR
+		CLC
+		ADC		#$96
+		LDY		_player_anim_phase_offset
+		CPY		#$A
+		BNE		loc_61925
+		CLC
+		ADC		#4
+loc_61925:
+		STA		_obj_spr_idx._player
+		LDA		_pad_last
+		AND		#$80
+		BEQ		loc_6193B
+		LDA		_player_sit_jump_flag
+		ORA		#1
+		STA		_player_sit_jump_flag
+		LDA		#$F0
+		STA		_player_y_meta16_tile_tmp
+		LDA		#0
+		STA		_player_edge_fall_flag
+loc_6193B:
+		JSR		_non_movement_controls
+		JMP		.additional_special_lvl_ctrl_test
+
+; =============== S U B	R O U T	I N E =======================================
 _player_explosion_anim:
 		LDA		_obj_y._player
 		CMP		#$BC
@@ -2648,11 +2908,11 @@ loc_616DA:
 		LSR
 		LSR
 		LSR
-		STA		_player_explode_spr_remove_reload
+		STA		_player_spr_out_reload
 		CLC
 		LDA		#0
-		SBC		_player_explode_spr_remove_reload
-		STA		_player_explode_spr_remove_reload
+		SBC		_player_spr_out_reload
+		STA		_player_spr_out_reload
 		CPX		#6
 		BCS		loc_6171B
 		LDA		_rand_seed
@@ -2664,7 +2924,7 @@ loc_6171B:
 		AND		#3
 		CLC
 		ADC		#$10
-		STA		_obj_var6,X
+		STA		_obj_sit_state,X
 		LDA		#7
 		STA		_obj_hndl_idx,X
 		STA		_obj_flags,X
@@ -2677,403 +2937,45 @@ loc_6172E:
 		STA		_game_over_flag
 locret_61738:
 		RTS
-_jetpack_input_control:
-		LDA		_overal_armor_sum
-		BNE		loc_6174A
-		LDA		#0
-		STA		_pads
-		LDA		_player_sit_jump_flag
-		BNE		loc_6174A
-		JSR		_player_explosion_anim
-		RTS
-loc_6174A:
-		LDA		#$14
-		STA		_player_explode_spr_remove_reload
-		LDY		#1
-		LDA		_pads
-		AND		#3
-		STA		_tptr1
-		LDA		_pads+2
-		AND		#3
-		CMP		_tptr1
-		BEQ		loc_61760
-		LDY		#8
-loc_61760:
-		STY		_player_hor_move_anim_increment
-		LDA		byte_656
-		BEQ		loc_6176E
-		DEC		byte_656
-		JMP		loc_6177F
-loc_6176E:
-		LDY		#0
-		LDA		_player_bullet_shot_state
+
+; =============== S U B	R O U T	I N E =======================================
+_player_anim_fire_control:
+		LDA		_player_anim_phase_offset
 		CMP		#$A
-		BNE		loc_61778
-		LDY		#5
-loc_61778:
-		STY		_player_bullet_shot_state
-		LDA		#$10
-		STA		byte_656
-loc_6177F:
-		LDA		_player_sit_jump_flag
-		AND		#1
-		BNE		loc_61788
-		JMP		loc_61834
-loc_61788:
-		LDA		#0
-		STA		_player_diagonal_fire_delta
-		LDY		_player_bullet_shot_state
-		CPY		#$A
-		BNE		loc_61794
-		LDA		#1
-loc_61794:
-		STA		_tptr1
-		LDA		_pads
-		AND		#$80
-		STA		_tptr1+1
-		BEQ		loc_617CB
-		LDA		_lvl2_jetpack_fuel_tanks
-		BEQ		loc_617CB
-		DEC		_lvl2_jetpack_fuel_count
-		BNE		loc_617AB
-		DEC		_lvl2_jetpack_fuel_tanks
-loc_617AB:
-		LDA		_lvl2_jetpack_fuel_tanks
-		CMP		#2
-		BCS		loc_617BB
-		LDA		#$13
-		JSR		_hud_msg_set_request
-loc_617BB:
-		JSR		_lvl2_obj_jet_update
-		LDA		_obj_var2
-		CMP		#$FD
-		BEQ		loc_617E1
-		DEC		_obj_var2
-		JMP		loc_617E1
-loc_617CB:
-		LDA		_obj_flags._misc
-		BEQ		loc_617D7
-		LDA		#0
-		STA		_obj_flags._misc
-		LDA		#$E
-		STA		_snd_idx
-loc_617D7:
-		LDA		_obj_var2
-		CMP		#8
-		BEQ		loc_617E1
-		INC		_obj_var2
-loc_617E1:
-		CLC
-		LDA		#$94
-		ADC		_tptr1
-		STA		_obj_spr_idx._player
-		LDA		#$C
-		STA		_obj_var4
-		LDA		_obj_var1
-		BPL		loc_61805
-loc_617F2:
-		LDA		#8
-		STA		_obj_var4
-		LDA		_obj_y._player
-		CMP		#$3C
-		BCS		loc_61802
-		LDA		#0
-		STA		_obj_var1
-loc_61802:
-		JMP		loc_6193B
-loc_61805:
-		BNE		loc_6180B
-		LDA		_tptr1+1
-		BNE		loc_617F2
-loc_6180B:
-		LDA		_obj_vcoll._player
-		ORA		_obj_hcoll._player
-		AND		#1
-		BNE		loc_61816
-		JMP		loc_6193B
-loc_61816:
-		LDA		_obj_y._player
-		AND		#$F0
-		STA		_obj_y._player
-		LDA		#0
-		STA		_obj_var1
-		STA		_obj_var2
-		LDA		#2
-		STA		_player_sit_jump_flag
-		LDA		#8
-		STA		_obj_var6
-		LDA		#$B
-		STA		_snd_idx
-		JMP		loc_6186B
-loc_61834:
-		LDA		#0
-		STA		_obj_flags._misc
-		LDA		_player_sit_jump_flag
-		AND		#2
-		BNE		loc_61847
-		LDA		_pads
-		CMP		#4
-		BEQ		loc_6185B
-		JMP		loc_61888
-loc_61847:
-		LDA		_pads
-		AND		#4
-		BNE		loc_6185B
-		DEC		_obj_var6
-		BNE		loc_6186B
-		LDA		_player_sit_jump_flag
-		AND		#$FD
-		STA		_player_sit_jump_flag
-		JMP		loc_6193B
-loc_6185B:
-		LDA		_player_sit_jump_flag
-		ORA		#2
-		STA		_player_sit_jump_flag
-		LDA		_obj_var6
-		CMP		#9
-		BCS		loc_6186B
-		INC		_obj_var6
-loc_6186B:
-		LDA		_player_bullet_shot_state
-		CMP		#$A
-		PHP
-		STY		_tptr1
-		LDA		_obj_var6
-		LSR
-		LSR
-		PLP
-		ADC		#$A2
-		STA		_obj_spr_idx._player
-		LDA		#0
-		STA		_player_diagonal_fire_delta
-		LDA		#$1A
-		STA		byte_657
-		JMP		loc_6193B
-loc_61888:
-		LDA		_obj_hcoll._player
-		ORA		_obj_vcoll._player
-		AND		#1
-		BNE		loc_618A2
-		LDA		#8
-		STA		_obj_var2
-		LDA		_player_sit_jump_flag
-		ORA		#1
-		STA		_player_sit_jump_flag
-		LDA		#$F0
-		STA		_player_y_meta16_tile_tmp
-		JMP		loc_6193B
-loc_618A2:
-		LDA		#0
-		STA		_player_sit_jump_flag
-		LDA		#$A
-		STA		byte_657
-		LDA		#0
-		STA		_player_diagonal_fire_delta
-		LDA		_pads
-		AND		#$8F
-		BNE		loc_618C8
-		STA		_player_hor_move_anim_timer
-		CLC
-		LDA		#$97
-		LDY		_player_bullet_shot_state
-		CPY		#$A
-		BNE		loc_618C3
-		CLC
-		ADC		#4
-loc_618C3:
-		STA		_obj_spr_idx._player
-		JMP		loc_6193B
-loc_618C8:
-		LDA		_pads
-		AND		#$83
-		BNE		loc_61912
-		LDA		_pads
-		AND		#8
-		BEQ		loc_618F0
-		LDA		#$FC
-		STA		_player_diagonal_fire_delta
-		LDA		_player_bullet_shot_state
-		CMP		#$A
-		LDA		#0
-		ADC		#$A6
-		STA		_obj_spr_idx._player
-		LDA		#$FD
-		STA		byte_657
-		LDA		_pads
-		AND		#$FC
-		STA		_pads
-		JMP		loc_6193B
-loc_618F0:
-		LDA		_pads
-		AND		#4
-		BEQ		loc_61912
-		LDA		#4
-		STA		_player_diagonal_fire_delta
-		LDA		_player_bullet_shot_state
-		CMP		#$A
-		LDA		#0
-		ADC		#$A8
-		STA		_obj_spr_idx._player
-		LDA		#$20
-		STA		byte_657
-		LDA		_pads
-		AND		#$FC
-		STA		_pads
-		JMP		loc_6193B
-loc_61912:
-		LDA		_player_hor_move_anim_timer
-		AND		#$1F
-		LSR
-		LSR
-		LSR
-		CLC
-		ADC		#$96
-		LDY		_player_bullet_shot_state
-		CPY		#$A
-		BNE		loc_61925
-		CLC
-		ADC		#4
-loc_61925:
-		STA		_obj_spr_idx._player
-		LDA		_pads
-		AND		#$80
-		BEQ		loc_6193B
-		LDA		_player_sit_jump_flag
-		ORA		#1
-		STA		_player_sit_jump_flag
-		LDA		#$F0
-		STA		_player_y_meta16_tile_tmp
-		LDA		#0
-		STA		_player_jump_or_fall_flag
-loc_6193B:
-		LDA		_pads
-		AND		#$40
-		BEQ		loc_61953
-		LDA		_player_bullet_shot_state
-		CMP		#$A
-		BEQ		loc_61953
+		BEQ		.pafc_skip								; A phase here means we just start firing
 		LDA		#5
-		STA		_player_bullet_shot_state
+		STA		_player_anim_phase_offset
 		LDA		#$10
-		STA		byte_656
+		STA		_player_shoot_state_timer				; reload shoot timer.
 		JSR		_player_fire_control
-loc_61953:
-		LDA		_pads
-		AND		#$10
-		BEQ		loc_61961
-		AND		_pads+2
-		BNE		loc_61961
-		LDA		#1
-		STA		_pause_flag
-loc_61961:
-		LDA		_pads
-		AND		#$20
-		BEQ		loc_61979
-		AND		_pads+2
-		BNE		loc_61979
-		LDA		_weapon_type
-		EOR		#1
-		AND		#1
-		STA		_weapon_type
-		LDA		#$21
-		STA		_snd_idx
-loc_61979:
-		JMP		loc_61560
-_left_move_test:
-		LDA		_pads
-		AND		#2
-		BEQ		loc_619DC
-		LDA		_obj_flags._player
-		AND		#$BF
-		STA		_obj_flags._player
-		LDA		_obj_hcoll._player
-		AND		#2
-		BNE		locret_619DB
-		CLC
-		LDA		_player_hor_move_anim_timer
-		ADC		_player_hor_move_anim_increment
-		STA		_player_hor_move_anim_timer
-		LDA		_obj_x_hi._player
-		CMP		_lvl_stop_sctoll_room_idx
-		BNE		loc_619B6
-		LDA		_obj_x_lo._player
-		CMP		#$75
-		BCS		loc_619B6
-		LDA		_player_wnd_scroll_counter
-		BEQ		locret_619DB
-		DEC		_player_wnd_scroll_counter
-		SEC
-		LDA		_obj_x_lo._player
-		SBC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		SBC		#0
-		STA		_obj_x_hi._player
-		RTS
-loc_619B6:
-		SEC
-		LDA		_obj_x_lo._player
-		SBC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		SBC		#0
-		STA		_obj_x_hi._player
-		LDA		_player_wnd_scroll_counter
-		CMP		#$75
-		BCC		loc_619CC
-		DEC		_player_wnd_scroll_counter
-		RTS
-loc_619CC:
-		SEC
-		LDA		_lvl_scroll_value
-		SBC		#1
-		STA		_lvl_scroll_value
-		LDA		_lvl_nt_value
-		SBC		#0
-		AND		#1
-		STA		_lvl_nt_value
-locret_619DB:
-		RTS
-loc_619DC:
-		LDA		_pads
-		AND		#1
-		BEQ		locret_61A0B
-		LDA		_obj_flags._player
-		ORA		#$40
-		STA		_obj_flags._player
-		LDA		_obj_hcoll._player
-		AND		#4
-		BNE		locret_61A0B
-		LDA		_player_wnd_scroll_counter
-		CMP		#$E6
-		BEQ		locret_61A0B
-		INC		_player_wnd_scroll_counter
-		CLC
-		LDA		_obj_x_lo._player
-		ADC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		ADC		#0
-		STA		_obj_x_hi._player
-		CLC
-		LDA		_player_hor_move_anim_timer
-		ADC		_player_hor_move_anim_increment
-		STA		_player_hor_move_anim_timer
-locret_61A0B:
+.pafc_skip:
 		RTS
 
+; =============== S U B	R O U T	I N E =======================================
+_player_shot_anim_phase_change:
+		LDY		#0
+		LDA		_player_anim_phase_offset				; when anim phase $A - hand raised upper, set when shoot start
+		CMP		#$A										; change it to 5 after 16 frames (hand raised lower)
+		BNE		loc_61326								; geves two-frame of arm firing
+		LDY		#5
+loc_61326:
+		STY		_player_anim_phase_offset
+		LDA		#$10
+		STA		_player_shoot_state_timer				; reload timer
+		RTS
+		
 ; =============== S U B	R O U T	I N E =======================================
 _lvl2_obj_jet_update:
 		LDA		_obj_flags._misc
 		BNE		loc_61A29
-		LDA		#$A
+		LDA		#SND_JETPACK
 		STA		_snd_idx
 		LDA		#0
 		STA		_obj_pal_idx._misc
-		STA		_obj_var1._misc
+		STA		_obj_y_velocity._misc
 		STA		_obj_x_velocity._misc
-		STA		_obj_var0._misc
-		STA		_obj_var2._misc
+		STA		_obj_x_velosity_target._misc
+		STA		_obj_y_velosity_target._misc
 		LDA		#$FF
 		STA		_obj_hndl_idx._misc
 		INC		_obj_flags._misc
@@ -3095,8 +2997,8 @@ loc_61A3A:
 		LDA		_obj_x_hi._player
 		ADC		#0
 		STA		_obj_x_hi._misc
-		INC		_obj_var6._misc
-		LDA		_obj_var6._misc
+		INC		_obj_sit_state._misc
+		LDA		_obj_sit_state._misc
 		AND		#$F
 		LSR
 		LSR
@@ -3133,19 +3035,13 @@ loc_61A76:
 		LDA		_player_wnd_scroll_counter
 		BEQ		locret_61A8F
 		DEC		_player_wnd_scroll_counter
-		SEC
-		LDA		_obj_x_lo._player
-		SBC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		SBC		#0
-		STA		_obj_x_hi._player
+		JSR		_player_x_pos_dec
 locret_61A8F:
 		RTS
 loc_61A90:
 		LDA		_obj_hcoll._player
 		AND		#4
-		BNE		locret_61ADD
+		BNE		locret_61A8F
 		LDA		_obj_x_hi._player
 		CMP		_lvl_stop_sctoll_room_idx
 		BCC		loc_61AB8
@@ -3154,40 +3050,18 @@ loc_61A90:
 		BCC		loc_61AB8
 		LDA		_player_wnd_scroll_counter
 		CMP		#$E6
-		BCS		locret_61ADD
+		BCS		locret_61A8F
 		INC		_player_wnd_scroll_counter
-		CLC
-		LDA		_obj_x_lo._player
-		ADC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		ADC		#0
-		STA		_obj_x_hi._player
-		RTS
+		JMP		_player_x_pos_inc
 loc_61AB8:
-		CLC
-		LDA		_obj_x_lo._player
-		ADC		#1
-		STA		_obj_x_lo._player
-		LDA		_obj_x_hi._player
-		ADC		#0
-		STA		_obj_x_hi._player
+		JSR		_player_x_pos_inc
 		LDA		_player_wnd_scroll_counter
 		CMP		#$74
 		BEQ		loc_61ACE
 		INC		_player_wnd_scroll_counter
 		RTS
 loc_61ACE:
-		CLC
-		LDA		_lvl_scroll_value
-		ADC		#1
-		STA		_lvl_scroll_value
-		LDA		_lvl_nt_value
-		ADC		#0
-		AND		#1
-		STA		_lvl_nt_value
-locret_61ADD:
-		RTS
+		JMP		_scroll_inc
 
 ; =============== S U B	R O U T	I N E =======================================
 _player_damage_blink:
@@ -3392,7 +3266,7 @@ loc_61C1F:
 		BEQ		loc_61C24
 		RTS
 loc_61C24:
-		LDA		#2
+		LDA		#SND_ROCKET1
 		STA		_snd_idx
 		LDX		#$F
 		LDA		#$1E
@@ -3409,7 +3283,7 @@ loc_61C32:
 		RTS
 loc_61C3C:
 		TYA
-		STA		_obj_var6,X
+		STA		_obj_sit_state,X
 		LDA		byte_65A
 		STA		_obj_hndl_idx,X
 		JSR		_player_bullet_insert
@@ -3419,7 +3293,7 @@ loc_61C3C:
 		CMP		#3
 		BCS		locret_61C58
 loc_61C54:
-		LDA		#1
+		LDA		#SND_SHOTGUN
 		STA		_snd_idx
 locret_61C58:
 		RTS
@@ -3443,9 +3317,9 @@ loc_61C60:
 		LDA		_obj_y._pbullet+1
 		STA		_obj_y._pbullet
 		STA		_obj_y._pbullet+2
-		LDA		_obj_var0._pbullet+1
-		STA		_obj_var0._pbullet
-		STA		_obj_var0._pbullet+2
+		LDA		_obj_x_velosity_target._pbullet+1
+		STA		_obj_x_velosity_target._pbullet
+		STA		_obj_x_velosity_target._pbullet+2
 		STA		_obj_x_velocity._pbullet
 		STA		_obj_x_velocity._pbullet+2
 		LDA		#3
@@ -3461,26 +3335,26 @@ loc_61C60:
 		LDY		#6
 loc_61CA0:
 		LDA		byte_61CF1,Y
-		STA		_obj_var2._pbullet
-		STA		_obj_var1._pbullet
+		STA		_obj_y_velosity_target._pbullet
+		STA		_obj_y_velocity._pbullet
 		LDA		byte_61CF1+1,Y
-		STA		_obj_var2._pbullet+1
-		STA		_obj_var1._pbullet+1
+		STA		_obj_y_velosity_target._pbullet+1
+		STA		_obj_y_velocity._pbullet+1
 		LDA		byte_61CF1+2,Y
-		STA		_obj_var2._pbullet+2
-		STA		_obj_var1._pbullet+2
+		STA		_obj_y_velosity_target._pbullet+2
+		STA		_obj_y_velocity._pbullet+2
 		LDA		_obj_x_velocity._pbullet+1
 		AND		byte_61CE8,Y
 		STA		_obj_x_velocity._pbullet
-		STA		_obj_var0._pbullet
+		STA		_obj_x_velosity_target._pbullet
 		LDA		_obj_x_velocity._pbullet+1
 		AND		byte_61CE8+1,Y
 		STA		_obj_x_velocity._pbullet+1
-		STA		_obj_var0._pbullet+1
+		STA		_obj_x_velosity_target._pbullet+1
 		LDA		_obj_x_velocity._pbullet+1
 		AND		byte_61CE8+2,Y
 		STA		_obj_x_velocity._pbullet+2
-		STA		_obj_var0._pbullet+2
+		STA		_obj_x_velosity_target._pbullet+2
 		LDA		#0
 		STA		_obj_pal_idx._pbullet
 		STA		_obj_pal_idx._pbullet+2
@@ -3504,7 +3378,7 @@ loc_61CFC:
 		LDA		#0
 		STA		_obj_energy._enemy,X
 		LDA		#8
-		STA		_obj_var0._enemy,X
+		STA		_obj_x_velosity_target._enemy,X
 		STA		_obj_x_velocity._enemy,X
 		LDA		#0
 		STA		_obj_energy._enemy,X
@@ -3515,10 +3389,10 @@ loc_61D11:
 		BNE		loc_61D1B
 		DEC		_weapon1_idx
 loc_61D1B:
-		LDA		#3
+		LDA		#SND_ROCKET2
 		STA		_snd_idx
 		LDA		#$32
-		STA		_pal_blink_flag
+		STA		_pal_blink_timer
 		LDA		#$28
 		STA		_player_fire_delay_reload
 		STA		_player_fire_delay_timer
@@ -3544,18 +3418,18 @@ loc_61D41:
 loc_61D4C:
 		LDX		_tmpE7
 		LDA		#$A
-		STA		_player_bullet_shot_state
+		STA		_player_anim_phase_offset
 		LDA		#4
-		STA		byte_656
+		STA		_player_shoot_state_timer
 		LDA		#0
 		STA		_obj_pal_idx,X
 		CLC
 		LDA		_obj_y._player
-		ADC		byte_657
+		ADC		_player_shot_pos_delta
 		STA		_obj_y,X
 		LDA		_player_diagonal_fire_delta
-		STA		_obj_var2,X
-		STA		_obj_var1,X
+		STA		_obj_y_velosity_target,X
+		STA		_obj_y_velocity,X
 		LDA		_tptr1
 		STA		_obj_spr_idx,X
 		LDA		_obj_flags._player
@@ -3566,7 +3440,7 @@ loc_61D4C:
 		PLP
 		BEQ		loc_61D90
 		LDA		#4
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		CLC
 		LDA		_obj_x_lo._player
@@ -3578,7 +3452,7 @@ loc_61D4C:
 		RTS
 loc_61D90:
 		LDA		#$FC
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		SEC
 		LDA		_obj_x_lo._player
@@ -3653,11 +3527,11 @@ _player_bullets_animate:
 		JMP		.pbullet_handler7_animate
 ; --------------------------------
 .pbullet_regular_missile_animate:
-		LDY		 _obj_var6._pbullet
+		LDY		 _obj_sit_state._pbullet
 		JMP		.pbullet_common_missile_animate
 ; --------------------------------
 .pbullet_homing_missile_animate:
-		LDY		 _obj_var6._pbullet
+		LDY		 _obj_sit_state._pbullet
 		BEQ		loc_61E29
 		LDA		_obj_flags,Y
 		BEQ		loc_61E29
@@ -3674,7 +3548,7 @@ loc_61E35:
 		DEY
 		BNE		loc_61E2B
 loc_61E38:
-		STY		 _obj_var6._pbullet
+		STY		 _obj_sit_state._pbullet
 		LDA		#4
 		STA		_tptr1
 		LDA		#3
@@ -3712,9 +3586,9 @@ loc_61E74:
 		STA		_tptr1+1
 loc_61E7B:
 		LDA		_tptr1
-		STA		_obj_var0._pbullet
+		STA		_obj_x_velosity_target._pbullet
 		LDA		_tptr1+1
-		STA		_obj_var2._pbullet
+		STA		_obj_y_velosity_target._pbullet
 		LDY		#0
 		LDA		_obj_x_velocity._pbullet
 		BPL		loc_61E8D
@@ -3722,7 +3596,7 @@ loc_61E7B:
 loc_61E8D:
 		STY		_tptr1
 		CLC
-		LDA		_obj_var1._pbullet
+		LDA		_obj_y_velocity._pbullet
 		ADC		#4
 		CLC
 		ADC		_tptr1
@@ -3976,11 +3850,11 @@ loc_62062:
 		STA		_obj_x_hi,X
 loc_62077:
 		LDA		#0										; init misc vars
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
-		STA		_obj_var2,X
-		STA		_obj_var1,X
-		STA		_obj_var6,X
+		STA		_obj_y_velosity_target,X
+		STA		_obj_y_velocity,X
+		STA		_obj_sit_state,X
 		STA		_obj_var7,X
 		LDA		#1
 		STA		_obj_var5,X
@@ -4012,8 +3886,7 @@ _obj_enemy_ai_loop:
 _obj_next_enemy_ai:
 		DEX
 		BNE		_obj_enemy_ai_loop
-		JSR		_obj_tank_weapon_handler
-		RTS
+		JMP		_obj_tank_weapon_handler
 
 _obj_enemy_ai_handlers_lib:
 		.WORD _obj_ehndl00_regular_gunman0
@@ -4087,7 +3960,7 @@ loc_62122:
 		LDA		_obj_hcoll,X
 		AND		#1
 		BNE		loc_62130
-		LDA		_obj_var2,X
+		LDA		_obj_y_velosity_target,X
 		BEQ		loc_6217E
 		JMP		loc_62228
 loc_62130:
@@ -4097,8 +3970,8 @@ loc_62130:
 		JMP		loc_62228
 loc_62139:
 		LDA		#0
-		STA		_obj_var2,X
-		STA		_obj_var1,X
+		STA		_obj_y_velosity_target,X
+		STA		_obj_y_velocity,X
 		LDA		_obj_y,X
 		AND		#$F0
 		STA		_obj_y,X
@@ -4118,8 +3991,8 @@ loc_62153:
 		STA		_obj_var7,X
 		JMP		loc_6217E
 loc_62168:
-		INC		_obj_var6,X
-		LDA		_obj_var6,X
+		INC		_obj_sit_state,X
+		LDA		_obj_sit_state,X
 		AND		#$1F
 		LSR
 		LSR
@@ -4140,7 +4013,7 @@ loc_6217E:
 		LDY		#$FF
 loc_6218C:
 		TYA
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		JMP		loc_62228
 loc_62195:
@@ -4164,7 +4037,7 @@ loc_62195:
 loc_621B8:
 		STA		_obj_flags,X
 		LDA		_tptr1
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		JMP		loc_62228
 loc_621C4:
@@ -4205,7 +4078,7 @@ loc_621F9:
 		LDA		#0
 		JSR		_enemy_bullet_insert
 		BCS		loc_62228
-		LDA		#$F
+		LDA		#SND_SOUND0F
 		STA		_snd_idx
 		LDA		_tmpE4
 		STA		_obj_spr_idx,X
@@ -4213,7 +4086,7 @@ loc_621F9:
 loc_6221E:
 		STA		_obj_var7,X
 		LDA		#0
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 loc_62228:
 		JMP		_obj_next_enemy_ai
@@ -4259,7 +4132,7 @@ loc_62252:
 loc_6225A:
 		LDA		#5
 		STA		_obj_var7,X
-		LDA		_obj_var6,X
+		LDA		_obj_sit_state,X
 		BNE		loc_62280
 		LDA		_obj_spr_idx,X
 		CMP		_tptr1
@@ -4273,7 +4146,7 @@ loc_6226F:
 		JMP		loc_6235C
 loc_62278:
 		LDA		#1
-		STA		_obj_var6,X
+		STA		_obj_sit_state,X
 		JMP		loc_6235C
 loc_62280:
 		LDA		_obj_spr_idx,X
@@ -4289,7 +4162,7 @@ loc_6228B:
 		CMP		#7
 		BCS		loc_622A0
 		LDA		#0
-		STA		_obj_var6,X
+		STA		_obj_sit_state,X
 		JMP		loc_6235C
 loc_622A0:
 		JSR		_enemy_projectile_collision_test_ex
@@ -4313,7 +4186,7 @@ loc_622BF:
 		LDA		_tptr1
 		BNE		loc_622DC
 		LDA		#6
-		STA		_obj_var2,X
+		STA		_obj_y_velosity_target,X
 		LDA		#0
 		STA		_obj_hndl_idx,X
 		LDA		#$2E
@@ -4341,7 +4214,7 @@ loc_622DC:
 		LDA		#5
 		JSR		_enemy_bullet_insert
 		BCS		loc_6235C
-		LDA		#$F
+		LDA		#SND_SOUND0F
 		STA		_snd_idx
 		LDA		_tmpE5
 		STA		_obj_spr_idx,X
@@ -4371,11 +4244,11 @@ loc_6230C:
 		STA		_tptr1+1
 loc_6233A:
 		LDA		_tptr1
-		STA		_obj_var0,Y
+		STA		_obj_x_velosity_target,Y
 		LDA		_tptr1+1
 		STA		_obj_x_velocity,Y
 		LDA		#$FD
-		STA		_obj_var1,Y
+		STA		_obj_y_velocity,Y
 		LDA		#3
 		STA		_obj_pal_idx,Y
 		LDA		#3
@@ -4437,7 +4310,7 @@ loc_62394:
 		BPL		loc_62391
 		LDA		#4
 		STA		_obj_var7,X
-		LDA		_obj_var6,X
+		LDA		_obj_sit_state,X
 		BNE		loc_623D0
 		LDA		#3
 		STA		_obj_var8,X
@@ -4458,7 +4331,7 @@ loc_623BE:
 		CMP		#6
 		BCS		loc_62427
 		LDA		#1
-		STA		_obj_var6,X
+		STA		_obj_sit_state,X
 		BNE		loc_62427
 loc_623D0:
 		LDA		#1
@@ -4475,7 +4348,7 @@ loc_623DF:
 		BNE		loc_623EF
 loc_623E8:
 		LDA		#0
-		STA		_obj_var6,X
+		STA		_obj_sit_state,X
 		BEQ		loc_62427
 loc_623EF:
 		JSR		_enemy_projectile_collision_test_ex
@@ -4498,13 +4371,13 @@ loc_623FA:
 		LDA		#0
 		JSR		_enemy_bullet_insert
 		BCS		loc_62427
-		LDA		#$10
+		LDA		#SND_SOUND10
 		STA		_snd_idx
 		LDA		_tmpE5
 		STA		_obj_spr_idx,X
 		DEC		_obj_var8,X
 		LDA		#2
-		STA		_pal_blink_flag
+		STA		_pal_blink_timer
 loc_62427:
 		JMP		_obj_next_enemy_ai
 
@@ -4543,7 +4416,7 @@ loc_62448:
 		EOR		#$FF
 		CLC
 		ADC		#1
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		LDA		_obj_flags,X
 		EOR		#$40
@@ -4552,8 +4425,8 @@ loc_62448:
 loc_62463:
 		LDA		_obj_x_velocity,X
 		BEQ		loc_62477
-		INC		_obj_var6,X
-		LDA		_obj_var6,X
+		INC		_obj_sit_state,X
+		LDA		_obj_sit_state,X
 		AND		#$1F
 		LSR
 		LSR
@@ -4579,7 +4452,7 @@ loc_62477:
 loc_62492:
 		STA		_obj_flags,X
 		LDA		_tptr1
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		LDA		_rand_seed,X
 		CMP		#5
@@ -4594,12 +4467,12 @@ loc_62492:
 		LDA		#0
 		JSR		_enemy_bullet_insert
 		BCS		loc_624EB
-		LDA		#$10
+		LDA		#SND_SOUND10
 		STA		_snd_idx
 		LDA		_tmpE4
 		STA		_obj_spr_idx,X
 		LDA		#0
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		JMP		_obj_next_enemy_ai
 loc_624C8:
@@ -4614,10 +4487,10 @@ loc_624C8:
 		LDA		#5
 		JSR		_enemy_bullet_insert
 		BCS		loc_624EB
-		LDA		#$10
+		LDA		#SND_SOUND10
 		STA		_snd_idx
 		LDA		#0
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 loc_624EB:
 		JMP		_obj_next_enemy_ai
@@ -4668,7 +4541,7 @@ loc_62526:
 		CMP		#$12
 		BCS		loc_6253E
 		LDA		#6
-		STA		_obj_var2,X
+		STA		_obj_y_velosity_target,X
 		LDA		_tptr1+1
 		STA		_obj_hndl_idx,X
 		JMP		loc_62565
@@ -4684,7 +4557,7 @@ loc_6253E:
 		LDA		#5
 		JSR		_enemy_bullet_insert
 		BCS		loc_62561
-		LDA		#$F
+		LDA		#SND_SOUND0F
 		STA		_snd_idx
 		LDA		_tmpE5
 		STA		_obj_spr_idx,X
@@ -4725,7 +4598,7 @@ loc_62581:
 		EOR		#$FF
 		CLC
 		ADC		#1
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		LDA		_obj_flags,X
 		EOR		#$40
@@ -4734,8 +4607,8 @@ loc_62581:
 loc_6259C:
 		LDA		_obj_x_velocity,X
 		BEQ		loc_625B0
-		INC		_obj_var6,X
-		LDA		_obj_var6,X
+		INC		_obj_sit_state,X
+		LDA		_obj_sit_state,X
 		AND		#$1F
 		LSR
 		LSR
@@ -4761,7 +4634,7 @@ loc_625B0:
 loc_625CB:
 		STA		_obj_flags,X
 		LDA		_tptr1
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		LDA		_rand_seed,X
 		CMP		#5
@@ -4782,11 +4655,11 @@ loc_625E6:
 		JSR		_enemy_bullet_insert
 		BCS		loc_6262C
 		LDA		#$FE
-		STA		_obj_var0,Y
+		STA		_obj_x_velosity_target,Y
 		LDA		#$FC
 		STA		_obj_x_velocity,Y
 		LDA		#$FD
-		STA		_obj_var1,Y
+		STA		_obj_y_velocity,Y
 		LDA		#2
 		STA		_obj_pal_idx,Y
 		LDA		#3
@@ -4797,12 +4670,12 @@ loc_625E6:
 		AND		#$40
 		BEQ		loc_62625
 		LDA		#2
-		STA		_obj_var0,Y
+		STA		_obj_x_velosity_target,Y
 		LDA		#4
 		STA		_obj_x_velocity,Y
 loc_62625:
 		LDA		#0
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 loc_6262C:
 		JMP		_obj_next_enemy_ai
@@ -4822,7 +4695,7 @@ loc_6263B:
 		EOR		#$FF
 		CLC
 		ADC		#1
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		LDA		_obj_flags,X
 		EOR		#$40
@@ -4831,8 +4704,8 @@ loc_6263B:
 loc_62656:
 		LDA		_obj_x_velocity,X
 		BEQ		loc_6266A
-		INC		_obj_var6,X
-		LDA		_obj_var6,X
+		INC		_obj_sit_state,X
+		LDA		_obj_sit_state,X
 		AND		#$1F
 		LSR
 		LSR
@@ -4858,7 +4731,7 @@ loc_6266A:
 loc_62685:
 		STA		_obj_flags,X
 		LDA		_tptr1
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		LDA		_rand_seed,X
 		CMP		#5
@@ -4873,12 +4746,12 @@ loc_62685:
 		LDA		#0
 		JSR		_enemy_bullet_insert
 		BCS		loc_626B8
-		LDA		#$10
+		LDA		#SND_SOUND10
 		STA		_snd_idx
 		LDA		#$B6
 		STA		_obj_spr_idx,X
 		LDA		#0
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 loc_626B8:
 		JMP		_obj_next_enemy_ai
@@ -4888,18 +4761,18 @@ _obj_ehndl0A_ninja:
 		LDA		#8
 		CMP		_lvl_spr_chr_bank_up
 		BEQ		loc_626CC
-		STA		_lvl_spr_chr_bank_up
+		STA		_lvl_spr_chr_bank_up					; special case, change bg chr bank and music
 		STA		_lvl_spr_chr_bank_down
-		LDA		#$26									; special case, music change if Ninja on the screen
+		LDA		#SND_MLEVEL4
 		STA		_snd_idx
 		JSR		_far_apu_mus_load_unsafe
 loc_626CC:
 		LDA		_obj_energy,X
 		BNE		loc_6271B
-		LDA		_player_scroll_stop_override_tmp
+		LDA		_player_scroll_stop_flag
 		BEQ		loc_626D9
 		LDA		#2
-		STA		_player_scroll_stop_override_tmp
+		STA		_player_scroll_stop_flag
 loc_626D9:
 		LDA		#$61
 		STA		_obj_spr_idx,X
@@ -4912,7 +4785,7 @@ loc_626D9:
 		STA		_lvl_spr_chr_bank_down
 		LDA		#0										; hacky-hacky!
 		STA		_obj_flags,X							; if ninja is dead, restore music for level 2
-		LDA		#$23									; if set ninjas in other levels, will cause problems
+		LDA		#SND_MLEVEL1							; if set ninjas in other levels, will cause problems
 		STA		_snd_idx
 		JSR		_far_apu_mus_load_unsafe
 loc_626F8:
@@ -4949,7 +4822,7 @@ loc_62722:
 		LDA		_obj_pal_idx,X
 		BMI		loc_6271F
 		LDA		#1
-		STA		_player_scroll_stop_override_tmp
+		STA		_player_scroll_stop_flag
 		LDA		_obj_hcoll,X
 		AND		#1
 		BNE		loc_627B1
@@ -4970,14 +4843,14 @@ loc_6274A:
 loc_62754:
 		STA		_obj_var7,X
 		TYA
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		LDA		#$FB
-		STA		_obj_var1,X
+		STA		_obj_y_velocity,X
 		LDA		#5
-		STA		_obj_var2,X
+		STA		_obj_y_velosity_target,X
 		LDA		#0
-		STA		_obj_var6,X
+		STA		_obj_sit_state,X
 		LDA		#5
 		STA		_obj_var4,X
 		LDA		_obj_flags,X
@@ -4988,8 +4861,8 @@ loc_6277A:
 		LDA		_obj_y,X
 		CMP		#$B4
 		BCS		loc_62742
-		INC		_obj_var6,X
-		LDA		_obj_var6,X
+		INC		_obj_sit_state,X
+		LDA		_obj_sit_state,X
 		LSR
 		LSR
 		LSR
@@ -5010,13 +4883,13 @@ byte_627A1:
 byte_627A9:
 		.BYTE	  5,  5,$C5,$C5,$45,$45,$85,$85
 loc_627B1:
-		LDA		_obj_var1,X
+		LDA		_obj_y_velocity,X
 		BPL		loc_627B9
 		JMP		loc_628D6
 loc_627B9:
 		LDA		#0
-		STA		_obj_var2,X
-		STA		_obj_var1,X
+		STA		_obj_y_velosity_target,X
+		STA		_obj_y_velocity,X
 		LDA		_obj_y,X
 		AND		#$F0
 		STA		_obj_y,X
@@ -5049,14 +4922,14 @@ loc_627DA:
 loc_627FB:
 		LDA		_obj_x_velocity,X
 		BNE		loc_62841
-		INC		_obj_var6,X
-		LDA		_obj_var6,X
+		INC		_obj_sit_state,X
+		LDA		_obj_sit_state,X
 		LSR
 		LSR
 		AND		#7
 		CMP		#7
 		BCC		loc_62822
-		LDA		#$C
+		LDA		#SND_RBLAND2
 		STA		_snd_idx
 		LDA		#2
 		STA		_tmpE5
@@ -5075,7 +4948,7 @@ loc_6282B:
 		LDA		_rand_seed
 		CMP		#$1E
 		BCS		loc_6286E
-		LDA		_lvl4_destruction_counter
+		LDA		_lvl4_cur_pass_char_idx
 		CMP		#$C
 		BCC		loc_6283E
 		LDA		_obj_y,X
@@ -5087,8 +4960,8 @@ loc_62841:
 		LDA		_obj_flags,X
 		AND		#8
 		BNE		loc_6286E
-		INC		_obj_var6,X
-		LDA		_obj_var6,X
+		INC		_obj_sit_state,X
+		LDA		_obj_sit_state,X
 		AND		#$1F
 		LSR
 		LSR
@@ -5122,7 +4995,7 @@ loc_6286E:
 loc_62883:
 		STA		_obj_flags,X
 		LDA		_tptr1
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 		JMP		loc_628D6
 loc_6288F:
@@ -5139,7 +5012,7 @@ loc_6289E:
 		BCS		loc_628D6
 		JMP		loc_6282B
 loc_628A8:
-		LDA		_lvl4_destruction_counter
+		LDA		_lvl4_cur_pass_char_idx
 		CMP		#$C
 		BCS		loc_6289E
 		JSR		_enemy_projectile_collision_test
@@ -5152,10 +5025,10 @@ loc_628A8:
 		LDA		#$A
 		STA		_obj_var7,X
 		LDA		#0
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
-		STA		_obj_var6,X
-		LDA		#$11
+		STA		_obj_sit_state,X
+		LDA		#SND_SOUND11
 		STA		_snd_idx
 		JMP		loc_628D6
 loc_628D6:
@@ -5163,9 +5036,9 @@ loc_628D6:
 loc_628D9:
 		LDA		#0
 		STA		_obj_x_velocity,X
-		STA		_obj_var0,X
-		STA		_obj_var2,X
-		STA		_obj_var1,X
+		STA		_obj_x_velosity_target,X
+		STA		_obj_y_velosity_target,X
+		STA		_obj_y_velocity,X
 		LDA		_obj_pal_idx._enemy+2
 		AND		_obj_pal_idx._enemy+1
 		BMI		loc_628EF
@@ -5212,8 +5085,8 @@ loc_62908:
 loc_62939:
 		LDA		_ingame_sync_counter
 		BNE		locret_62946
-		LDA		#5
-		STA		_lvl_idx
+;		LDA		#5
+;		STA		_lvl_idx								; and here too
 		LDA		#1
 		STA		_game_over_flag
 locret_62946:
@@ -5239,11 +5112,11 @@ loc_62963:
 		CLC
 		ADC		#1
 		STA		_obj_x_velocity,X
-		LDA		_obj_var0,X
+		LDA		_obj_x_velosity_target,X
 		EOR		#$FF
 		CLC
 		ADC		#1
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		LDA		_obj_var7,X
 		EOR		#$FF
 		CLC
@@ -5257,7 +5130,7 @@ loc_62983:
 		CMP		#$F2
 		BCS		loc_62963
 loc_6298D:
-		LDA		_lvl4_destruction_counter
+		LDA		_lvl4_cur_pass_char_idx
 		CMP		#$C
 		BCC		locret_629BC
 		LDA		_obj_hcoll,X
@@ -5291,17 +5164,17 @@ loc_629C5:
 		BEQ		locret_629EC
 		JSR		_enemy_projectile_collision_test_ex
 		BCC		loc_629E4
-		LDA		_obj_var0,X
+		LDA		_obj_x_velosity_target,X
 		BPL		locret_629EC
 		LDA		#1
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		LDA		#$40
 		STA		_obj_var7,X
 		ORA		_obj_flags,X
 		STA		_obj_flags,X
 		RTS
 loc_629E4:
-		LDA		_obj_var0,X
+		LDA		_obj_x_velosity_target,X
 		BMI		locret_629EC
 		JMP		loc_62963
 locret_629EC:
@@ -5333,9 +5206,9 @@ _obj_ehndl15_walker_droid:
 		STA		_lvl_spr_chr_bank_up
 		STA		_lvl_spr_chr_bank_down
 		LDA		_obj_energy,X
-		BNE		loc_62A1C
-		JMP		loc_62B48
-loc_62A1C:
+		BNE		.droid_active
+		JMP		.droid_explode
+.droid_active:
 		JSR		_enemy_projectile_collision_test_ex
 		LDA		_obj_flags,X
 		AND		#$BF
@@ -5344,10 +5217,10 @@ loc_62A1C:
 loc_62A27:
 		STA		_obj_flags,X
 		CLC
-		LDA		_obj_var6,X
+		LDA		_obj_sit_state,X
 		ADC		_obj_x_velocity,X
 		AND		#$1F
-		STA		_obj_var6,X
+		STA		_obj_sit_state,X
 		LSR
 		LSR
 		LSR
@@ -5375,21 +5248,21 @@ loc_62A54:
 		ORA		#$20
 		STA		_obj_var7,X
 		LDY		#1
-		LDA		_obj_var0,X
+		LDA		_obj_x_velosity_target,X
 		BMI		loc_62A6B
 		LDY		#$FF
 loc_62A6B:
 		TYA
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
 loc_62A71:
 		LDA		#0
-		STA		_obj_var0._enemy+1
+		STA		_obj_x_velosity_target._enemy+1
 		STA		_obj_x_velocity._enemy+1
-		STA		_obj_var2._enemy+1
-		STA		_obj_var1._enemy+1
-		STA		_obj_var2,X
-		STA		_obj_var1,X
+		STA		_obj_y_velosity_target._enemy+1
+		STA		_obj_y_velocity._enemy+1
+		STA		_obj_y_velosity_target,X
+		STA		_obj_y_velocity,X
 		LDA		#3
 		STA		_obj_pal_idx._enemy+1
 		LDA		_obj_flags,X
@@ -5417,10 +5290,10 @@ loc_62AA8:
 		LDA		_obj_spr_idx._enemy+1
 		CMP		#$8C
 		BCC		loc_62ACF
-		DEC		_obj_var6._enemy
+		DEC		_obj_sit_state._enemy
 		BPL		loc_62AD3
 		LDA		#3
-		STA		_obj_var6._enemy
+		STA		_obj_sit_state._enemy
 		LDA		_obj_var7._enemy
 		BMI		loc_62AD3
 		DEC		_obj_var7._enemy
@@ -5483,7 +5356,7 @@ loc_62B2B:
 		LDA		#3
 		STA		_obj_pal_idx,Y
 		STA		_obj_var7._enemy
-		LDA		#1
+		LDA		#SND_SHOTGUN
 		STA		_snd_idx
 loc_62B39:
 		LDA		#1
@@ -5494,7 +5367,7 @@ loc_62B39:
 		RTS
 byte_62B44:
 		.BYTE	$99,$98,$99,$98
-loc_62B48:
+.droid_explode:
 		LDY		#4
 loc_62B4A:
 		LDA		_obj_flags,Y
@@ -5526,10 +5399,10 @@ loc_62B56:
 		TAX
 loc_62B7C:
 		LDA		#0
-		STA		_obj_var0,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
-		STA		_obj_var2,X
-		STA		_obj_var1,X
+		STA		_obj_y_velosity_target,X
+		STA		_obj_y_velocity,X
 		LDA		_obj_pal_idx,X
 		EOR		#3
 		STA		_obj_pal_idx,X
@@ -5537,15 +5410,15 @@ loc_62B7C:
 		BNE		locret_62B9C
 		LDA		#1
 		STA		_game_over_flag
-		LDA		#4
-		STA		_lvl_idx
+;		LDA		#4										; no need anymore, autoincrementing
+;		STA		_lvl_idx
 locret_62B9C:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
 _obj_ehndl16_ground_timed_bomb:
-		INC		_obj_var6,X
-		LDA		_obj_var6,X
+		INC		_obj_sit_state,X
+		LDA		_obj_sit_state,X
 		CMP		#$64
 		BCC		loc_62C0B
 
@@ -5564,12 +5437,12 @@ loc_62BA9:
 		LDA		#4
 		STA		_obj_spr_idx,Y
 		LDA		#$FC
-		STA		_obj_var1,Y
+		STA		_obj_y_velocity,Y
 		LDA		#2
-		STA		_obj_var2,Y
+		STA		_obj_y_velosity_target,Y
 		LDA		#0
 		STA		_obj_hndl_idx,Y
-		STA		_obj_var0,Y
+		STA		_obj_x_velosity_target,Y
 		STA		_obj_x_velocity,Y
 		STA		_obj_pal_idx,Y
 		LDA		#1
@@ -5580,21 +5453,21 @@ loc_62BA9:
 		LDA		#$F8
 		STA		_obj_x_velocity._ebullet
 		LDA		#$FC
-		STA		_obj_var0._ebullet
+		STA		_obj_x_velosity_target._ebullet
 		LDA		#8
 		STA		_obj_x_velocity._ebullet+2
 		LDA		#4
-		STA		_obj_var0._ebullet+2
+		STA		_obj_x_velosity_target._ebullet+2
 		LDA		#$F8
-		STA		_obj_var1._ebullet+1
+		STA		_obj_y_velocity._ebullet+1
 		LDA		#6
-		STA		_obj_var2._ebullet+1
+		STA		_obj_y_velosity_target._ebullet+1
 		LDA		#0
 		STA		_obj_flags,X
-		LDA		#7
+		LDA		#SND_EXPLDLA
 		STA		_snd_idx
 		LDA		#5
-		STA		_pal_blink_flag
+		STA		_pal_blink_timer
 loc_62C0B:
 		JMP		_obj_next_enemy_ai
 
@@ -5620,19 +5493,19 @@ loc_62C25:
 
 ; =============== S U B	R O U T	I N E =======================================
 _enemy_proj_explode0_start:
-		LDA		#5
+		LDA		#SND_EXPLDSM
 		STA		_snd_idx
 		JMP		_enemy_projectile_explode_start
 
 ; =============== S U B	R O U T	I N E =======================================
 _enemy_proj_explode1_start:
-		LDA		#6
+		LDA		#SND_EXPLDMD
 		STA		_snd_idx
 
 ; =============== S U B	R O U T	I N E =======================================
 _enemy_projectile_explode_start:
 		LDA		#$13
-		STA		_obj_var6,X
+		STA		_obj_sit_state,X
 		LDA		#7
 		STA		_obj_hndl_idx,X
 		STA		_obj_spr_idx,X
@@ -5643,14 +5516,14 @@ _enemy_projectile_explode_start:
 ; =============== S U B	R O U T	I N E =======================================
 _explosion_spr_anim:
 		LDA		#0
-		STA		_obj_var2,X
-		STA		_obj_var0,X
+		STA		_obj_y_velosity_target,X
+		STA		_obj_x_velosity_target,X
 		STA		_obj_x_velocity,X
-		STA		_obj_var1,X
+		STA		_obj_y_velocity,X
 		STA		_obj_pal_idx,X
-		DEC		_obj_var6,X
+		DEC		_obj_sit_state,X
 		BEQ		loc_62C62
-		LDA		_obj_var6,X
+		LDA		_obj_sit_state,X
 		LSR
 		LSR
 		CLC
@@ -5693,15 +5566,15 @@ loc_62C7D:
 		ADC		_enemy_bullet_y_pos_global_arg
 		STA		_obj_y,Y
 		LDA		_tptr1
-		STA		_obj_var2,Y
-		STA		_obj_var1,Y
+		STA		_obj_y_velosity_target,Y
+		STA		_obj_y_velocity,Y
 		LDA		_tptr1+1
 		STA		_obj_spr_idx,Y
 		LDA		_obj_flags,X
 		AND		#$40
 		BEQ		loc_62CC1
 		LDA		#5
-		STA		_obj_var0,Y
+		STA		_obj_x_velosity_target,Y
 		STA		_obj_x_velocity,Y
 		CLC
 		LDA		_obj_x_lo,X
@@ -5714,7 +5587,7 @@ loc_62C7D:
 		RTS
 loc_62CC1:
 		LDA		#$FB
-		STA		_obj_var0,Y
+		STA		_obj_x_velosity_target,Y
 		STA		_obj_x_velocity,Y
 		LDA		_obj_x_lo,X
 		STA		_obj_x_lo,Y
@@ -5809,12 +5682,12 @@ loc_62D45:
 		LDA		_lvl2_tank_boss_fire_pal_list,X
 		STA		_obj_pal_idx,Y
 		LDA		_lvl2_tank_boss_fire_vel_list,X
-		STA		_obj_var0,Y
+		STA		_obj_x_velosity_target,Y
 		STA		_obj_x_velocity,Y
 		LDA		_lvl2_tank_boss_fire_var2_list,X
-		STA		_obj_var2,Y
+		STA		_obj_y_velosity_target,Y
 		LDA		_lvl2_tank_boss_fire_var1_list,X
-		STA		_obj_var1,Y
+		STA		_obj_y_velocity,Y
 		LDA		#2
 		STA		_obj_hndl_idx,Y
 		LDA		#1
@@ -5824,9 +5697,9 @@ loc_62D45:
 		CMP		#5
 		BEQ		loc_62D8F								; additional blink only if main cannon shot (!=5)
 		LDA		#2
-		STA		_pal_blink_flag
+		STA		_pal_blink_timer
 loc_62D8F:
-		LDA		#7
+		LDA		#SND_EXPLDLA
 		STA		_snd_idx
 		RTS
 .do_lvl2_shot_delay:
@@ -5841,8 +5714,8 @@ loc_62D8F:
 		SBC		_obj_x_hi._player
 		STA		_lvl2_tank_shot_timer_hi				; the closer to the end of level, the faster appears
 		LDA		#3
-		STA		_pal_blink_flag							; do sound and blink
-		LDA		#7
+		STA		_pal_blink_timer							; do sound and blink
+		LDA		#SND_EXPLDLA
 		STA		_snd_idx
 		RTS
 .do_lvl2_tank_shot_counter:
@@ -5876,10 +5749,10 @@ loc_62D8F:
 		LDA		_lvl2_tank_y_pos_list,X					; initialize the object
 		STA		_obj_y,Y
 		LDA		#0
-		STA		_obj_var2,Y
-		STA		_obj_var1,Y
+		STA		_obj_y_velosity_target,Y
+		STA		_obj_y_velocity,Y
 		LDA		#$FA
-		STA		_obj_var0,Y
+		STA		_obj_x_velosity_target,Y
 		STA		_obj_x_velocity,Y						; velicity
 		LDA		#$AB
 		STA		_obj_spr_idx,Y							; sprite
@@ -5959,7 +5832,7 @@ loc_62ECF:
 
 ; =============== S U B	R O U T	I N E =======================================
 _obj_ninja_self_destruct_animate:
-		LDA		_lvl4_destruction_counter
+		LDA		_lvl4_cur_pass_char_idx
 		CMP		#$C
 		BCC		_enemy_projectile_collision_test_ex
 		LDY		#0
@@ -6083,7 +5956,7 @@ _player_to_item_collision_test:
 locret_62F9A:
 		RTS
 loc_62F9B:
-		LDA		_pads
+		LDA		_pad_last
 		AND		#4
 		BEQ		locret_62F9A
 		LDA		_obj_flags._bonus
@@ -6130,7 +6003,13 @@ loc_62F9B:
 .regular_item_snd:
 		JSR		_hud_msg_set_request_ex
 		STA		_obj_flags._bonus						; after exit ser_request_ex A=0 by default
-		LDA		#8
+		LDA		_apu_enable
+		AND		#APU_MUS_ENABLE
+		BNE		.short_pickup1
+		LDA		#SND_PCKUP1A
+		.BYTE	$2C
+.short_pickup1:
+		LDA		#SND_PICKUP1
 		STA		_snd_idx
 		RTS
 ; --------------------------------
@@ -6144,24 +6023,6 @@ loc_62FFB:												; never occurs in the game!
 		BNE		loc_62FFB
 		LDA		#0										; the only case you need to force A=0
 		BEQ		.regular_item_snd
-; --------------------------------
-.get_power_restore_item:
-		LDX		#3
-loc_63009:
-		CLC
-		LDA		_percents,X
-		ADC		#DEF_PERCENT_POWERUP					; tweakable
-		STA		_percents,X
-		DEX
-		BPL		loc_63009
-		JSR		_player_overall_armor_calc				; since we don't recalc it every time
-		LDA		#4
-.powerup_item_snd:
-		JSR		_hud_msg_set_request_ex
-		STA		_obj_flags._bonus						; again after exit ser_request_ex A=0 by default
-		LDA		#9
-		STA		_snd_idx
-		RTS
 ; --------------------------------
 .get_repair_tank_items:
 		INC		_repair_tanks
@@ -6180,6 +6041,30 @@ loc_63009:
 		STA		_lvl2_jetpack_fuel_tanks
 		LDA		#$14
 		BNE		.regular_item_snd
+; --------------------------------
+.get_power_restore_item:
+		LDX		#3
+loc_63009:
+		CLC
+		LDA		_percents,X
+		ADC		#DEF_PERCENT_POWERUP					; tweakable
+		STA		_percents,X
+		DEX
+		BPL		loc_63009
+		JSR		_player_overall_armor_calc				; since we don't recalc it every time
+		LDA		#4
+.powerup_item_snd:
+		JSR		_hud_msg_set_request_ex
+		STA		_obj_flags._bonus						; again after exit ser_request_ex A=0 by default
+		LDA		_apu_enable
+		AND		#APU_MUS_ENABLE
+		BNE		.short_pickup2
+		LDA		#SND_PCKUP2A
+		.BYTE	$2C
+.short_pickup2:
+		LDA		#SND_PICKUP2
+		STA		_snd_idx
+		RTS
 
 _upgrade_bullets_list:
 		.BYTE	$FF,$C8,$64
@@ -6251,9 +6136,9 @@ loc_630D3:
 		LDA		#$FD
 		STA		_tptr1+1
 		LDA		_tptr1
-		STA		_obj_var2,Y
+		STA		_obj_y_velosity_target,Y
 		LDA		_tptr1+1
-		STA		_obj_var1,Y
+		STA		_obj_y_velocity,Y
 		LDA		#0
 		STA		_obj_energy,Y
 		LDA		#5
@@ -6267,7 +6152,7 @@ loc_630D3:
 loc_630FB:
 		LDA		_tptr1
 		STA		_obj_x_velocity,Y
-		STA		_obj_var0,Y
+		STA		_obj_x_velosity_target,Y
 		JSR		_obj_add_score
 		JMP		loc_6310F
 loc_63109:
@@ -6356,9 +6241,7 @@ loc_6318A:												; pickup other random body part to damage
 		SEC
 		LDA		_percents,X
 ; --
-; debug invulnerability
-;
-;		SBC		_tptr1
+;		SBC		_tptr1									; DEBUG invulnerability
 ; --
 		BCS		loc_631A1
 		LDA		#0										; clamp to 0
@@ -6382,12 +6265,12 @@ _exit:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_obj_misc_collision_test:
+_far_obj_misc_collision_test_lvl_prg_safe:
 		LDA		_obj_flags._misc
 		BEQ		loc_63220
 		CMP		#$FF
 		BEQ		loc_63220
-		LDA		_obj_var1._misc
+		LDA		_obj_y_velocity._misc
 		BNE		loc_63216
 		LDY		#6
 		JSR		_mmc1_prg
@@ -6406,12 +6289,12 @@ _obj_misc_collision_test:
 		LDA		#1
 		STA		_obj_hcoll._player
 		STA		_obj_vcoll._player
-		INC		_obj_var6._misc
-		LDA		_obj_var6._misc
+		INC		_obj_sit_state._misc
+		LDA		_obj_sit_state._misc
 		CMP		#$1E
 		BCC		loc_63220
 		LDA		#5
-		STA		_obj_var2._misc
+		STA		_obj_y_velosity_target._misc
 		RTS
 loc_63216:
 		LDA		_obj_y._misc
@@ -6422,8 +6305,7 @@ loc_63216:
 loc_63220:
 		LDX		_lvl_idx
 		LDY		_lvl_prg_bank_list,X
-		JSR		_mmc1_prg
-		RTS
+		JMP		_mmc1_prg
 
 ; =============== S U B	R O U T	I N E =======================================
 _obj_add_score:
@@ -6538,16 +6420,16 @@ loc_632D9:
 		LDA		_lvl_player_start_x_hi_list,Y
 		STA		_obj_x_hi._player
 		LDA		#0
-		STA		_obj_var2
-		STA		_obj_var1
-		STA		_obj_var0
+		STA		_obj_y_velosity_target._player
+		STA		_obj_y_velocity._player
+		STA		_obj_x_velosity_target._player
 		STA		_obj_x_velocity._player
 		LDA		#3
 		STA		_obj_pal_idx._player
 		LDA		#$41
 		STA		_obj_flags._player
 		LDA		#1
-		STA		_obj_var5
+		STA		_obj_var5._player
 		LDA		_lvl_spr_hit0_x_lo_list,Y
 		STA		_obj_x_lo._spr0hit
 		LDA		_lvl_spr_hit0_x_hi_list,Y
@@ -6562,7 +6444,7 @@ loc_632D9:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_obj_spr_manager:
+_far_spr_manager_lvl_prg_safe:
 		LDY		#6
 		JSR		_mmc1_prg
 		SEC
@@ -6590,12 +6472,12 @@ _obj_spr_manager:
 		STX		_obj_manager_tmp_cnt
 loc_6335A:
 		LDA		#0
-		STA		_player_explode_spr_remove_cnt
+		STA		_player_spr_out_cnt
 		LDY		_obj_manager_tmp_cnt
 		LDA		(_ptr1),Y
 		BNE		loc_63368
-		LDY		_player_explode_spr_remove_reload
-		STY		_player_explode_spr_remove_cnt
+		LDY		_player_spr_out_reload
+		STY		_player_spr_out_cnt
 loc_63368:
 		TAY
 		JSR		_obj_spr_insert
@@ -6625,12 +6507,12 @@ loc_63380:
 loc_6338F:
 		LDX		_lvl_idx
 		LDY		_lvl_prg_bank_list,X
-		JSR		_mmc1_prg
-		RTS
+		JMP		_mmc1_prg
+
 _obj_shuffle_tables:
-		.BYTE	 $C,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, $A, $B,  0,  0,  0
+		.BYTE	 $C,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, $A, $B,  0,  0,  0	; player sprite priority, never blink
 		.BYTE	 $C,  0,  4,  5,  6,  7,  8,  9, $B,  1,  2,  3, $A,  0,  0,  0
-		.BYTE	 $C,  4,  5,  6,  0,  1,  2,  3,  7,  8,  9, $A, $B,  0,  0,  0
+		.BYTE	 $C,  4,  5,  6,  0,  1,  2,  3,  7,  8,  9, $A, $B,  0,  0,  0	; explosion sprites priority, when dead
 		.BYTE	 $C,  7,  8,  9,  0,  1,  2,  3,  4,  5,  6, $A, $B,  0,  0,  0
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -6702,24 +6584,25 @@ loc_63429:
 		STA		_ptr0+1
 		LDY		#0
 		LDA		(_ptr0),Y
-		STA		_obj_spr_data_ptr_tmp
+		STA		_obj_spr_width_tmp
 		INY
 		LDA		(_ptr0),Y
-		STA		_obj_spr_data_ptr_tmp+1
+		STA		_obj_spr_height_tmp
 		INY
 		PLP
-		BEQ		loc_63467
-		JMP		loc_634DB
-loc_63467:
-		INC		_player_explode_spr_remove_cnt
+		BEQ		.spr_left_flip_draw_loop
+		BNE		.spr_right_flip_draw_loop
+; --------------------------------
+.spr_left_flip_draw_loop:
+		INC		_player_spr_out_cnt
 		BPL		loc_63473
 		TYA
 		CLC
-		ADC		_obj_spr_data_ptr_tmp
+		ADC		_obj_spr_width_tmp
 		TAY
 		JMP		loc_634CB
 loc_63473:
-		LDA		_obj_spr_data_ptr_tmp
+		LDA		_obj_spr_width_tmp
 		STA		_tptr1
 		LDA		(_ptr0),Y
 		STA		_tmpE7
@@ -6769,23 +6652,24 @@ loc_634B6:
 		STA		_tmpE7
 		BPL		loc_63495
 loc_634CB:
-		DEC		_obj_spr_data_ptr_tmp+1
+		DEC		_obj_spr_height_tmp
 		BEQ		locret_634DA
 		CLC
 		LDA		_obj_scr_y_pos_tmp
 		ADC		#8
 		STA		_obj_scr_y_pos_tmp
 		INY
-		JMP		loc_63467
+		JMP		.spr_left_flip_draw_loop
 locret_634DA:
 		RTS
-loc_634DB:
-		INC		_player_explode_spr_remove_cnt
+; --------------------------------
+.spr_right_flip_draw_loop:
+		INC		_player_spr_out_cnt
 		BPL		loc_634E3
 		INY
 		JMP		loc_63545
 loc_634E3:
-		LDA		_obj_spr_data_ptr_tmp
+		LDA		_obj_spr_width_tmp
 		STA		_tptr1
 		LDA		(_ptr0),Y
 		EOR		#$FF
@@ -6809,7 +6693,7 @@ loc_63508:
 		STA		_tmpE7
 		TYA
 		SEC
-		ADC		_obj_spr_data_ptr_tmp
+		ADC		_obj_spr_width_tmp
 		TAY
 loc_6350F:
 		DEY
@@ -6842,7 +6726,7 @@ loc_63530:
 		STA		_tmpE7
 		BPL		loc_6350F
 loc_63545:
-		DEC		_obj_spr_data_ptr_tmp+1
+		DEC		_obj_spr_height_tmp
 		BEQ		locret_63558
 		CLC
 		LDA		_obj_scr_y_pos_tmp
@@ -6850,9 +6734,9 @@ loc_63545:
 		STA		_obj_scr_y_pos_tmp
 		CLC
 		TYA
-		ADC		_obj_spr_data_ptr_tmp
+		ADC		_obj_spr_width_tmp
 		TAY
-		JMP		loc_634DB
+		JMP		.spr_right_flip_draw_loop
 locret_63558:
 		RTS
 
@@ -6877,14 +6761,14 @@ loc_63571:
 		DEC		_obj_x_hi,X
 loc_63575:
 		CLC
-		LDA		_obj_var1,X
+		LDA		_obj_y_velocity,X
 		ADC		_obj_y,X
 		STA		_obj_y,X
 		DEC		_obj_var3,X
 		BNE		loc_635AB
 		LDA		_obj_var4,X
 		STA		_obj_var3,X
-		LDA		_obj_var0,X
+		LDA		_obj_x_velosity_target,X
 		CMP		_obj_x_velocity,X
 		BEQ		loc_63598
 		BMI		loc_63596
@@ -6893,14 +6777,14 @@ loc_63575:
 loc_63596:
 		DEC		_obj_x_velocity,X
 loc_63598:
-		LDA		_obj_var2,X
-		CMP		_obj_var1,X
+		LDA		_obj_y_velosity_target,X
+		CMP		_obj_y_velocity,X
 		BEQ		loc_635AB
 		BMI		loc_635A8
-		INC		_obj_var1,X
+		INC		_obj_y_velocity,X
 		JMP		loc_635AB
 loc_635A8:
-		DEC		_obj_var1,X
+		DEC		_obj_y_velocity,X
 loc_635AB:
 		DEX
 		BPL		loc_6355B
@@ -7197,14 +7081,19 @@ _printf:
 _far_apu_mus_load_unsafe:
 		LDA		_snd_idx
 		BEQ		_far_apu_load
-		LDA		_apu_music_enable
+		LDA		_apu_enable
+		AND		#APU_MUS_ENABLE
 		BNE		_far_apu_load
+loc_637C0:
+		LDA		#$FF									; if music or sounds disabled, force idx to FF
+		STA		_snd_idx								; to prevent accidental music start
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
 _far_apu_snd_load_unsafe:
-		LDA		_apu_sound_enable
-		BEQ		locret_637CC
+		LDA		_apu_enable
+		AND		#APU_SND_ENABLE
+		BEQ		loc_637C0
 
 ; =============== S U B	R O U T	I N E =======================================
 _far_apu_load:
@@ -7245,86 +7134,47 @@ locret_637CC:
 		RTS
 
 _sound_lib:
-_snd00_silence:
-		.BYTE	  0,  0,  1,  0,  2,  0,  3,  0
-_snd01_shotgun:
-		.BYTE	  0,  1,  3,  2,$FF,$FF,$FF,$FF
-_snd02_rocket_launch1:
-		.BYTE	  3,  3,$FF,$FF,$FF,$FF,$FF,$FF
-_snd03_rocket_launch2:
-		.BYTE	  3,  4,$FF,$FF,$FF,$FF,$FF,$FF
-_snd04_screen_explosion:
-		.BYTE	  2,  5,  3,  6,$FF,$FF,$FF,$FF
-_snd05_small_explosion:
-		.BYTE	  2,  7,  3,  8,$FF,$FF,$FF,$FF
-_snd06_medium_explosion:
-		.BYTE	  2,  9,  3, $A,$FF,$FF,$FF,$FF
-_snd07_large_explosion:
-		.BYTE	  2, $B,  3, $C,$FF,$FF,$FF,$FF
-_snd08_pickup1:
-		.BYTE	  0, $D,$FF,$FF,$FF,$FF,$FF,$FF
-;		.BYTE	  0, $D,  1, $E,$FF,$FF,$FF,$FF		; original version of effect
-_snd09_pickup2:
-		.BYTE	  0, $F,$FF,$FF,$FF,$FF,$FF,$FF
-;		.BYTE	  0, $F,  1,$10,$FF,$FF,$FF,$FF		; original version of effect
-_snd0A_jetpack:
-		.BYTE	  3,$11,$FF,$FF,$FF,$FF,$FF,$FF
-_snd0B_robocop_land1:
-		.BYTE	  2,$13,  3,$14,$FF,$FF,$FF,$FF
-_snd0C_robocop_land2:
-		.BYTE	  0,$12,  2,$13,  3,$14,$FF,$FF
-_snd0D:
-		.BYTE	  3,$3B,$FF,$FF,$FF,$FF,$FF,$FF
-_snd0E:
-		.BYTE	  3,  0,$FF,$FF,$FF,$FF,$FF,$FF
-_snd0F:
-		.BYTE	  0,$26,  3,$27,$FF,$FF,$FF,$FF
-_snd10:
-		.BYTE	  0,$28,  3,$29,$FF,$FF,$FF,$FF
-_snd11:
-		.BYTE	  3,$2A,$FF,$FF,$FF,$FF,$FF,$FF
-_snd12_weap_change_unused:
-		.BYTE	  0,$2B,  2,$2C,$FF,$FF,$FF,$FF
-_snd13:
-		.BYTE	  0,$30,  2,$32,$FF,$FF,$FF,$FF
-_snd14:
-		.BYTE	  0,$2D,  2,$31,$FF,$FF,$FF,$FF
-_snd15:
-		.BYTE	  0,$2D,  2,$32,$FF,$FF,$FF,$FF
-_snd16:
-		.BYTE	  0,$2D,  2,$33,$FF,$FF,$FF,$FF
-_snd17:
-		.BYTE	  0,$2E,  2,$31,$FF,$FF,$FF,$FF
-_snd18:
-		.BYTE	  0,$2E,  2,$32,$FF,$FF,$FF,$FF
-_snd19:
-		.BYTE	  0,$2E,  2,$33,$FF,$FF,$FF,$FF
-_snd1A:
-		.BYTE	  0,$2F,  2,$31,$FF,$FF,$FF,$FF
-_snd1B:
-		.BYTE	  0,$2F,  2,$32,$FF,$FF,$FF,$FF
-_snd1C:
-		.BYTE	  0,$2F,  2,$33,$FF,$FF,$FF,$FF
-_snd1D_title_mus:
-		.BYTE	  0,$15,  1,$16,  2,$17,  3,$18
-_snd1E_repair_mus:
-		.BYTE	  0,$1A,  1,$1B,  2,$1C,  3,$1D
-_snd1F_ending_mus:
-		.BYTE	  0,$1E,  1,$1F,  2,$20,  3,$21
-_snd20_gameover_mus:
-		.BYTE	  0,$22,  1,$23,  2,$24,  3,$25
-_snd21_weap_change:
-		.BYTE	  0,$2B,$FF,$FF,$FF,$FF,$FF,$FF
-_snd22_lvl0_mus:
-		.BYTE	  1,$19,$FF,$FF,$FF,$FF,$FF,$FF
-_snd23_lvl1_mus:
-		.BYTE	  1,$37,$FF,$FF,$FF,$FF,$FF,$FF
-_snd24_lvl2_mus:
-		.BYTE	  1,$38,$FF,$FF,$FF,$FF,$FF,$FF
-_snd25_lvl3_mus:
-		.BYTE	  1,$39,$FF,$FF,$FF,$FF,$FF,$FF
-_snd26_lvl4_mus:
-		.BYTE	  1,$3A,$FF,$FF,$FF,$FF,$FF,$FF
+		SOUND	SILENCE,  0,  0,  1,  0,  2,  0,  3,  0
+		SOUND	SHOTGUN,  0,  1,  3,  2,$FF,$FF,$FF,$FF	; $01
+		SOUND	ROCKET1,  3,  3,$FF,$FF,$FF,$FF,$FF,$FF	; $02
+		SOUND	ROCKET2,  3,  4,$FF,$FF,$FF,$FF,$FF,$FF	; $03
+		SOUND	BIGBOOM,  2,  5,  3,  6,$FF,$FF,$FF,$FF	; $04
+		SOUND	EXPLDSM,  2,  7,  3,  8,$FF,$FF,$FF,$FF	; $05
+		SOUND	EXPLDMD,  2,  9,  3, $A,$FF,$FF,$FF,$FF	; $06
+		SOUND	EXPLDLA,  2, $B,  3, $C,$FF,$FF,$FF,$FF	; $07
+		SOUND	PICKUP1,  0, $D,$FF,$FF,$FF,$FF,$FF,$FF	; $08
+		SOUND	PCKUP1A,  0, $D,  1, $E,$FF,$FF,$FF,$FF	; original version for no-music mode
+		SOUND	PICKUP2,  0, $F,$FF,$FF,$FF,$FF,$FF,$FF	; $09
+		SOUND	PCKUP2A,  0, $F,  1,$10,$FF,$FF,$FF,$FF	; original version for no-music mode
+		SOUND	JETPACK,  3,$11,$FF,$FF,$FF,$FF,$FF,$FF	; $0A
+		SOUND	RBLAND1,  2,$13,  3,$14,$FF,$FF,$FF,$FF	; $0B
+		SOUND	RBLAND2,  0,$12,  2,$13,  3,$14,$FF,$FF	; $0C
+		SOUND	ACIDHIS,  3,$3B,$FF,$FF,$FF,$FF,$FF,$FF
+		SOUND	SOUND0E,  3,  0,$FF,$FF,$FF,$FF,$FF,$FF
+		SOUND	SOUND0F,  0,$26,  3,$27,$FF,$FF,$FF,$FF
+		SOUND	SOUND10,  0,$28,  3,$29,$FF,$FF,$FF,$FF
+		SOUND	SOUND11,  3,$2A,$FF,$FF,$FF,$FF,$FF,$FF
+		SOUND	WCHANGE,  0,$2B,$FF,$FF,$FF,$FF,$FF,$FF	; $21
+;		SOUND	WCHANG_,  0,$2B,  2,$2C,$FF,$FF,$FF,$FF	; $12	unused, conflict with explosions
+		SOUND	PASSBP0,  0,$30,  2,$32,$FF,$FF,$FF,$FF
+		SOUND	PASSBP1,  0,$2D,  2,$31,$FF,$FF,$FF,$FF
+		SOUND	PASSBP2,  0,$2D,  2,$32,$FF,$FF,$FF,$FF
+		SOUND	PASSBP3,  0,$2D,  2,$33,$FF,$FF,$FF,$FF
+		SOUND	PASSBP4,  0,$2E,  2,$31,$FF,$FF,$FF,$FF
+		SOUND	PASSBP5,  0,$2E,  2,$32,$FF,$FF,$FF,$FF
+		SOUND	PASSBP6,  0,$2E,  2,$33,$FF,$FF,$FF,$FF
+		SOUND	PASSBP7,  0,$2F,  2,$31,$FF,$FF,$FF,$FF
+		SOUND	PASSBP8,  0,$2F,  2,$32,$FF,$FF,$FF,$FF
+		SOUND	PASSBP9,  0,$2F,  2,$33,$FF,$FF,$FF,$FF
+		SOUND	MTITLE_,  0,$15,  1,$16,  2,$17,  3,$18	; $1D
+		SOUND	MREPAIR,  0,$1A,  1,$1B,  2,$1C,  3,$1D	; $1E
+		SOUND	MENDING,  0,$1E,  1,$1F,  2,$20,  3,$21	; $1F
+		SOUND	MGMOVER,  0,$22,  1,$23,  2,$24,  3,$25	; $20
+		SOUND	MLEVEL0,  1,$19,$FF,$FF,$FF,$FF,$FF,$FF	; $22
+		SOUND	MLEVEL1,  1,$37,$FF,$FF,$FF,$FF,$FF,$FF	; $23
+		SOUND	MLEVEL2,  1,$38,$FF,$FF,$FF,$FF,$FF,$FF	; $24
+		SOUND	MLEVEL3,  1,$39,$FF,$FF,$FF,$FF,$FF,$FF	; $25
+		SOUND	MLEVEL4,  1,$3A,$FF,$FF,$FF,$FF,$FF,$FF	; $26
 
 ; =============== S U B	R O U T	I N E =======================================
 _mmc1_chr0:
@@ -7461,7 +7311,6 @@ _lvl2_transition_pal_lib:
 		.BYTE	 $F,$18,$1B,$2B, $F,  6,$16,$26, $F,$18,$28,$38, $F,$12,$22,$32
 		.BYTE	 $F, $C,$1C,$2C, $F,  6,$16,$26, $F,$18,$28,$38, $F,$12,$22,$32
 		.BYTE	 $F,$22,$18,$29, $F,$18,$29,$39, $F,$18,$28,$38, $F,$12,$22,$32
-
 ; --
 ; original version of hi-score table
 _def_score_tbl:
@@ -7499,16 +7348,6 @@ _def_score_tbl:
 		STRING	_H,_DT,_B,_I,_N,_N,_S,_,_,_
 		.BYTE	$FF
 _def_score_tbl_end:
-
-; --
-; older unused version of hi-score table from bank 5 used now instead
-;_def_score_tbl:
-;		.BYTE	  1,  0,  2,  0,  0,  7,$24,  8,  1,$12,$12,  9,$13, $F, $E
-;		.BYTE	  0,  7,  5,  3,  0,$13,$24, $E,  9,  3, $F, $C,  0,  0,  0
-;		.BYTE	  0,  7,  0,  0,  0,$13,$24,  3,$12, $F,$17,  0,  0,  0,  0
-;		.BYTE	  0,  4,  0,  6,  5,  8,$24,  2,  9, $E, $E,$13,  0,  0,  0
-;		.BYTE	  0,  0,  8,  0,  0, $A,$24,$14,  5, $C,  0,  0,  0,  0,  0
-;		.BYTE	  0,  0,  0,  4,  5, $A,$24,  2, $F, $E,  1,$12,  0,  0,  0
 
 		ECHO "bank 7 free space", [SYS_STUB_ORG-.]
 		ECHO "zero ram free", [$100 - _end_of_zero_ram]

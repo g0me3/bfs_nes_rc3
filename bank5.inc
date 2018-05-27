@@ -18,8 +18,10 @@ loc_440C1:
 ; event with logos, title and hi-score table
 ;
 _attract_display:
-		LDA		#$1D
-		JSR		_far_apu_mus_load_prg5_safe				; init title sound
+		LDA		#$FF
+		STA		_pad_block_mask
+		LDA		#SND_MTITLE_
+		JSR		_far_apu_mus_load_prg5_safe				; init title mus
 		JSR		_star_field_init
 		LDA		#4
 		JSR		_screen_display							; disables ppu as well
@@ -60,6 +62,8 @@ _attract_display:
 ; level briefing messages
 ;
 _intro_display:
+		LDA		#$FF
+		STA		_pad_block_mask
 		LDA		#0
 		STA		_event_idx
 		STA		_tmp_idx0
@@ -83,6 +87,8 @@ _intro_display:
 ; draw an ending screen, set manual sprite overlays and wait
 ;
 _ending_display:
+		LDA		#$FF
+		STA		_pad_block_mask
 		LDA		#0
 		STA		_event_idx
 		STA		_hi_score_entry_display_lock
@@ -95,7 +101,7 @@ _ending_display:
 		STA		_pad_prev1
 		LDA		#4
 		STA		_event_reload_idx
-		LDA		#$1F
+		LDA		#SND_MENDING
 		JSR		_far_apu_mus_load_prg5_safe
 		LDA		#7
 		JSR		_screen_display
@@ -108,6 +114,8 @@ _ending_display:
 ; run an input event
 ;
 _repair_lab_display:
+		LDA		#$FF
+		STA		_pad_block_mask
 		LDA		#0
 		STA		_event_idx
 		LDA		#5
@@ -119,18 +127,10 @@ _repair_lab_display:
 		LDA		#2
 		STA		_repair_body_index
 		STA		_repair_body_index_request
-;		LDA		_percents.head
-;		STA		_head_percent_backup
-;		LDA		_percents.body
-;		STA		_body_percent_backup
-;		LDA		_percents.arms
-;		STA		_arms_percent_backup
-;		LDA		_percents.legs
-;		STA		_legs_percent_backup
 		JSR		_player_percents_backup					; save current to be able to repeat repair
 		LDA		_repair_tanks
 		STA		_repair_tanks_backup
-		LDA		#$1E
+		LDA		#SND_MREPAIR
 		JSR		_far_apu_mus_load_prg5_safe
 		LDA		#8
 		JSR		_screen_display
@@ -148,6 +148,8 @@ _repair_lab_display:
 ; go to the Game Overs screen, test for continues, etc..
 ;
 _game_over_display:
+		LDA		#$FF
+		STA		_pad_block_mask
 		LDA		#0
 		STA		_event_idx
 		STA		_tmp_idx0
@@ -173,7 +175,7 @@ loc_442AB:
 		STA		_title_menu_idx							; or to START and disable continues
 		JSR		_log_clear_buf
 		JSR		_star_field_init
-		LDA		#$20
+		LDA		#SND_MGMOVER
 		JSR		_far_apu_mus_load_prg5_safe
 		LDA		#4
 		JSR		_screen_display							; draw regular frame tilemap
@@ -339,7 +341,8 @@ loc_445260:
 		INX
 		DEC		_title_menu_spr_num_tmp								; previously saved size of menu item in sprites
 		BNE		.title_menu_update_ex
-		LDA		_apu_sound_enable
+		LDA		_apu_enable
+		AND		#APU_SND_ENABLE
 		BEQ		.menu_sound_off							; if SOUND is on
 		LDA		#$4F									; draw "N " sprite
 		STA		[_spr_buf+_m2onoff]
@@ -351,7 +354,8 @@ loc_445260:
 		STA		[_spr_buf+_m2onoff]
 		STA		[_spr_buf+_m2onoff+4]
 loc_44569:
-		LDA		_apu_music_enable
+		LDA		_apu_enable
+		AND		#APU_MUS_ENABLE
 		BEQ		.menu_music_off
 		LDA		#$4F
 		STA		[_spr_buf+_m3onoff]
@@ -402,11 +406,9 @@ loc_445C3:
 		AND		#9
 		BEQ		loc_445E7
 		JSR		_reload_delay_counter_2
-		LDA		_apu_sound_enable
-		CLC
-		ADC		#1
-		AND		#1
-		STA		_apu_sound_enable
+		LDA		_apu_enable
+		EOR		#APU_SND_ENABLE
+		STA		_apu_enable
 loc_445E7:
 		LDA		_title_menu_idx
 		CMP		#3
@@ -418,17 +420,13 @@ loc_445E7:
 		AND		#9
 		BEQ		.wait_for_midscreen_change
 		JSR		_reload_delay_counter_2
-		LDA		_apu_music_enable
-		CLC
-		ADC		#1
-		AND		#1
-		STA		_apu_music_enable
+		LDA		_apu_enable
+		EOR		#APU_MUS_ENABLE
+		STA		_apu_enable
+		AND		#APU_MUS_ENABLE
 		BEQ		loc_44615
-		LDA		#$1D
-		JSR		_far_apu_mus_load_prg5_safe
-		JMP		.wait_for_midscreen_change
+		LDA		#SND_MTITLE_
 loc_44615:
-		LDA		#0
 		JSR		_far_apu_mus_load_prg5_safe
 .wait_for_midscreen_change:
 		BIT		_PPU_STATUS
@@ -656,6 +654,8 @@ loc_448B8:
 ; as well after the hi-score entry screen
 ;
 _title_screen_display:
+		LDA		#$FF
+		STA		_pad_block_mask
 		LDA		#0
 		STA		_event_idx
 		LDA		#2
@@ -664,7 +664,7 @@ _title_screen_display:
 		STA		_pad_prev0
 		STA		_pad_prev1
 		JSR		_reload_delay_counter_2
-		LDA		#$1D
+		LDA		#SND_MTITLE_
 		JSR		_far_apu_mus_load_prg5_safe
 		LDA		#2
 		JSR		_screen_display
@@ -1334,6 +1334,7 @@ loc_44C65:
 		BEQ		loc_44CA9
 		INC		_tmp_idx1
 		JSR		_player_percents_backup					; save new parameters
+		JSR		_player_overall_armor_calc				; recalc overall value as well
 		JMP		_event_exec
 loc_44CA9:
 		LDA		_pad
@@ -1341,14 +1342,6 @@ loc_44CA9:
 		BNE		loc_44CB3
 		JMP		_event_exec
 loc_44CB3:
-;		LDA		_head_percent_backup
-;		STA		_percents.head
-;		LDA		_body_percent_backup
-;		STA		_percents.body
-;		LDA		_arms_percent_backup
-;		STA		_percents.arms
-;		LDA		_legs_percent_backup
-;		STA		_percents.legs
 		JSR		_player_percents_restore
 		LDA		_repair_tanks_backup
 		STA		_repair_tanks

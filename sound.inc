@@ -46,8 +46,7 @@ _apu_play:
 		LDX		#2
 		JSR		_apu_play_chnl
 		LDX		#3
-		JSR		_apu_play_chnl
-		RTS
+		JMP		_apu_play_chnl
 
 ; =============== S U B	R O U T	I N E =======================================
 _apu_play_chnl:
@@ -1127,8 +1126,6 @@ s13:
 s14:
 		.BYTE	$C8,$84,$66,  8,$E1
 		.BYTE	$FF
-
-		echo "music data start", .
 
 _seq15:
 		.BYTE	$85,$22,$25			;A

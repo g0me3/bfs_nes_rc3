@@ -35,23 +35,24 @@ _obj_offscreen_flag_tmp:			.BYTE	0
 _obj_scr_x_pos_tmp:					.BYTE	0
 _obj_scr_y_pos_tmp:					.BYTE	0
 _obj_shuffle_mode:					.BYTE	0
-_obj_spr_data_ptr_tmp:				.BYTE	0,0
-_pads:								.BYTE	0,0,0
+_obj_spr_width_tmp:					.BYTE	0
+_obj_spr_height_tmp					.BYTE	0
 _pad_last:							.BYTE	0
 _pad_data:							.BYTE	0
 _pad_edge:							.BYTE	0
+_pad_block_mask:					.BYTE	0
 _pal_update_redundant:				.BYTE	0
 _pause_flag:						.BYTE	0
-_player_bullet_shot_state:			.BYTE	0
+_player_anim_phase_offset:			.BYTE	0
 _player_damage_blink_timer:			.BYTE	0
 _player_diagonal_fire_delta:		.BYTE	0
-_player_explode_spr_remove_cnt:		.BYTE	0
-_player_explode_spr_remove_reload:	.BYTE	0
+_player_spr_out_cnt:				.BYTE	0
+_player_spr_out_reload:				.BYTE	0
 _player_explode_timer_tmp:			.BYTE	0
 _player_fire_delay_reload:			.BYTE	0
 _player_hor_move_anim_timer:		.BYTE	0
-_player_jump_or_fall_flag:			.BYTE	0
-_player_scroll_stop_override_tmp:	.BYTE	0
+_player_edge_fall_flag:				.BYTE	0
+_player_scroll_stop_flag:			.BYTE	0
 _player_sit_jump_flag:				.BYTE	0
 _player_wnd_scroll_counter:			.BYTE	0
 _player_wnd_tile_number:			.BYTE	0
@@ -98,7 +99,6 @@ _weapon1_idx:						.BYTE	0
 ; 0x27 - missile upgrade
 ;
 		TOBJ	_obj_hndl_idx
-		TOBJ	_obj_x_velocity
 		
 _end_of_zero_ram	EQU	.
 
@@ -216,13 +216,14 @@ _lvl4_clock_delay:	.BYTE	0
 _lvl4_seconds_timer:.BYTE	0
 _lvl4_minutes_timer:.BYTE	0
 
-		TOBJ	_obj_var0
-		TOBJ	_obj_var1
-		TOBJ	_obj_var2
+		TOBJ	_obj_x_velocity
+		TOBJ	_obj_x_velosity_target
+		TOBJ	_obj_y_velocity
+		TOBJ	_obj_y_velosity_target
 		TOBJ	_obj_var3
 		TOBJ	_obj_var4
 		TOBJ	_obj_var5
-		TOBJ	_obj_var6
+		TOBJ	_obj_sit_state
 		TOBJ	_obj_var7
 		TOBJ	_obj_var8
 		TOBJ	_obj_energy
@@ -255,7 +256,7 @@ _lvl2_jetpack_fuel_count:
 _collision_test_idx:
 		.BYTE	0
 		.BYTE	0,0
-_pal_blink_flag:
+_pal_blink_timer:
 		.BYTE	0
 _lvl2_smart_bomb_flag:
 		.BYTE	0
@@ -278,9 +279,9 @@ _hud_msg_expose_time:
 _player_hor_move_anim_increment:
 		.BYTE	0
 		.BYTE	0
-byte_656:
+_player_shoot_state_timer:
 		.BYTE	0
-byte_657:
+_player_shot_pos_delta:
 		.BYTE	0
 		.BYTE	0
 _weapon_type:
@@ -319,19 +320,19 @@ _special_boss_flood_object_count:
 		.BYTE	0
 byte_682:
 		.BYTE	0
-_lvl4_destruction_counter:
+_lvl4_cur_pass_char_idx:
 		.BYTE	0
 byte_684:
 		.BYTE	0
 byte_685:
 		.BYTE	0
-byte_686:
+_player_back_standing_flag:
 		.BYTE	0
 _ingame_spr_pal_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-byte_697:
+_lvl4_pass_done_snd_delay:
 		.BYTE	0
-byte_698:
+_lvl4_pass_done_snd_pos:
 		.BYTE	0
 _body_target_idx:
 		.BYTE	0
@@ -354,20 +355,19 @@ _repair_tanks:
 _unused_32:
 		.BYTE	0
 		.BYTE	0
-_apu_music_enable:
-		.BYTE	0
-_apu_sound_enable:
+_apu_enable:
 		.BYTE	0
 _unused_31:
+		.BYTE	0
 		.BYTE	0
 		.BYTE	0,0,0,0,0,0
 		.BYTE	0,0,0,0
 _failure_duration_period:
 		.BYTE	0
-_failure_mode:
+;_failure_mode:
 		.BYTE	0
 _unused_30:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
+		.BYTE	0,0,0,0,0,0,0,0,0
 
 _continues:						.BYTE	0
 
