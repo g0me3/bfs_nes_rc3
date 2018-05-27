@@ -2,18 +2,6 @@
 		ORG $8000, $00
 
 ; =============== S U B	R O U T	I N E =======================================
-; dumb delay, input arg X
-;
-_delay:
-		LDY		#0
-loc_440C1:
-		DEY
-		BNE		loc_440C1
-		DEX
-		BNE		loc_440C1
-		RTS
-
-; =============== S U B	R O U T	I N E =======================================
 ; start to display the copyright message, then start the main title attract
 ; event with logos, title and hi-score table
 ;
@@ -39,8 +27,6 @@ _attract_display:
 		STA		_event_idx								; clear back
 		TXA
 		PHA
-		LDX		#3
-		JSR		_delay
 		JSR		_star_field_animate
 		PLA
 		TAX
@@ -62,18 +48,14 @@ _attract_display:
 ; level briefing messages
 ;
 _intro_display:
-		LDA		#$FF
-		STA		_pad_block_mask
 		LDA		#0
 		STA		_event_idx
 		STA		_tmp_idx0
 		STA		_tmp_idx1
 		STA		_tmp_idx2
 		STA		_delay_counter
-		LDA		#8										; init pad prev value with START button to make sure it won't
-		STA		_pad_prev0								; skip intro immediately after you press start at the title screen
-		LDA		#1
-		STA		_pad_prev1
+		LDA		#$FF
+		STA		_pad_block_mask
 		LDA		#3
 		STA		_event_reload_idx
 		JSR		_log_clear_buf
@@ -87,8 +69,6 @@ _intro_display:
 ; draw an ending screen, set manual sprite overlays and wait
 ;
 _ending_display:
-		LDA		#$FF
-		STA		_pad_block_mask
 		LDA		#0
 		STA		_event_idx
 		STA		_hi_score_entry_display_lock
@@ -96,9 +76,8 @@ _ending_display:
 		STA		_delay_counter+1
 		STA		_continues								; to prevent game continue after the completion
 		STA		_title_menu_idx							; to disable the title menu change
-		STA		_pad_prev0
-		LDA		#1
-		STA		_pad_prev1
+		LDA		#$FF
+		STA		_pad_block_mask
 		LDA		#4
 		STA		_event_reload_idx
 		LDA		#SND_MENDING
@@ -114,8 +93,6 @@ _ending_display:
 ; run an input event
 ;
 _repair_lab_display:
-		LDA		#$FF
-		STA		_pad_block_mask
 		LDA		#0
 		STA		_event_idx
 		LDA		#5
@@ -124,6 +101,8 @@ _repair_lab_display:
 		STA		_repair_cursor_spr_y_pos
 		LDA		#$40
 		STA		_repair_cursor_spr_x_pos
+		LDA		#$FF
+		STA		_pad_block_mask
 		LDA		#2
 		STA		_repair_body_index
 		STA		_repair_body_index_request
@@ -148,8 +127,6 @@ _repair_lab_display:
 ; go to the Game Overs screen, test for continues, etc..
 ;
 _game_over_display:
-		LDA		#$FF
-		STA		_pad_block_mask
 		LDA		#0
 		STA		_event_idx
 		STA		_tmp_idx0
@@ -157,15 +134,13 @@ _game_over_display:
 		STA		_tmp_idx2
 		STA		_delay_counter
 		STA		_delay_counter+1
-		LDA		#8
-		STA		_pad_prev0
-		LDA		#1
-		STA		_pad_prev1
+		LDA		#$FF
+		STA		_pad_block_mask
 		LDA		#6
 		STA		_event_reload_idx
 		LDA		_lvl_idx								; test is level > 1
 		BNE		loc_442AB0
-		STA		_continues								; if =0, disable continues
+		STA		_continues								; if = 0, disable continues
 		BEQ		loc_442AB
 loc_442AB0:
 		LDA		_continues								; test for player continues
@@ -223,95 +198,43 @@ _event2_title:
 		DEX												; if jumped over hi-score (3 + 1), jump back to title (2)
 		DEX
 		STX		_screen_idx								; reload timers
-		LDA		_delays_list_hi,X
-		STA		_delay_counter+1
-		LDA		#0
-		STA		_delay_counter
+		JSR		_reload_counters
 loc_443B5:
 		LDA		_screen_idx								; redisplay a new screen by index
 		JSR		_screen_display_ex
 		LDA		_screen_idx
 		CMP		#3
 		BNE		loc_4444F
-		JSR		_star_field_init						; special case fot hi-score screen
+		JSR		_star_field_init						; special init case for hi-score screen
 		JSR		_draw_hiscore_table
 loc_4444F:
 		LDA		#$81									; re-enable ppu again
 		STA		_PPU_CTRL
-		JSR		_read_pad								; read-pads for unknown weird reason once when switching the screens
 		INC		_screen_idx								; set ptr to next value in delays list to wait for
 .do_title_generic_handlers:
-		LDA		_delay_counter							; do idle timers roll on every screen
-		CLC
-		ADC		#1
-		STA		_delay_counter
-		LDA		_delay_counter+1
-		ADC		#0
-		STA		_delay_counter+1
+		ADD16	_delay_counter, 1						; do idle timers roll on every screen
 		LDA		_screen_idx
 		CMP		#4
 		BNE		loc_44491								; check for special case, a hi-score screen
 		JSR		_star_field_animate
-		LDA		_pad									; at hi-score screen do check for input lol
+		LDA		_pad_edge								; at hi-score screen do check for input lol
 		BEQ		loc_4448B								; while no one ever read the pads here, this only
 		LDX		#4										; works when any button is held at the title
 		STX		_screen_idx								; while it switching to the next screen
-		LDA		_delays_list_hi,X
-		STA		_delay_counter+1						; do skip to the title screen
-		LDA		#0
-		STA		_delay_counter
+		JSR		_reload_counters						; do skip to the title screen
 loc_4448B:
 		JMP		_event_exec
 loc_44491:
 		LDA		_disp_spr0hit_use
-		BNE		loc_444AD								; there is special title input flag, but here
-		LDX		#3										; is used the spr-hit flag for some reason
-		JSR		_delay									; in any case, it reads the input, but DOESn't
-		JSR		_read_pad								; check for skip lol
-		LDA		#1
-		STA		_logo_skip_forbid_flag					; the input logic is BAD, to prevent the title to
-		JMP		_event_exec								; get input after show up and skip immediately after the intro
-														; set this lock var, BUT this does not work when switching
-														; after game over or ending! so we get this shitty skip anyway!
+		BNE		loc_444AD
+		JMP		_event_exec
 loc_444AD:
-		LDX		#1										; only title screen goes here
-		JSR		_delay
-		JSR		_read_pad
 		LDY		_title_menu_idx							; select menu item for blink
 		LDX		_title_menu_spr_ofs_list,Y
 		LDA		_title_menu_spr_num_list,Y
 		STA		_title_menu_spr_num_tmp
-		LDA		_generic_nmi_over_counter				; check nmi counter, first 20 frames do show all menu items
-		AND		#$1F
-		CMP		#$15
-		BCC		loc_444DA								; from 21th to 31 frames do menu hide. this code is called
-		LDA		#$F0									; continuosly on every frame after 20th
-		BNE		.title_menu_update_ex					; item visible time is longer than not visible
-loc_444DA:
-		LDA		_logo_skip_forbid_flag					; if we jumped here from logos and we have any button pressed
-		BEQ		loc_444EA								; or held there, should do nothing, BUT, wait for middle screen
-		LDA		_pad									; branch do check for title skip! it jumps immediately to game
-		BEQ		loc_444E6
-		JMP		.wait_for_midscreen_change
-loc_444E6:
-		LDA		#0										; if we reach title screen with no button pressed, disable this
-		STA		_logo_skip_forbid_flag					; weird skip and do the regular input check
-loc_444EA:
-		LDA		_pad
-		CMP		_pad_prev0
-		BNE		loc_444FC
-		STA		_pad_prev0
-		LDA		_generic_nmi_over_counter
-		AND		#$1F									; accept menu change input only at 32th frame,
-		BNE		.title_menu_update						; only two times per second
-loc_444FC:
-		LDA		_pad
-		AND		#4
-		STA		_pad_prev0
-		BNE		loc_44510
-		LDA		_pad
-		STA		_pad_prev0
-		AND		#$20
+		LDA		_pad_edge
+		AND		#$24
 		BEQ		loc_44526
 loc_44510:
 		LDA		_title_menu_idx							; select or down pressed here
@@ -319,8 +242,8 @@ loc_44510:
 		ADC		#1
 		JMP		loc_445260
 loc_44526:
-		LDA		_pad
-		AND		#$10
+		LDA		_pad_edge
+		AND		#8
 		BEQ		.title_menu_update
 		LDA		_title_menu_idx
 		SEC
@@ -328,10 +251,17 @@ loc_44526:
 loc_445260:
 		AND		#3
 		STA		_title_menu_idx
-		JSR		_reload_delay_counter_2
+		JSR		_reload_title_counters
 		LDA		#0
 		STA		_generic_nmi_over_counter
 .title_menu_update:
+		LDA		_generic_nmi_over_counter				; check nmi counter, first 20 frames do show all menu items
+		AND		#$1F
+		CMP		#$15
+		BCC		loc_444DA								; from 21th to 31 frames do menu hide. this code is called
+		LDA		#$F0									; continuosly on every frame after 20th
+		BNE		.title_menu_update_ex					; item visible time is longer than not visible
+loc_444DA:
 		LDA		_title_menu_pos_list,Y					; get the menu Y value to restore
 .title_menu_update_ex:
 		STA		_spr_buf,X								; force it to the screen
@@ -339,7 +269,7 @@ loc_445260:
 		INX
 		INX
 		INX
-		DEC		_title_menu_spr_num_tmp								; previously saved size of menu item in sprites
+		DEC		_title_menu_spr_num_tmp					; previously saved size of menu item in sprites
 		BNE		.title_menu_update_ex
 		LDA		_apu_enable
 		AND		#APU_SND_ENABLE
@@ -361,7 +291,7 @@ loc_44569:
 		STA		[_spr_buf+_m3onoff]
 		LDA		#1
 		STA		[_spr_buf+_m3onoff+4]
-		JMP		loc_44583
+		BNE		loc_44583
 .menu_music_off:
 		LDA		#$3F
 		STA		[_spr_buf+_m3onoff]
@@ -369,18 +299,17 @@ loc_44569:
 loc_44583:
 		LDA		_title_menu_idx							; test for title menu idx
 		BNE		loc_4459F
-		LDA		_pad									; start menu idx, test A or Start
-		AND		#9
+		LDA		_pad_edge								; start menu idx, test A or Start
+		AND		#$90
 		BEQ		loc_4459F
-		STA		_pad_prev0
 		JSR		_player_vars_init						; start new game, reset all players params
 		JMP		_intro_display							; begin intro always, one-player code too
 loc_4459F:
 		LDA		_title_menu_idx
 		CMP		#1
 		BNE		loc_445C3								; continue option
-		LDA		_pad
-		AND		#9
+		LDA		_pad_edge
+		AND		#$90
 		BEQ		loc_445C3
 		LDA		_continues								; recheck the continues for first player
 		BNE		loc_445BD
@@ -399,13 +328,10 @@ loc_445C3:
 		LDA		_title_menu_idx
 		CMP		#2
 		BNE		loc_445E7
-		LDA		_pad
-		CMP		_pad_prev1
+		LDA		_pad_edge
+		AND		#$90
 		BEQ		loc_445E7
-		STA		_pad_prev1
-		AND		#9
-		BEQ		loc_445E7
-		JSR		_reload_delay_counter_2
+		JSR		_reload_title_counters
 		LDA		_apu_enable
 		EOR		#APU_SND_ENABLE
 		STA		_apu_enable
@@ -413,13 +339,10 @@ loc_445E7:
 		LDA		_title_menu_idx
 		CMP		#3
 		BNE		.wait_for_midscreen_change
-		LDA		_pad
-		CMP		_pad_prev1
+		LDA		_pad_edge
+		AND		#$90
 		BEQ		.wait_for_midscreen_change
-		STA		_pad_prev1
-		AND		#9
-		BEQ		.wait_for_midscreen_change
-		JSR		_reload_delay_counter_2
+		JSR		_reload_title_counters
 		LDA		_apu_enable
 		EOR		#APU_MUS_ENABLE
 		STA		_apu_enable
@@ -430,14 +353,13 @@ loc_44615:
 		JSR		_far_apu_mus_load_prg5_safe
 .wait_for_midscreen_change:
 		BIT		_PPU_STATUS
-		BMI		loc_44623
+		BMI		loc_44620
 		BVC		.wait_for_midscreen_change
-		LDX		#$13									; delay 96 clocks
-loc_44623:
-		DEX
-		BNE		loc_44623
-		LDA		#$1A									; call - 48 clocks
+		LDX		#$11									
+		JSR		_delayx									; delay 97 clocks
+		LDA		#$1A									; call 48 clocks
 		JSR		_mmc1_chr0
+loc_44620:
 		JMP		_event_exec
 
 ; offset of the menu item sprites from the beginning of the sprite buffer
@@ -473,16 +395,19 @@ _m2onoff	EQU	[[_spr2_title_menu2 - _spr2_title] + 25]
 _m3onoff	EQU	[[_spr2_title_menu3 - _spr2_title] + 25]
 		
 ; =============== S U B	R O U T	I N E =======================================
-_reload_delay_counter_2:
-		TXA
-		PHA
-		LDX		#2
+_reload_counters:
 		LDA		_delays_list_hi,X
 		STA		_delay_counter+1
 		LDA		#0
 		STA		_delay_counter
-		PLA
-		TAX
+		RTS
+
+; =============== S U B	R O U T	I N E =======================================
+_reload_title_counters:
+		LDA		_delays_list_hi+2
+		STA		_delay_counter+1
+		LDA		#0
+		STA		_delay_counter
 		RTS
 
 _delays_list_hi:
@@ -490,14 +415,8 @@ _delays_list_hi:
 
 ; =============== S U B	R O U T	I N E =======================================
 _event3_intro:
-		LDX		#4
-		JSR		_delay
-		JSR		_read_pad
-		LDA		_pad
-		CMP		_pad_prev0
-		BEQ		loc_44684
-		STA		_pad_prev0
-		AND		#9
+		LDA		_pad_edge
+		AND		#$90
 		BEQ		loc_44684								; test if button is pressed to skip
 .i_cmdFA_break:
 		RTS
@@ -589,13 +508,7 @@ _event4_ending:
 		STA		_spr_buf+2
 		LDA		#0
 		STA		_spr_buf+3
-		LDA		_delay_counter
-		CLC
-		ADC		#1
-		STA		_delay_counter
-		LDA		_delay_counter+1
-		ADC		#0
-		STA		_delay_counter+1
+		ADD16	_delay_counter, 1
 		LDA		_delay_counter+1
 		CMP		#3
 		BCC		loc_44858
@@ -603,48 +516,18 @@ _event4_ending:
 		BCS		_title_screen_display
 		JMP		_hi_score_entry_event
 loc_44858:
-		JSR		_read_pad
-		LDA		_pad
-		AND		#1
-		CMP		_pad_prev1
+		LDA		_pad_edge
+		AND		#$80
 		BEQ		loc_44871
-		STA		_pad_prev1
-		CMP		#1
-		BNE		loc_44871
 		LDA		#3
 		STA		_delay_counter+1
 loc_44871:
-		LDX		#3
-		JSR		_delay
-loc_4487B:
 		BIT		_PPU_STATUS
 		BMI		loc_448B8
-		BVC		loc_4487B
-		NOP												; delay 48 clocks
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		LDA		#$1F									; call delay 48 clocks
+		BVC		loc_44871
+		LDX		#7
+		JSR		_delayx									; delay 48 clocks
+		LDA		#$1F									; call 48 clocks
 		JSR		_mmc1_chr0
 loc_448B8:
 		JMP		_event_exec
@@ -654,16 +537,13 @@ loc_448B8:
 ; as well after the hi-score entry screen
 ;
 _title_screen_display:
-		LDA		#$FF
-		STA		_pad_block_mask
 		LDA		#0
 		STA		_event_idx
 		LDA		#2
 		STA		_event_reload_idx
-		LDA		#1
-		STA		_pad_prev0
-		STA		_pad_prev1
-		JSR		_reload_delay_counter_2
+		LDA		#$FF
+		STA		_pad_block_mask
+		JSR		_reload_title_counters
 		LDA		#SND_MTITLE_
 		JSR		_far_apu_mus_load_prg5_safe
 		LDA		#2
@@ -692,69 +572,63 @@ _hi_score_entry_event:
 		STA		_PPU_CTRL
 loc_44965:
 		JSR		_star_field_animate
-		JSR		_read_pad
 		LDX		_hi_score_line_idx
 		LDA		_hi_score_ram_name_ofs_list,X
 		CLC
 		ADC		_tmp_idx2
 		TAX
-		LDA		_pad
-		CMP		_pad_prev0
-		BEQ		loc_44987
-		STA		_pad_prev0
-		JMP		loc_44992
-loc_44987:
+		LDA		_pad_edge
+		BNE		loc_44992
 		LDA		_generic_nmi_over_counter				; if button is held nmi counter is reset to 3 here
-		AND		#$1F									; so we return back after 17 frames every time
-		BEQ		loc_44992								; if not, the code will be called for nothing every
-		CMP		#$14									; 20, then 12 frames, period. weird logic anyway.
+		AND		#$1F									; so we auto-repear back after 17 frames every time
+		BEQ		loc_44992
 		BNE		.j_event_exec3
 loc_44992:
-		LDA		_pad
-		AND		#$20
+		LDA		_pad_last
+		AND		#4
 		BEQ		loc_449B3
 		LDA		_ram_score_tbl,X
 		CLC
 		ADC		#1
 		CMP		#$25
-		BCC		loc_449C4
+		BCC		.update_char
 		LDA		#0
-		BEQ		loc_449C4
+		BEQ		.update_char
 loc_449B3:
-		LDA		_pad
-		AND		#$10
+		LDA		_pad_last
+		AND		#8
 		BEQ		loc_449D2
 		LDA		_ram_score_tbl,X
 		SEC
 		SBC		#1
-		BCS		loc_449C4
+		BCS		.update_char
 		LDA		#$24
-loc_449C4:
+.update_char:
 		STA		_ram_score_tbl,X
-		JMP		loc_44A050
+		JMP		.reset_counters
 loc_449D2:
-		LDA		_pad
-		AND		#$80
+		LDA		_pad_last
+		AND		#1
 		BEQ		loc_449EE
 		LDA		_tmp_idx2
 		CMP		#9
-		BCS		loc_44A05
+		BCS		.wait_for_start
 		INC		_tmp_idx2
-		BCC		loc_44A050
+		BCC		.reset_counters
 loc_449EE:
-		LDA		_pad
-		AND		#$40
-		BEQ		loc_44A05
+		LDA		_pad_last
+		AND		#2
+		BEQ		.wait_for_start
 		LDA		_tmp_idx2
-		BEQ		loc_44A05
+		BEQ		.wait_for_start
 		DEC		_tmp_idx2
-loc_44A050:
+.reset_counters:
 		LDA		#3
 		STA		_delay_counter+1
 		STA		_generic_nmi_over_counter
-loc_44A05:
-		LDA		_pad
-		AND		#9
+.wait_for_start:
+		LDA		_pad_edge
+		AND		#$90
 		BEQ		.j_event_exec3
 		JMP		_title_screen_display
 .j_event_exec3:
@@ -937,8 +811,6 @@ _nums_table:
 
 ; =============== S U B	R O U T	I N E =======================================
 _event5_repair:
-		LDX		#1
-		JSR		_delay
 		LDA		_repair_cursor_spr_x_pos				; update cursor position
 		STA		_spr_buf+4
 		CLC
@@ -953,14 +825,13 @@ _event5_repair:
 		LDY		_repair_update_flag_list,X
 		LDA		_percents,Y
 		U8TOS	_repair_percent_disp_buf_tmp
-		JSR		_read_pad
-		LDA		_pad
-		AND		#8
+		LDA		_pad_edge
+		AND		#$10
 		BEQ		loc_44AB8
 		LDA		#0
 		STA		_event_reload_idx
 		LDA		#7
-		JMP		_bios_msg_display_ex
+		JMP		_bios_msg_display_no_skip
 loc_44AB8:
 		LDA		_repair_tanks							; draw only single digit of tanks if more than 9, draw always 9
 		CMP		#$A										; there were original bug, drawing % instead, since you doubtly
@@ -970,13 +841,9 @@ loc_44AC1:
 		CLC
 		ADC		#$E6
 		STA		_repair_tanks_number_tile_tmp
-		LDA		_pad
-		AND		#1
-		CMP		_pad_prev0
+		LDA		_pad_edge
+		AND		#$80
 		BEQ		loc_44AF1
-		STA		_pad_prev0
-		CMP		#1
-		BNE		loc_44AF1
 		LDA		_repair_tanks
 		BEQ		loc_44AF1
 		LDX		_repair_body_index_request
@@ -996,86 +863,35 @@ loc_44AF1:
 		BIT		_PPU_STATUS
 		BMI		loc_44B2B
 		BVC		loc_44AF1
-		NOP												; 48 clocks delay
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		NOP
-		LDA		#$17
-		JSR		_mmc1_chr0								; 48 clocks call
+		LDX		#6										
+		JSR		_delayx									; 43 clocks delay
+		LDA		#$17									; 48 clocks call
+		JSR		_mmc1_chr0								
 loc_44B2B:
 		JSR		_repair_cursor_input
 		JSR		_repair_cursor_animate
-		JSR		_dpad_convert
 		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
 _repair_cursor_input:
-		LDA		_dpad
+		LDA		_repair_cursor_animate_in_progress
+		BNE		locret_45C98
+		LDA		_pad_edge
+		AND		#$F
+		TAX
+		LDY		_dpad_conv_tbl,X
 		BNE		loc_45C39
 		RTS
 loc_45C39:
-		CMP		#1
-		BEQ		loc_45C54
-		CMP		#2
-		BEQ		loc_45C6B
-		CMP		#3
-		BEQ		loc_45C82
-		JSR		_get_cursor_allow_list_ptr
-		LDY		#3
-		LDA		(_tptr0),Y
-		BMI		locret_45CAF
-		CMP		_repair_body_index_request
-		BEQ		locret_45CAF
-		STA		_repair_body_index_request
-		LDA		#1
-		STA		_repair_cursor_animate_in_progress
-locret_45CAF:
-		RTS
-loc_45C54:
-		JSR		_get_cursor_allow_list_ptr
-		LDY		#0
-		LDA		(_tptr0),Y
-		BMI		locret_45C6A
-		CMP		_repair_body_index_request
-		BEQ		locret_45C6A
-		STA		_repair_body_index_request
-		LDA		#1
-		STA		_repair_cursor_animate_in_progress
-locret_45C6A:
-		RTS
-loc_45C6B:
-		JSR		_get_cursor_allow_list_ptr
-		LDY		#1
-		LDA		(_tptr0),Y
-		BMI		locret_45C81
-		CMP		_repair_body_index_request
-		BEQ		locret_45C81
-		STA		_repair_body_index_request
-		LDA		#1
-		STA		_repair_cursor_animate_in_progress
-locret_45C81:
-		RTS
-loc_45C82:
-		JSR		_get_cursor_allow_list_ptr
-		LDY		#2
-		LDA		(_tptr0),Y
+		DEY
+		STY		_tptr0
+		LDA		_repair_body_index
+		ASL
+		ASL
+		CLC
+		ADC		_tptr0
+		TAY
+		LDA		_repair_cursor_allow_table,Y
 		BMI		locret_45C98
 		CMP		_repair_body_index_request
 		BEQ		locret_45C98
@@ -1085,21 +901,28 @@ loc_45C82:
 locret_45C98:
 		RTS
 
-; =============== S U B	R O U T	I N E =======================================
-_get_cursor_allow_list_ptr:
-		LDA		#0
-		STA		_tptr0+1
-		LDA		_repair_body_index
-		ASL
-		ASL
-		ROL		_tptr0+1
-		CLC
-		ADC		#<[_repair_cursor_allow_table]
-		STA		_tptr0
-		LDA		_tptr0+1
-		ADC		#>[_repair_cursor_allow_table]
-		STA		_tptr0+1
-		RTS
+UP	EQU	1
+RT	EQU 2
+DN	EQU	3
+LT	EQU	4
+
+_dpad_conv_tbl:
+		.BYTE	0,RT,LT,0,DN,0,0,0,UP,0,0,0,0,0,0,0
+
+HEAD	EQU	0
+RHAND	EQU 1
+BODY	EQU	2
+LHAND	EQU	3
+LEGS	EQU	4
+STOP	EQU $FF
+
+_repair_cursor_allow_table:
+;				UP    RT    DN    LT
+		.BYTE	STOP ,LHAND,BODY ,RHAND ; HEAD
+		.BYTE	HEAD ,BODY ,LEGS ,STOP  ; RHAND
+		.BYTE	HEAD ,LHAND,LEGS ,RHAND	; BODY
+		.BYTE	HEAD ,STOP ,LEGS ,BODY	; LHAND
+		.BYTE	BODY ,LHAND,STOP ,RHAND ; LEGS
 
 ; =============== S U B	R O U T	I N E =======================================
 _repair_cursor_animate:
@@ -1186,12 +1009,6 @@ locret_45D7D:
 
 _repair_update_flag_list:
 		.BYTE	  0,  2,  1,  2,  3
-_repair_cursor_allow_table:
-		.BYTE	$FF,  3,  2,  1
-		.BYTE	  0,  2,  4,$FF
-		.BYTE	  0,  3,  4,  1
-		.BYTE	  0,$FF,  4,  2
-		.BYTE	  2,$FF,$FF,  1
 _repair_cursor_anim_data:
 		.WORD $20A0
 		.WORD $5888
@@ -1201,33 +1018,16 @@ _repair_cursor_anim_data:
 
 ; =============== S U B	R O U T	I N E =======================================
 _event6_game_over:
-		LDX		#3
-		JSR		_delay
 		JSR		_star_field_animate
-		JSR		_read_pad								; read pad
-		LDA		_pad
-		BEQ		loc_44B5A								; if nothing is pressed, do times
-		LDA		_pad_prev0								; check if _pad_prev0 is zero, so we has released any buttons before
-		BEQ		.game_over_set_max_timers				; then jump to max timers set!
-		JMP		.game_over_timers_increase
-loc_44B5A:
-		LDA		#0
-		STA		_pad_prev0
+		LDA		_pad_edge
 		BEQ		.game_over_timers_increase
-.game_over_set_max_timers:
 		LDA		#2										; here we set timers to max value and jump to test it and so skip!
 		STA		_delay_counter+1						; why don't you just jupm to skip here?! maybe because it's mean some
 		LDA		#$30									; kind of reinitialization of the same timers used by the title screen
 		STA		_delay_counter
 		BNE		.game_over_timers_test
 .game_over_timers_increase:
-		LDA		_delay_counter
-		CLC
-		ADC		#1
-		STA		_delay_counter
-		LDA		_delay_counter+1
-		ADC		#0
-		STA		_delay_counter+1
+		ADD16	_delay_counter, 1
 .game_over_timers_test:
 		LDA		_delay_counter+1
 		CMP		#2
@@ -1248,29 +1048,15 @@ loc_44B5A:
 
 ; =============== S U B	R O U T	I N E =======================================
 _event7_log_msg:
-		LDX		#3
-		JSR		_delay
-		LDA		_log_msg_deny_input
+		LDA		_log_msg_skip_forbid
 		BNE		loc_44BCA
-		JSR		_read_pad
-		LDA		_pad
-		AND		#1
-		CMP		_pad_prev1
+		LDA		_pad_edge
+		AND		#$80
 		BEQ		loc_44BCA
-		STA		_pad_prev1
-		CMP		#1
-		BNE		loc_44BCA
 		RTS
 loc_44BCA:
 		LDY		_tmp_idx1								; msg pos temp value
 		LDA		(_txt_ptr),Y
-		CMP		#$FD
-		BNE		loc_44BE1								; special $FD cmd, force forbid input skip
-		LDA		#$FF									; used only in repair lab confirm message
-		STA		_log_msg_deny_input
-		INC		_tmp_idx1
-		JMP		_event_exec
-loc_44BE1:
 		CMP		#$F9
 		BEQ		.l_cmdF9_repair_confirmation			; special $F9 cmd to ask a question and wait for input
 		CMP		#$FE
@@ -1328,17 +1114,16 @@ loc_44C65:
 		JMP		_event_exec
 ; --------------------------------
 .l_cmdF9_repair_confirmation:
-		JSR		_read_pad
-		LDA		_pad
-		AND		#1
+		LDA		_pad_edge
+		AND		#$80
 		BEQ		loc_44CA9
 		INC		_tmp_idx1
 		JSR		_player_percents_backup					; save new parameters
 		JSR		_player_overall_armor_calc				; recalc overall value as well
 		JMP		_event_exec
 loc_44CA9:
-		LDA		_pad
-		AND		#2
+		LDA		_pad_edge
+		AND		#$40
 		BNE		loc_44CB3
 		JMP		_event_exec
 loc_44CB3:
@@ -1597,7 +1382,7 @@ _no_log_screen:
 		LDA		_event_reload_idx
 		CMP		#5
 		BEQ		_repair_mode_dequeue
-		JMP		_nmi0_common
+		JMP		_nmi0_extra
 _repair_mode_dequeue:
 		BIT		_PPU_STATUS
 		LDA		#$22
@@ -1728,7 +1513,7 @@ loc_4505F:
 		LDA		_generic_nmi_over_counter
 		AND		#1
 		BEQ		loc_45069
-		JMP		_nmi0_common
+		JMP		_nmi0_extra
 loc_45069:
 		LDX		_repair_body_index_request
 		LDA		_repair_update_flag_list,X
@@ -1739,16 +1524,16 @@ loc_45069:
 		CMP		#2
 		BEQ		loc_4508D
 		JSR		_repair_ppu_legs_upgrade_display
-		JMP		_nmi0_common
+		JMP		_nmi0_extra
 loc_45081:
 		JSR		_repair_ppu_head_upgrade_display
-		JMP		_nmi0_common
+		JMP		_nmi0_extra
 loc_45087:
 		JSR		_repair_ppu_body_upgrade_display
-		JMP		_nmi0_common
+		JMP		_nmi0_extra
 loc_4508D:
 		JSR		_repair_ppu_arms_upgrade_display
-		JMP		_nmi0_common
+		JMP		_nmi0_extra
 
 ; =============== S U B	R O U T	I N E =======================================
 _repair_ppu_head_upgrade_display:
@@ -2156,60 +1941,47 @@ loc_45314:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_nmi0_common:
+_nmi0_extra:
 		JSR		_nmi0_scroll_reload
 		LDA		_event_reload_idx
 		STA		_event_idx
 		LDA		#$1E
 		STA		_PPU_MASK
-		LDA		_special_controls_flag					; used only for title screen, overrides generic
-		BEQ		.nmi0_generic_input						; input controls for the rest of the screens displayed
-		LDA		#$A8
-		STA		_PPU_CTRL
-		INC		_generic_nmi_over_counter
-		JSR		_far_apu_play_prg5_safe					; put it here, because we always run in prg5 during
-		LDA		_irq_regs_backup						; intro sequences, removed from event loops
-		LDX		_irq_regs_backup+1
-		LDY		_irq_regs_backup+2
-		RTI
-.nmi0_generic_input:
+		LDA		_special_controls_flag					; set only for title screen to prevent accidentally
+		BEQ		.nmi0_hiscore_handler					; hi-score input handler selection
+		LDA		#$A8									; the title screen ends its nmi here
+		BNE		.nmi0_finish1
+.nmi0_hiscore_handler:
 		LDA		_event_reload_idx
 		CMP		#4
-		BNE		.j_nmi0_finish
+		BNE		.nmi0_finish0
 		LDA		_screen_idx
 		CMP		#3
-		BEQ		.nmi0_hiscore_entry_ppu_update
-.j_nmi0_finish:
-		JMP		.nmi0_finish
+		BNE		.nmi0_finish0
 ; --------------------------------
-.nmi0_hiscore_entry_ppu_update:
 		BIT		_PPU_STATUS
-		LDA		_hi_score_line_idx						; set the ppu offset to the current name entry line
-		ASL
-		TAX
-		LDA		_hi_score_ppu_ofs_list+1,X
+		LDX		_hi_score_line_idx						; set the ppu offset to the current name entry line
+		LDA		_hi_score_ppu_ofs_list_hi,X
 		STA		_PPU_ADDR
 		STA		_tmpE6
-		LDA		_hi_score_ppu_ofs_list,X
+		LDA		_hi_score_ppu_ofs_list_lo,X
 		STA		_PPU_ADDR
 		STA		_tmpE7
-		LDX		_hi_score_line_idx
 		LDY		_hi_score_ram_name_ofs_list,X
-		LDX		#0										; update the whole string entered until now
+		LDX		#$A										; update the whole string entered until now
 loc_4539C:
 		LDA		_ram_score_tbl,Y
 		STA		_PPU_DATA
 		INY
-		INX
-		CPX		#$A
-		BCC		loc_4539C
+		DEX
+		BNE		loc_4539C								; from here X is zero!
 		LDA		_tmpE7									; calc position of the cursor tile (+32-1+cur)
 		CLC
 		ADC		#$1F
 		STA		_tmpE7
-		LDA		_tmpE6
-		ADC		#0
-		STA		_tmpE6
+		BCC		loc_45390
+		INC		_tmpE6
+loc_45390:
 		BIT		_PPU_STATUS
 		LDA		_tmpE6
 		STA		_PPU_ADDR
@@ -2221,40 +1993,35 @@ loc_4539C:
 		AND		#$1F
 		CMP		#$13
 		BCS		loc_453E0								; draw " _ " or "  " to blink
-		LDA		#0										; spaces before and after are for clean previous cursor
-		STA		_PPU_DATA								; if it's position is changed
-		LDA		#$DE
+		STX		_PPU_DATA								; spaces before and after are for clean previous cursor
+		LDA		#$DE									; if it's position is changed
 		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
+		STX		_PPU_DATA
 		BNE		loc_453E8
 loc_453E0:
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
+		STX		_PPU_DATA
+		STX		_PPU_DATA
 loc_453E8:
 		LDA		#$20
 		STA		_PPU_ADDR
-		LDA		#0
-		STA		_PPU_ADDR
+		STX		_PPU_ADDR
 ; --------------------------------
-.nmi0_finish:
+.nmi0_finish0:
 		LDA		#$88
+.nmi0_finish1:
 		STA		_PPU_CTRL
 		INC		_generic_nmi_over_counter
 		JSR		_far_apu_play_prg5_safe					; put it here, because we always run in prg5 during
+		JSR		_read_pads
 		LDA		_irq_regs_backup						; intro sequences, removed from event loops
 		LDX		_irq_regs_backup+1
 		LDY		_irq_regs_backup+2
 		RTI
 
-_hi_score_ppu_ofs_list:
-		.WORD $2151
-		.WORD $2191
-		.WORD $21D1
-		.WORD $2211
-		.WORD $2251
-		.WORD $2291
+_hi_score_ppu_ofs_list_lo:
+		.BYTE	$51,$91,$D1,$11,$51,$91
+_hi_score_ppu_ofs_list_hi:
+		.BYTE	$21,$21,$21,$22,$22,$22
 
 _repair_small_frame_txt_lib:
 		.WORD _repair_small_frame_txt0
@@ -2291,36 +2058,6 @@ _nmi0_scroll_reload:
 		LDA		#$E0
 loc_4544C:
 		STA		_PPU_SCROLL
-		RTS
-
-; =============== S U B	R O U T	I N E =======================================
-_dpad_convert:
-		LDA		_pad
-		LSR
-		LSR
-		LSR
-		LSR
-		TAX
-		LDA		_dpad_conv_tbl,X
-		STA		_dpad
-		RTS
-
-_dpad_conv_tbl:
-		.BYTE	0,1,3,0,4,0,0,0,2,0,0,0,0,0,0,0
-
-; =============== S U B	R O U T	I N E =======================================
-_read_pad:
-		LDX		#1
-		STX		_PAD0_REG
-		DEX
-		STX		_PAD0_REG
-		LDY		#8
-loc_454CC:
-		LDA		_PAD0_REG
-		LSR
-		ROR		_pad
-		DEY
-		BNE		loc_454CC
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -2671,13 +2408,7 @@ loc_45959:
 ;		STA		_tptr0
 ;		BCS		locret_459F1
 ;loc_459D4:
-;		LDA		_str_ptr
-;		CLC
-;		ADC		#1
-;		STA		_str_ptr
-;		LDA		_str_ptr+1
-;		ADC		#0
-;		STA		_str_ptr+1
+;		ADD16	_str_ptr, 1
 ;		INX
 ;		CPX		#$20
 ;		BCC		loc_4597B
@@ -3089,10 +2820,12 @@ _repair_small_frame_txt3:
 ;
 _bios_msg_display:
 		LDY		#0
-		STY		_log_msg_deny_input
-
+		.BYTE	$2C
+		
 ; =============== S U B	R O U T	I N E =======================================
-_bios_msg_display_ex:
+_bios_msg_display_no_skip:
+		LDY		#$FF
+		STY		_log_msg_skip_forbid
 		STA		_tmp_idx0
 		ASL
 		TAX
@@ -3105,10 +2838,8 @@ _bios_msg_display_ex:
 		STA		_tmp_idx1
 		STA		_tmp_idx2
 		STA		_delay_counter
-		LDA		#8
-		STA		_pad_prev0
-		LDA		#1
-		STA		_pad_prev1
+		LDA		#$FF
+		STA		_pad_block_mask
 		LDA		#7
 		STA		_event_reload_idx
 		JSR		_log_clear_buf
@@ -3271,7 +3002,6 @@ _msg6_prepare_to_repair:
 		.BYTE	_R,_E,_P,_A,_I,_R,_,_L,_A,_B,_O,_R,_A,_T,_O,_R,_Y,_DT,_DT,_DT,_SCL
 		.BYTE	_DLY,_END
 _msg7_confirm_repair:
-		.BYTE	_MUT
 		.BYTE	_P,_L,_E,_A,_S,_E,_,_C,_O,_N,_F,_I,_R,_M,_,_R,_E,_P,_A,_I,_R,_S,_DT,_DT,_DT,_SCL
 		.BYTE	_DLY,_SCL
 		.BYTE	_P,_R,_E,_S,_S,_,_A,_,_T,_O,_,_A,_C,_C,_E,_P,_T,_SCL

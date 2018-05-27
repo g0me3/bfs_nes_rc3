@@ -144,7 +144,7 @@ _event_idx:							.BYTE	0
 _event_reload_idx:					.BYTE	0
 _generic_nmi_over_counter:			.BYTE	0
 _hi_score_entry_display_lock:		.BYTE	0
-_log_msg_deny_input:				.BYTE	0
+_log_msg_skip_forbid:				.BYTE	0
 _mul_argA:							.BYTE	0
 _mul_argB:							.BYTE	0
 _mul_result_low:					.BYTE	0

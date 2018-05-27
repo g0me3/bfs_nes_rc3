@@ -17,9 +17,11 @@ loc_6362D:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_delayX:
+; delay 18 clocks for 1 loop, total delay 13+5*X
+;
+_delayx:
 		DEX
-		BNE		_delayX
+		BNE		_delayx
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -789,12 +791,8 @@ _lvl4_ppu_data_dequeue:
 		AND		#$FB
 		STA		_ppu_ctrl_shadow
 		STA		_PPU_CTRL
-		LDX		#$52
-		JSR		_delayX
-		NOP
-		NOP
-		NOP
-		NOP
+		LDX		#$53
+		JSR		_delayx
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -947,6 +945,7 @@ loc_60811:
 loc_6081B:
 		LDA		(_lvl_room_data_ptr),Y
 		STA		_tmp_buf0,X
+
 		CLC
 		LDA		_lvl_room_data_ptr
 		ADC		#$20
@@ -1590,8 +1589,7 @@ _hud_all_energy_ppu_data_send:
 		LDA		_tmp_buf2+$14
 		STA		_PPU_DATA
 		LDX		#7
-		JSR		_delayX
-		NOP
+		JSR		_delayx
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -1653,8 +1651,7 @@ _hud_score_weapon_ppu_data_send:
 		LDA		_tmp_buf2+$11
 		STA		_PPU_DATA
 		LDX		#6
-		JSR		_delayX
-		NOP
+		JSR		_delayx
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -1779,10 +1776,8 @@ _hud_large_weapon_ppu_data_send:
 		STA		_PPU_DATA
 		LDA		_tmp_buf2+$11
 		STA		_PPU_DATA
-		LDX		#8
-		JSR		_delayX
-		NOP
-		NOP
+		LDX		#9
+		JSR		_delayx
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================

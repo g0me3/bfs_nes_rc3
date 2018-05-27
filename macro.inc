@@ -157,6 +157,16 @@ _cur	EQU	$2B
 .1:
 	ENDM
 	
+	MAC	ADD16
+		LDA		{1}
+		CLC
+		ADC		#[{2}]
+		STA		{1}
+		BCC		.1
+		INC		{1}+1
+.1:
+	ENDM
+	
 	MAC	PRINTF
 		LDA		#<{1}
 		LDY		#>{1}
