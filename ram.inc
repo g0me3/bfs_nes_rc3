@@ -387,38 +387,12 @@ _pl_bckp_repair_tanks:
 		.BYTE	0,0
 _pl_bckp_lvl_idx:
 		.BYTE	0,0
-_unused_29:
-		.BYTE	0,0,0,0,0,0
 _pl_bckp_score_hex_lo:
 		.BYTE	0,0
 _pl_bckp_score_hex_hi:
 		.BYTE	0,0
 _pl_bkcp_continues:
 		.BYTE	0,0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
 _hud_weap0_attr_overlay:
 		.BYTE	0,0
 _hud_weap1_attr_overlay:
@@ -427,52 +401,47 @@ _hud_weapon_blink_timer:
 		.BYTE	0
 byte_6F5:
 		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-		.BYTE	0
-_log_msg_buf:
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
+_log_msg_buf:
+		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+_ram_score_tbl:
 _hi0_score:
 		.BYTE	0,0,0,0,0
-_hi0_name:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
 _hi1_score:
 		.BYTE	0,0,0,0,0
-_hi1_name:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
 _hi2_score:
 		.BYTE	0,0,0,0,0
-_hi2_name:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
 _hi3_score:
 		.BYTE	0,0,0,0,0
-_hi3_name:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
 _hi4_score:
 		.BYTE	0,0,0,0,0
-_hi4_name:
-		.BYTE	0,0,0,0,0,0,0,0,0,0
 _hi5_score:
 		.BYTE	0,0,0,0,0
+_res_ram_scores:
+		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0	; def hiscore text header
+_hi0_name:
+		.BYTE	0,0,0,0,0,0,0,0,0,0
+		.BYTE	0,0,0,0,0,0,0,0								; def hiscore text line
+_hi1_name:
+		.BYTE	0,0,0,0,0,0,0,0,0,0
+		.BYTE	0,0,0,0,0,0,0,0
+_hi2_name:
+		.BYTE	0,0,0,0,0,0,0,0,0,0
+		.BYTE	0,0,0,0,0,0,0,0
+_hi3_name:
+		.BYTE	0,0,0,0,0,0,0,0,0,0
+		.BYTE	0,0,0,0,0,0,0,0
+_hi4_name:
+		.BYTE	0,0,0,0,0,0,0,0,0,0
+		.BYTE	0,0,0,0,0,0,0,0
 _hi5_name:
 		.BYTE	0,0,0,0,0,0,0,0,0,0
+		.BYTE	0											; EOF
 
-		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		.BYTE	0,0,0,0,0,0
 _score_cmp_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 _hi_score_line_idx:
@@ -481,7 +450,6 @@ _hi_score_pos_count:
 		.BYTE	0
 _hi_dec_tmp_buf:
 		.BYTE	0,0,0,0,0
-		.BYTE	0,0,0,0,0,0,0,0,0,0
 
 	ORG $2000
 

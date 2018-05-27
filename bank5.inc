@@ -363,8 +363,8 @@ loc_44445:
 		LDA		_screen_idx
 		CMP		#3
 		BNE		loc_4444F
-		JSR		_draw_hiscore_table
 		JSR		_star_field_init
+		JSR		_draw_hiscore_table
 loc_4444F:
 		LDA		#$81
 		STA		_PPU_CTRL
@@ -870,7 +870,7 @@ loc_44965:
 		JSR		_star_field_animate
 		JSR		_read_pad
 		LDX		_hi_score_line_idx
-		LDA		_hi_score_ram_ofs_list,X
+		LDA		_hi_score_ram_name_ofs_list,X
 		CLC
 		ADC		_tmp_idx2
 		TAX
@@ -880,54 +880,43 @@ loc_44965:
 		STA		_pad_prev0
 		JMP		loc_44992
 loc_44987:
-		LDA		_generic_nmi_over_counter
-		AND		#$1F
-		BEQ		loc_44992
-		CMP		#$14
+		LDA		_generic_nmi_over_counter				; if button is held nmi counter is reset to 3 here
+		AND		#$1F									; so we return back after 17 frames every time
+		BEQ		loc_44992								; if not, the code will be called for nothing every
+		CMP		#$14									; 20, then 12 frames, period. weird logic anyway.
 		BNE		.j_event_exec3
 loc_44992:
 		LDA		_pad
 		AND		#$20
 		BEQ		loc_449B3
-		LDA		_log_msg_buf,X
+		LDA		_ram_score_tbl,X
 		CLC
 		ADC		#1
-		CMP		#$1B
-		BCC		loc_449A5
-		SBC		#$1B
-loc_449A5:
-		STA		_log_msg_buf,X
-		LDA		#3
-		STA		_delay_counter+1
-		STA		_generic_nmi_over_counter
-		JMP		loc_44A05
+		CMP		#$25
+		BCC		loc_449C4
+		LDA		#0
+		BEQ		loc_449C4
 loc_449B3:
 		LDA		_pad
 		AND		#$10
 		BEQ		loc_449D2
-		LDA		_log_msg_buf,X
+		LDA		_ram_score_tbl,X
 		SEC
 		SBC		#1
 		BCS		loc_449C4
-		ADC		#$1B
+		LDA		#$24
 loc_449C4:
-		STA		_log_msg_buf,X
-		LDA		#3
-		STA		_delay_counter+1
-		STA		_generic_nmi_over_counter
-		JMP		loc_44A05
+		STA		_ram_score_tbl,X
+		JMP		loc_44A050
 loc_449D2:
 		LDA		_pad
 		AND		#$80
 		BEQ		loc_449EE
 		LDA		_tmp_idx2
 		CMP		#9
-		BCS		loc_449EE
+		BCS		loc_44A05
 		INC		_tmp_idx2
-		LDA		#3
-		STA		_delay_counter+1
-		STA		_generic_nmi_over_counter
-		JMP		loc_44A05
+		BCC		loc_44A050
 loc_449EE:
 		LDA		_pad
 		AND		#$40
@@ -935,6 +924,7 @@ loc_449EE:
 		LDA		_tmp_idx2
 		BEQ		loc_44A05
 		DEC		_tmp_idx2
+loc_44A050:
 		LDA		#3
 		STA		_delay_counter+1
 		STA		_generic_nmi_over_counter
@@ -946,92 +936,94 @@ loc_44A05:
 .j_event_exec3:
 		JMP		_event_exec
 
-_hi_score_ram_ofs_list:
-		.BYTE	$75,$84,$93,$A2,$B1,$C0
-
 ; =============== S U B	R O U T	I N E =======================================
 _sort_hiscore_test:
-		LDX		#0
+;		LDX		#0
 		LDA		_cur_score_hex
-		STA		_pl_bckp_score_hex_lo,X
-		STA		_str_ptr
+;		STA		_pl_bckp_score_hex_lo,X				; why to backup the 1p here? they should be
+		STA		_str_ptr							; erased in any case after this screen
 		LDA		_cur_score_hex+1
-		STA		_pl_bckp_score_hex_hi,X
+;		STA		_pl_bckp_score_hex_hi,X
 		STA		_str_ptr+1
 		LDA		#0
 		STA		_hex2dec_tile_delta
-		LDX		#<[_hi_dec_tmp_buf]
-		LDY		#>[_hi_dec_tmp_buf]
-		JSR		_hex2str
-		LDX		#0
-		LDY		#0
-loc_45A16:
-		LDA		_hi_dec_tmp_buf,X
-		STA		_score_cmp_buf,X
-		INX
-		CPX		#5
-		BNE		loc_45A16
-loc_45A21:
-		LDA		#0
-		STA		_score_cmp_buf,X
-		INX
-		CPX		#$F
-		BCC		loc_45A21
-		LDA		#0
 		STA		_hi_score_pos_count
 		STA		_hi_score_line_idx
-		LDA		#<[_hi0_score]
-		STA		_tptr1
-		LDA		#>[_hi0_score]
-		STA		_tptr1+1
+		LDX		#$E
+loc_45A21:
+		STA		_score_cmp_buf,X
+		DEX
+		BPL		loc_45A21
+		LDX		#<[_score_cmp_buf]
+		LDY		#>[_score_cmp_buf]
+		JSR		_hex2str
 loc_45A3B:
+		LDY		_hi_score_pos_count					; read cur score line idx to test
+		CPY		#6
+		BCS		locret_45A7A						; check if no more lines
+		LDX		_hi_score_ram_score_ofs_list,Y		; table calc of score data offset
 		LDY		#0
-		LDA		_hi_score_pos_count
-		CMP		#6
-		BCS		locret_45A7A
-loc_45A44:
-		LDA		_score_cmp_buf,Y
-		CMP		(_tptr1),Y
-		BCC		loc_45A52
-		BNE		_hiscore_swap
+.test_loop:
+		LDA		_score_cmp_buf,Y					; compare
+		CMP		_ram_score_tbl,X
+		BCC		.hiscore_no_swap
+		BNE		.hiscore_swap
+		INX
 		INY
 		CPY		#5
-		BNE		loc_45A44
-loc_45A52:
-		INC		_hi_score_line_idx
+		BNE		.test_loop
+.hiscore_no_swap:
+		INC		_hi_score_line_idx					; player position in the list
 loc_45A55:
-		INC		_hi_score_pos_count
-		LDA		_tptr1
-		CLC
-		ADC		#$F
-		STA		_tptr1
-		LDA		_tptr1+1
-		ADC		#0
-		STA		_tptr1+1
-		BNE		loc_45A3B
-_hiscore_swap:
-		LDY		#$E
+		INC		_hi_score_pos_count					; next line
+		JMP		loc_45A3B
+.hiscore_swap:
+		LDY		_hi_score_pos_count					; return score data offset to the begining
+		LDX		_hi_score_ram_score_ofs_list,Y
+		LDY		#0
 loc_45A69:
-		LDA		(_tptr1),Y
-		TAX
-		LDA		_score_cmp_buf,Y
-		STA		(_tptr1),Y
-		TXA
-		STA		_score_cmp_buf,Y
-		DEY
-		BPL		loc_45A69
-		BMI		loc_45A55
+		JSR		_do_swap
+		CPY		#5
+		BNE		loc_45A69
+		LDY		_hi_score_pos_count					; get the name offset
+		LDX		_hi_score_ram_name_ofs_list,Y
+		LDY		#5
+loc_45A690:
+		JSR		_do_swap
+		CPY		#$F
+		BNE		loc_45A690
+		BEQ		loc_45A55
 locret_45A7A:
 		RTS
+		
+; =============== S U B	R O U T	I N E =======================================
+_do_swap:
+		LDA		_ram_score_tbl,X
+		PHA
+		LDA		_score_cmp_buf,Y
+		STA		_ram_score_tbl,X
+		PLA
+		STA		_score_cmp_buf,Y
+		INX
+		INY
+		RTS
 
-_nums_table:
-		.BYTE	_O,_1,_2,_3,_4,_5,_6,_7,_8,_9
+_hi_score_ram_score_ofs_list:
+		.BYTE	0,5,10,15,20,25
+_hi_score_ram_name_ofs_list:
+		.BYTE	_hi0_name-_ram_score_tbl
+		.BYTE	_hi1_name-_ram_score_tbl
+		.BYTE	_hi2_name-_ram_score_tbl
+		.BYTE	_hi3_name-_ram_score_tbl
+		.BYTE	_hi4_name-_ram_score_tbl
+		.BYTE	_hi5_name-_ram_score_tbl
 
 ; =============== S U B	R O U T	I N E =======================================
 ; draws an actual hi-score table data from RAM at the fixed position
 ; on the screen
 ;
 _draw_hiscore_table:
+		PRINTF	_res_ram_scores	;	_res_hi_score_header
 		BIT		_PPU_STATUS
 		LDA		#$21
 		STA		_PPU_ADDR
@@ -1048,16 +1040,16 @@ loc_45AEE:
 		LDA		#$F
 		STA		_PPU_DATA
 		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45B0F:
-		LDA		_hi0_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45B0F
+;		LDA		#0
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;loc_45B0F:
+;		LDA		_hi0_score,X
+;		STA		_PPU_DATA
+;		INX
+;		CPX		#$F
+;		BCC		loc_45B0F
 		LDA		#$21
 		STA		_PPU_ADDR
 		LDA		#$87
@@ -1073,16 +1065,16 @@ loc_45B26:
 		LDA		#$F
 		STA		_PPU_DATA
 		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45B47:
-		LDA		_hi1_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45B47
+;		LDA		#0
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;loc_45B47:
+;		LDA		_hi1_score,X
+;		STA		_PPU_DATA
+;		INX
+;		CPX		#$F
+;		BCC		loc_45B47
 		LDA		#$21
 		STA		_PPU_ADDR
 		LDA		#$C7
@@ -1098,16 +1090,16 @@ loc_45B5E:
 		LDA		#$F
 		STA		_PPU_DATA
 		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45B7F:
-		LDA		_hi2_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45B7F
+;		LDA		#0
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;loc_45B7F:
+;		LDA		_hi2_score,X
+;		STA		_PPU_DATA
+;		INX
+;		CPX		#$F
+;		BCC		loc_45B7F
 		LDA		#$22
 		STA		_PPU_ADDR
 		LDA		#7
@@ -1123,16 +1115,16 @@ loc_45B96:
 		LDA		#$F
 		STA		_PPU_DATA
 		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45BB7:
-		LDA		_hi3_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45BB7
+;		LDA		#0
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;loc_45BB7:
+;		LDA		_hi3_score,X
+;		STA		_PPU_DATA
+;		INX
+;		CPX		#$F
+;		BCC		loc_45BB7
 		LDA		#$22
 		STA		_PPU_ADDR
 		LDA		#$47
@@ -1148,16 +1140,16 @@ loc_45BCE:
 		LDA		#$F
 		STA		_PPU_DATA
 		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45BEF:
-		LDA		_hi4_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45BEF
+;		LDA		#0
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;loc_45BEF:
+;		LDA		_hi4_score,X
+;		STA		_PPU_DATA
+;		INX
+;		CPX		#$F
+;		BCC		loc_45BEF
 		LDA		#$22
 		STA		_PPU_ADDR
 		LDA		#$87
@@ -1173,19 +1165,37 @@ loc_45C06:
 		LDA		#$F
 		STA		_PPU_DATA
 		STA		_PPU_DATA
-		LDA		#0
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-loc_45C27:
-		LDA		_hi5_score,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$F
-		BCC		loc_45C27
+;		LDA		#0
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;loc_45C27:
+;		LDA		_hi5_score,X
+;		STA		_PPU_DATA
+;		INX
+;		CPX		#$F
+;		BCC		loc_45C27
 		RTS
 
-_res_hi_score:
+_nums_table:
+		.BYTE	_O,_1,_2,_3,_4,_5,_6,_7,_8,_9
+
+;_res_hi_score_header:
+;		.BYTE	$21,$0B
+;		STRING	_H,_I,_G,_H,_S,_C,_O,_R,_E,_S
+;		.BYTE	$21,$44
+;		STRING	_1,_DT
+;		.BYTE	$21,$84
+;		STRING	_2,_DT
+;		.BYTE	$21,$c4
+;		STRING	_3,_DT
+;		.BYTE	$22,$04
+;		STRING	_4,_DT
+;		.BYTE	$22,$44
+;		STRING	_5,_DT
+;		.BYTE	$22,$84
+;		STRING	_6,_DT
+;		.BYTE	$FF
 
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -2477,10 +2487,9 @@ _nmi0_common:
 		JMP		.nmi0_finish
 ; --------------------------------
 .nmi0_hiscore_entry_ppu_update:
-; --
 ;		LDA		#0										; calc the hiscore table data offset
 ;		CLC												; ofs = hi_score_line_idx * 15
-;		LDX		_hi_score_line_idx
+;		LDX		_hi_score_line_idx						; but later it use the table for the same calc lol
 ;loc_45371:
 ;		CPX		#0
 ;		BEQ		loc_4537B
@@ -2488,18 +2497,9 @@ _nmi0_common:
 ;		DEX
 ;		JMP		loc_45371
 ;loc_4537B:
-; --
-		LDA		_hi_score_line_idx
-		ASL
-		ASL
-		ASL
-		ASL
-		SEC
-		SBC		_hi_score_line_idx
-; --
-		TAY
+;		TAY
 		BIT		_PPU_STATUS
-		LDA		_hi_score_line_idx
+		LDA		_hi_score_line_idx						; set the ppu offset to the current name entry line
 		ASL
 		TAX
 		LDA		_hi_score_ppu_ofs_list+1,X
@@ -2509,16 +2509,16 @@ _nmi0_common:
 		STA		_PPU_ADDR
 		STA		_tmpE7
 		LDX		_hi_score_line_idx
-		LDY		_hi_score_ram_ofs_list,X
-		LDX		#0
+		LDY		_hi_score_ram_name_ofs_list,X
+		LDX		#0										; update the whole string entered until now
 loc_4539C:
-		LDA		_log_msg_buf,Y
+		LDA		_ram_score_tbl,Y
 		STA		_PPU_DATA
 		INY
 		INX
 		CPX		#$A
 		BCC		loc_4539C
-		LDA		_tmpE7
+		LDA		_tmpE7									; calc position of the cursor tile (+32-1+cur)
 		CLC
 		ADC		#$1F
 		STA		_tmpE7
@@ -2530,14 +2530,14 @@ loc_4539C:
 		STA		_PPU_ADDR
 		LDA		_tmpE7
 		CLC
-		ADC		_tmp_idx2
-		STA		_PPU_ADDR
+		ADC		_tmp_idx2								; here is tmp edit cursor position
+		STA		_PPU_ADDR								; set ppu
 		LDA		_generic_nmi_over_counter
 		AND		#$1F
 		CMP		#$13
-		BCS		loc_453E0
-		LDA		#0
-		STA		_PPU_DATA
+		BCS		loc_453E0								; draw " _ " or "  " to blink
+		LDA		#0										; spaces before and after are for clean previous cursor
+		STA		_PPU_DATA								; if it's position is changed
 		LDA		#$DE
 		STA		_PPU_DATA
 		LDA		#0
@@ -2824,29 +2824,29 @@ _screen_display_ex:
 		BIT		_PPU_STATUS
 		BPL		_screen_display
 		BIT		_PPU_STATUS
-		LDA		#$20
-		STA		_PPU_ADDR
-		TYA
-		STA		_PPU_ADDR								; Y already 0
-loc_45855:
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		INY
-		BNE		loc_45855
-		BIT		_PPU_STATUS
-		LDA		#$24
-		STA		_PPU_ADDR
-		TYA
-		STA		_PPU_ADDR
-loc_45872:
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		STA		_PPU_DATA
-		INY
-		BNE		loc_45872
+;		LDA		#$20									; every screen start from 2000 and redraw the whole screen!
+;		STA		_PPU_ADDR								; don't need this here at all!
+;		TYA
+;		STA		_PPU_ADDR								; Y already 0
+;loc_45855:
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		INY
+;		BNE		loc_45855
+;		BIT		_PPU_STATUS
+;		LDA		#$24
+;		STA		_PPU_ADDR
+;		TYA
+;		STA		_PPU_ADDR
+;loc_45872:
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		STA		_PPU_DATA
+;		INY
+;		BNE		loc_45872
 		LDA		#$F0									; Y already 0
 loc_45885:
 		STA		_spr_buf,Y
@@ -3051,7 +3051,7 @@ _disp_tlm_lib:
 		.WORD _tlm0_ocean
 		.WORD _tlm1_probe
 		.WORD _tlm2_title
-		.WORD _tlm3_hiscore
+		.WORD _tlm4_frame	; _tlm3_hiscore
 		.WORD _tlm4_frame
 		.WORD _tlm5_lewis
 		.WORD _tlm6_robocop
@@ -3210,8 +3210,8 @@ _tlm1_probe:
 		INCBIN	"tlm\tlm1_a.pak"
 _tlm2_title:
 		INCBIN	"tlm\tlm2.pak"
-_tlm3_hiscore:
-		INCBIN	"tlm\tlm3.pak"
+;_tlm3_hiscore:
+;		INCBIN	"tlm\tlm3.pak"
 _tlm4_frame:
 		INCBIN	"tlm\tlm4.pak"
 _tlm5_lewis:

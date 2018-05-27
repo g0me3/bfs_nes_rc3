@@ -25,12 +25,13 @@ loc_60023:
 		BNE		loc_60023
 		DEX
 		TXS
-		LDX		#$59
+		LDX		#0
 loc_60044:
 		LDA		_def_score_tbl,X
-		STA		_hi0_score,X
-		DEX
-		BPL		loc_60044
+		STA		_ram_score_tbl,X
+		INX
+		CPX		#[_def_score_tbl_end-_def_score_tbl]
+		BNE		loc_60044
 		JSR		_all_player_vars_init
 		LDA		#1
 		STA		_apu_music_enable
@@ -7540,12 +7541,41 @@ _lvl2_transition_pal_lib:
 ; --
 ; original final version of hi-score table
 _def_score_tbl:
-		.BYTE	  0,  0,  2,  0,  0,  7,$24,  8,  1,$12,$12,  9,$13, $F, $E
-		.BYTE	  0,  0,  1,  0,  0,$13,$24, $E,  9,  3, $F, $C,  0,  0,  0
-		.BYTE	  0,  0,  0,  8,  0,$13,$24,  3,$12, $F,$17,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  6,  0, $A,$24,  2, $F, $E,  1,$12,  0,  0,  0
-		.BYTE	  0,  0,  0,  4,  0, $A,$24,$14,  5, $C,  0,  0,  0,  0,  0
-		.BYTE	  0,  0,  0,  1,  0,  8,$24,  2,  9, $E, $E,$13,  0,  0,  0
+		.BYTE	0,0,2,0,0
+		.BYTE	0,0,1,0,0
+		.BYTE	0,0,0,8,0
+		.BYTE	0,0,0,6,0
+		.BYTE	0,0,0,4,0
+		.BYTE	0,0,0,1,0
+		.BYTE	$21,$0B
+		STRING	_H,_I,_G,_H,_S,_C,_O,_R,_E,_S
+		.BYTE	$21,$44
+		STRING	_1,_DT
+		.BYTE	$21,$51
+		STRING	_G,_DT,_H,_A,_R,_R,_I,_S,_O,_N
+		.BYTE	$21,$84
+		STRING	_2,_DT
+		.BYTE	$21,$91
+		STRING	_S,_DT,_N,_I,_C,_O,_L,_,_,_
+		.BYTE	$21,$C4
+		STRING	_3,_DT
+		.BYTE	$21,$D1
+		STRING	_S,_DT,_C,_R,_O,_W,_,_,_,_
+		.BYTE	$22,$04
+		STRING	_4,_DT
+		.BYTE	$22,$11
+		STRING	_J,_DT,_B,_O,_N,_A,_R,_,_,_
+		.BYTE	$22,$44
+		STRING	_5,_DT
+		.BYTE	$22,$51
+		STRING	_J,_DT,_T,_E,_L,_,_,_,_,_
+		.BYTE	$22,$84
+		STRING	_6,_DT
+		.BYTE	$22,$91
+		STRING	_H,_DT,_B,_I,_N,_N,_S,_,_,_
+		.BYTE	$FF
+_def_score_tbl_end:
+
 ; --
 ; older unused version of hi-score table from bank 5 used now instead
 ;_def_score_tbl:
