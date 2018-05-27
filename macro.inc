@@ -9,6 +9,48 @@ SAFE_VECTOR_ORG	EQU	SYS_VECTOR_ORG & $BFFF
 
 ; == ENUMS ==
 
+; == BIOS FONT ==
+
+_	EQU	$00
+_A	EQU	$01
+_B	EQU	$02
+_C	EQU	$03
+_D	EQU	$04
+_E	EQU	$05
+_F	EQU	$06
+_G	EQU	$07
+_H	EQU	$08
+_I	EQU	$09
+_J	EQU	$0A
+_K	EQU	$0B
+_L	EQU	$0C
+_M	EQU	$0D
+_N	EQU	$0E
+_O	EQU	$0F
+_P	EQU	$10
+_Q	EQU	$11
+_R	EQU	$12
+_S	EQU	$13
+_T	EQU	$14
+_U	EQU	$15
+_V	EQU	$16
+_W	EQU	$17
+_X	EQU	$18
+_Y	EQU	$19
+_Z	EQU	$1A
+_1	EQU	$1B
+_2	EQU	$1C
+_3	EQU	$1D
+_4	EQU	$1E
+_5	EQU	$1F
+_6	EQU	$20
+_7	EQU	$21
+_8	EQU	$22
+_9	EQU	$23
+_DT	EQU	$24
+_DD	EQU	$25
+_CO	EQU	$26
+
 ; == STRUCT ==
 
 	MAC	TOBJ

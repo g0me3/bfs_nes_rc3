@@ -40,7 +40,7 @@ loc_60044:
 		JSR		_ppu_reinit
 		LDA		#0
 		STA		_nmi_hndl_idx
-		JSR		_sub0_intro_title
+		JSR		_attract_display
 
 ; =============== S U B	R O U T	I N E =======================================
 _MAIN_LOOP:
@@ -62,7 +62,7 @@ _MAIN_LOOP:
 		STA		_player_damage_blink_timer
 		STA		byte_685
 		LDA		_cur_lvl_idx
-		JSR		_asci_bios_msg_display_with_skip
+		JSR		_bios_msg_display
 		JSR		_ppu_reinit
 		LDA		#0
 		STA		_weapon0_idx
@@ -80,7 +80,6 @@ _MAIN_GAME_START:
 		STA		_cur_arms_percent
 		LDA		_pl_bckp_legs_percent,X
 		STA		_cur_legs_percent
-		LDA		_pl_bckp_repair_tanks,X
 ; --
 ; fix for starting explosion sprite appearance at the start 
 ; of the level
@@ -91,6 +90,7 @@ _MAIN_GAME_START:
 		ADC		_cur_legs_percent
 		STA		_cur_overal_armor_sum
 ; --
+		LDA		_pl_bckp_repair_tanks,X
 		STA		_cur_repair_tanks
 		LDA		_pl_bckp_score_hex_lo,X
 		STA		_cur_score_hex
@@ -193,7 +193,7 @@ _main_ingame_loop1:
 		LDA		#0
 		STA		_nmi_hndl_idx
 		STA		_cur_lvl_state_idx
-		JSR		_sub2_game_over
+		JSR		_game_over_display
 		LDA		_new_game_start_flag
 		BNE		loc_601BA
 		JSR		_all_player_vars_init
@@ -205,24 +205,24 @@ loc_601BA:
 		STA		_pl_bckp_score_hex_hi,X
 		JMP		_MAIN_LOOP
 _level_complete:
-		LDA		_cur_lvl_idx
+		LDA		_cur_lvl_idx							; test if the game is complete
 		CMP		#5
 		BEQ		_game_complete
-		LDX		_player_number
+		LDX		_player_number							; save cur level number
 		LDA		_cur_lvl_idx
 		STA		_pl_bckp_lvl_idx,X
 		LDA		#0
 		STA		_nmi_hndl_idx
 		STA		_cur_lvl_state_idx
-		JSR		_ppu_reinit
+		JSR		_ppu_reinit								; prepare to enter the repair lab
 		LDY		#5
 		JSR		_mmc1_prg
 		LDA		_cur_lvl_idx
 		CMP		#4
-		BNE		_player_backup
+		BNE		_player_backup							; there is no repair after the level 4, except a secret one
 		JMP		_MAIN_LOOP
 _player_backup:
-		LDX		_player_number
+		LDX		_player_number							; backup player data and go to repair lab
 		LDA		_cur_score_hex
 		STA		_pl_bckp_score_hex_lo,X
 		LDA		_cur_score_hex+1
@@ -236,8 +236,8 @@ _player_backup:
 		LDA		_cur_legs_percent
 		STA		_pl_bckp_legs_percent,X
 		LDA		#6
-		JSR		_asci_bios_msg_display_with_skip
-		JSR		_sub1_repair_lab
+		JSR		_bios_msg_display
+		JSR		_repair_lab_display
 		JMP		_MAIN_LOOP
 _game_complete:
 		LDY		#5
@@ -245,12 +245,14 @@ _game_complete:
 		JSR		_ppu_reinit
 		LDA		#0
 		STA		_nmi_hndl_idx
-		JSR		_sub3_ending
+		LDA		#8
+		JSR		_bios_msg_display
+		JSR		_ending_display
 		JSR		_player_vars_init_ex
 		JMP		_MAIN_LOOP
 
 ; =============== S U B	R O U T	I N E =======================================
-_repair_lab_handler:
+_lvl3_bonus_repair_lab:
 		LDX		_player_number
 		LDA		_cur_lvl_idx
 		STA		_pl_bckp_lvl_idx,X
@@ -262,8 +264,8 @@ _repair_lab_handler:
 		LDY		#5
 		JSR		_mmc1_prg
 		LDA		#6
-		JSR		_asci_bios_msg_display_with_skip
-		JSR		_sub1_repair_lab
+		JSR		_bios_msg_display
+		JSR		_repair_lab_display
 		JMP		_MAIN_GAME_START
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -464,7 +466,7 @@ loc_603BF:
 		LDA		#$FF
 		STA		_pal_blink_flag
 		LDA		#$1E
-		STA		_lvl_door_enrty_delay
+		STA		_lvl_bonus_portal_delay
 		LDA		#$14
 		STA		_special_boss_flood_object_count
 		LDA		_PPU_STATUS
@@ -1324,7 +1326,7 @@ loc_60C29:
 		DEC		_star_field_data1
 loc_60C31:
 		LDA		#$36
-		STA		_dec_word_1E_chr_ofs_delta
+		STA		_hex2dec_tile_delta
 		LDA		_star_field_data0+$27
 		STA		_str_ptr
 		LDA		#0
@@ -1360,7 +1362,7 @@ _j_hud_lvl4_timer_ppu_data_update:
 ; =============== S U B	R O U T	I N E =======================================
 _hud_all_energy_ppu_data_update:
 		LDA		#$36
-		STA		_dec_word_1E_chr_ofs_delta
+		STA		_hex2dec_tile_delta
 		LDA		#0
 		STA		_str_ptr+1
 		CLC
@@ -1464,7 +1466,7 @@ locret_60D49:
 ; =============== S U B	R O U T	I N E =======================================
 _hud_score_weapon_ppu_data_update:
 		LDA		#0
-		STA		_dec_word_1E_chr_ofs_delta
+		STA		_hex2dec_tile_delta
 		LDA		_cur_score_hex+1
 		STA		_str_ptr+1
 		LDA		_cur_score_hex
@@ -1875,29 +1877,29 @@ loc_6112A:
 loc_6112D:
 		INX
 		LDA		_str_ptr
-		SBC		_dec_list_lo_0,Y
+		SBC		_dec_list_lo,Y
 		STA		_str_ptr
 		LDA		_str_ptr+1
-		SBC		_dec_list_lo_hi,Y
+		SBC		_dec_list_hi,Y
 		STA		_str_ptr+1
 		BCS		loc_6112D
 		LDA		_str_ptr
-		ADC		_dec_list_lo_0,Y
+		ADC		_dec_list_lo,Y
 		STA		_str_ptr
 		LDA		_str_ptr+1
-		ADC		_dec_list_lo_hi,Y
+		ADC		_dec_list_hi,Y
 		STA		_str_ptr+1
 		TXA
 		CLC
-		ADC		_dec_word_1E_chr_ofs_delta
+		ADC		_hex2dec_tile_delta
 		STA		(_ptr1),Y
 		INY
 		CPY		#5
 		BNE		loc_6112A
 		RTS
-_dec_list_lo_0:
+_dec_list_lo:
 		.BYTE	$10,$E8,$64, $A,  1
-_dec_list_lo_hi:
+_dec_list_hi:
 		.BYTE	$27,  3,  0,  0,  0
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -2323,7 +2325,7 @@ loc_61464:
 		LDA		_pads
 		AND		#8
 		BEQ		loc_614B8
-		LDA		_player_hit_bonus_portal_flag
+		LDA		_lvl_bonus_portal_detected
 		BEQ		loc_6149C
 		LDA		#$25
 		STA		_obj_spr_idx._player
@@ -2334,7 +2336,7 @@ loc_61464:
 		STA		byte_686
 		JMP		locret_6149B
 loc_61487:
-		DEC		_lvl_door_enrty_delay
+		DEC		_lvl_bonus_portal_delay
 		BPL		locret_6149B
 		INC		_cur_lvl_state_idx
 		PLA
@@ -2344,7 +2346,7 @@ loc_61487:
 		BEQ		loc_61498
 		JMP		loc_600D6
 loc_61498:
-		JMP		_repair_lab_handler
+		JMP		_lvl3_bonus_repair_lab
 locret_6149B:
 		RTS
 loc_6149C:
@@ -3280,10 +3282,10 @@ loc_61AED:
 		CLC
 		LDA		_tptr1
 		ADC		_lvl_collision_data2_ptr
-		STA		_ptr2
+		STA		_tptr2
 		LDA		_tptr1+1
 		ADC		_lvl_collision_data2_ptr+1
-		STA		_ptr2+1
+		STA		_tptr2+1
 		LDA		_obj_lvl_y,X
 		CMP		#$40
 		BCS		loc_61B37
@@ -3352,7 +3354,7 @@ loc_61B9D:
 		LSR		_tptr1
 loc_61B9F:
 		LDY		#0
-		LDA		(_ptr2),Y
+		LDA		(_tptr2),Y
 		AND		_tptr1
 		BEQ		loc_61BAD
 		LDA		_obj_hcoll,X
@@ -3360,7 +3362,7 @@ loc_61B9F:
 		STA		_obj_hcoll,X
 loc_61BAD:
 		LDY		#3
-		LDA		(_ptr2),Y
+		LDA		(_tptr2),Y
 		AND		_tptr1
 		BEQ		loc_61BBB
 		LDA		_obj_hcoll,X
@@ -4066,6 +4068,7 @@ _obj_next_enemy_ai:
 		BNE		_obj_enemy_ai_loop
 		JSR		_obj_tank_weapon_handler
 		RTS
+		
 _obj_enemy_ai_handlers_lib:
 		.WORD _obj_ehndl00_regular_gunman0
 		.WORD _obj_ehndl01_bomb_thrower0
@@ -6044,7 +6047,7 @@ loc_62F01:
 ; =============== S U B	R O U T	I N E =======================================
 _obj_hidden_passage_test_and_bonus_animate:
 		LDA		#0
-		STA		_player_hit_bonus_portal_flag
+		STA		_lvl_bonus_portal_detected
 		LDY		_cur_lvl_state_idx
 		SEC
 		LDA		_obj_lvl_x_lo._player
@@ -6059,7 +6062,7 @@ _obj_hidden_passage_test_and_bonus_animate:
 		AND		#$F0
 		CMP		_lvl_hidden_passage_y_list,Y
 		BNE		loc_62F2E
-		INC		_player_hit_bonus_portal_flag
+		INC		_lvl_bonus_portal_detected
 loc_62F2E:
 		LDA		_obj_hndl_idx._bonus
 		CMP		#$23
@@ -6412,7 +6415,11 @@ loc_6318A:
 loc_63197:
 		SEC
 		LDA		_cur_head_percent,X
-		SBC		_tptr1
+; --
+; debug invulnerability
+;
+;		SBC		_tptr1
+; --
 		BCS		loc_631A1
 		LDA		#0
 loc_631A1:

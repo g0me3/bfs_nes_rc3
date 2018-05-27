@@ -20,7 +20,7 @@ _lvl_collision_data2_ptr:			.BYTE	0,0
 _lvl_cur_bg_chr_bank:				.BYTE	0
 _lvl_cur_spr_chr_bank_down:			.BYTE	0
 _lvl_cur_spr_chr_bank_up:			.BYTE	0
-_lvl_door_enrty_delay:				.BYTE	0
+_lvl_bonus_portal_delay:				.BYTE	0
 _lvl_nt_value:						.BYTE	0
 _lvl_obj_list_ptr:					.BYTE	0,0
 _lvl_phase_bg_chr_banks_list:		.BYTE	0,0,0
@@ -59,7 +59,6 @@ _ppu_ctrl_shadow:					.BYTE	0
 _ppu_mask_shadow:					.BYTE	0
 _ptr0:								.BYTE	0,0
 _ptr1:								.BYTE	0,0
-_ptr2:								.BYTE	0,0
 _rand_seed:							.BYTE	0,0,0,0
 _snd_idx:							.BYTE	0
 _str_ptr:							.BYTE	0,0
@@ -71,6 +70,7 @@ _tmpE8:								.BYTE	0
 _tmpE9:								.BYTE	0
 _tptr0:								.BYTE	0,0
 _tptr1:								.BYTE	0,0
+_tptr2:								.BYTE	0,0
 _txt_ptr:							.BYTE	0,0
 _weapon0_idx:						.BYTE	0
 _weapon1_idx:						.BYTE	0
@@ -163,7 +163,7 @@ _pad:
 		.BYTE	0
 byte_3B1:
 		.BYTE	0
-byte_3B2:
+_pad_prev:
 		.BYTE	0
 _event_reload_idx:
 		.BYTE	0
@@ -194,7 +194,7 @@ _repair_cursor_animate_tmp:
 		.BYTE	0
 _tmp3C3:
 		.BYTE	0,0,0
-_tmp_score_hex_value:
+;_tmp_score_hex_value:
 		.BYTE	0,0
 _repair_cur_percent_disp_buf_tmp:
 		.BYTE	0,0,0,0,0,0
@@ -218,9 +218,9 @@ byte_3D6:
 		.BYTE	0
 byte_3D7:
 		.BYTE	0
-_dec_score_chr_ofs_delta:
+;_dec_score_chr_ofs_delta:
 		.BYTE	0
-_asci_msg_skip_forbid:
+_log_msg_skip_forbid:
 		.BYTE	0
 _cur_head_percent_backup:
 		.BYTE	0
@@ -329,7 +329,7 @@ _tmp_buf2:
 _lvl_rooms_walked_count_unused:
 		.BYTE	0
 		.BYTE	0
-_dec_word_1E_chr_ofs_delta:
+_hex2dec_tile_delta:
 		.BYTE	0
 _cur_score_hex:
 		.BYTE	0,0
@@ -387,7 +387,7 @@ _weapon1_ammo:
 		.BYTE	0
 byte_663:
 		.BYTE	0
-_player_hit_bonus_portal_flag:
+_lvl_bonus_portal_detected:
 		.BYTE	0
 _ingame_bg_pal_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
