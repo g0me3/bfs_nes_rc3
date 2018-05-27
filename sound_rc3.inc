@@ -73,7 +73,7 @@ VOICE04:
 		ASL
 		TAY
 		LDA		#$10				;Set _apu_amplitude				<bit 04>
-		ORA		#$20				;Continuous lenght enabled	<bit 05>
+		ORA		#$20				;Continuous lenght enabled		<bit 05>
 		ORA		_apu_amplitud,X		;_apu_amplitude/Envelope Value	<bit 03-00>
 		STA		_APU_PULSE1_ENV,Y
 		LDA		_apu_lofrqwrd,X
@@ -122,11 +122,11 @@ SPDHDL1:
 		STA		_apu_spdcheck,X
 		BPL		SECONS1
 		LDY		_apu_seqposit,X
-		LDA		_apu_seqtabes,Y
+		LDA		_ptr_seqtabes,Y
 		JMP		SPDSET1
 SECONS1:
 		LDY		_apu_seqposit,X
-		LDA		_apu_seqtabes+1,Y
+		LDA		_ptr_seqtabes+1,Y
 SPDSET1:
 		STA		_apu_spdcount,X
 		LDA		#$FF
@@ -148,9 +148,9 @@ NOFXPL1:
 		RTS
 STPHDL1:
 		LDY		_apu_stepnumb,X		;What step to take
-		LDA		_apu_stptablo,Y
+		LDA		_ptr_stptablo,Y
 		STA		_apu_tmp0
-		LDA		_apu_stptabhi,Y
+		LDA		_ptr_stptabhi,Y
 		STA		_apu_tmp0+1
 		LDA		#0					;reset glide (if not reached dest. note)
 		STA		_apu_gldspeed,X
@@ -169,9 +169,9 @@ SEQHDL1:
 		JMP		STPHD12
 REALSQ1:
 		LDY		_apu_seqposit,X		;what sequence to take
-		LDA		_apu_seqtabel,Y
+		LDA		_ptr_seqtabel,Y
 		STA		_apu_tmp0
-		LDA		_apu_seqtabel+1,Y
+		LDA		_ptr_seqtabel+1,Y
 		STA		_apu_tmp0+1
 		LDY		_apu_seqindex,X		;read sequence-index
 		LDA		(_apu_tmp0),Y
@@ -424,9 +424,9 @@ PLAYFXR:
 		LDA		_apu_fx03,X			;_apu_amplitude routine
 		AND		#$7F
 		TAY
-		LDA		_apu_amptabl,Y
+		LDA		_ptr_amptabl,Y
 		STA		_apu_tmp0
-		LDA		_apu_amptabh,Y
+		LDA		_ptr_amptabh,Y
 		STA		_apu_tmp0+1
 		LDY		_apu_ampindex,X
 		LDA		(_apu_tmp0),Y
@@ -489,9 +489,9 @@ VIBRA01:
 		LDA		_apu_fx01,X
 		AND		#$F
 		TAY
-		LDA		_apu_vibtabl-1,Y
+		LDA		_ptr_vibtabl-1,Y
 		STA		_apu_tmp0
-		LDA		_apu_vibtabh-1,Y
+		LDA		_ptr_vibtabh-1,Y
 		STA		_apu_tmp0+1
 		LDY		_apu_vibindex,X
 		LDA		(_apu_tmp0),Y
@@ -533,9 +533,9 @@ PULSE1:
 		AND		#$F
 		BEQ		NOPULS1
 		TAY
-		LDA		_apu_pultabl-1,Y
+		LDA		_ptr_pultabl-1,Y
 		STA		_apu_tmp0
-		LDA		_apu_pultabh-1,Y
+		LDA		_ptr_pultabh-1,Y
 		STA		_apu_tmp0+1
 		LDY		_apu_pulindex,X
 		LDA		(_apu_tmp0),Y
@@ -558,9 +558,9 @@ ARPEG01:
 		AND		#$40
 		BEQ		NOARP01
 		LDY		_apu_arpnumbo,X
-		LDA		_apu_arptablo,Y
+		LDA		_ptr_arptablo,Y
 		STA		_apu_tmp0
-		LDA		_apu_arptabhi,Y
+		LDA		_ptr_arptabhi,Y
 		STA		_apu_tmp0+1
 		LDY		_apu_arpindex,X
 		BNE		ARP01
@@ -638,7 +638,7 @@ _apu_frqtabhi:
 		.BYTE	  7
 ;---------------------------------------------------------------------------------------------------------------------------------
 
-_apu_seqtabel:
+_ptr_seqtabel:
 		.WORD	_seq00_clearsfx	; 0 $XX
 		.WORD	_seq01_sinshot1	; 1 0
 		.WORD	_seq02_sinshot4	; 2 3
@@ -700,7 +700,7 @@ _apu_seqtabel:
 		.WORD	_seq00_clearsfx	; 0 $XX
 		.WORD	_seq00_clearsfx	; 0 $XX
 
-_apu_seqtabes:
+_ptr_seqtabes:
 		.BYTE	  0,  0		; 0 $XX
 		.BYTE	  2,  2		; 1 0
 		.BYTE	  2,  2		; 2 3
@@ -762,40 +762,40 @@ _apu_seqtabes:
 		.BYTE	  0,  0		; 0 $XX
 		.BYTE	  0,  0		; 0 $XX
 
-_apu_stptablo:
+_ptr_stptablo:
 		.BYTE	<s00,<s01,<s02,<s03,<s04,<s05,<s06,<s07,<s08,<s09,<s0a,<s0b,<s0c,<s0d,<s0e,<s0f
 		.BYTE	<s10,<s11,<s12,<s13,<s14,<s15,<s16,<s17,<s18,<s19,<s1a,<s1b,<s1c,<s1d,<s1e,<s1f
 		.BYTE	<s20,<s21,<s22,<s23,<s24,<s25,<s26,<s27,<s28,<s29,<s2a,<s2b,<s2c,<s2d,<s2e,<s2f
 		.BYTE	<s30,<s31,<s32,<s33,<s34,<s35,<s36,<s37
 
-_apu_stptabhi:
+_ptr_stptabhi:
 		.BYTE	>s00,>s01,>s02,>s03,>s04,>s05,>s06,>s07,>s08,>s09,>s0a,>s0b,>s0c,>s0d,>s0e,>s0f
 		.BYTE	>s10,>s11,>s12,>s13,>s14,>s15,>s16,>s17,>s18,>s19,>s1a,>s1b,>s1c,>s1d,>s1e,>s1f
 		.BYTE	>s20,>s21,>s22,>s23,>s24,>s25,>s26,>s27,>s28,>s29,>s2a,>s2b,>s2c,>s2d,>s2e,>s2f
 		.BYTE	>s30,>s31,>s32,>s33,>s34,>s35,>s36,>s37
 
-_apu_amptabl:
+_ptr_amptabl:
 		.BYTE	<am00,<am01,<am02,<am03,<am04,<am05,<am06,<am07,<am08,<am09,<am0a,<am0b,<am0c,<am0d,<am0e,<am0f
 		.BYTE	<am10,<am11,<am12,<am13,<am14
-_apu_amptabh:
+_ptr_amptabh:
 		.BYTE	>am00,>am01,>am02,>am03,>am04,>am05,>am06,>am07,>am08,>am09,>am0a,>am0b,>am0c,>am0d,>am0e,>am0f
 		.BYTE	>am10,>am11,>am12,>am13,>am14
 
-_apu_vibtabl:
+_ptr_vibtabl:
 		.BYTE	<v00,<v01,<v02
-_apu_vibtabh:
+_ptr_vibtabh:
 		.BYTE	>v00,>v01,>v02
 
-_apu_pultabl:
+_ptr_pultabl:
 		.BYTE	<p00,<p01,<p02,<p03,<p04
-_apu_pultabh:
+_ptr_pultabh:
 		.BYTE	>p00,>p01,>p02,>p03,>p04
 
-_apu_arptablo:
+_ptr_arptablo:
 		.BYTE	<a00,<a01,<a02,<a03,<a04,<a05,<a06,<a07,<a08,<a09,<a0a,<a0b,<a0c,<a0d,<a0e,<a0f
 		.BYTE	<a10,<a11,<a12,<a13,<a14,<a15,<a16,<a17,<a18,<a19,<a1a,<a1b,<a1c,<a1d,<a1e,<a1f
 		.BYTE	<a20,<a21
-_apu_arptabhi:
+_ptr_arptabhi:
 		.BYTE	>a00,>a01,>a02,>a03,>a04,>a05,>a06,>a07,>a08,>a09,>a0a,>a0b,>a0c,>a0d,>a0e,>a0f
 		.BYTE	>a10,>a11,>a12,>a13,>a14,>a15,>a16,>a17,>a18,>a19,>a1a,>a1b,>a1c,>a1d,>a1e,>a1f
 		.BYTE	>a20,>a21

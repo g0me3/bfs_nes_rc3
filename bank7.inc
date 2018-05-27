@@ -6417,7 +6417,7 @@ loc_63197:
 ; --
 ; debug invulnerability
 ;
-;		SBC		_tptr1
+		SBC		_tptr1
 ; --
 		BCS		loc_631A1
 		LDA		#0
@@ -7234,6 +7234,41 @@ _spr_clear:
 loc_63779:
 		STA		_spr_buf,Y
 		BNE		loc_63779
+		RTS
+
+; =============== S U B	R O U T	I N E =======================================
+; text display routine, print out a text resource at once on the screen
+; resource format:
+; 0,1	- ppu offset to printf
+; 2		- line size N
+; ...	- data of size N
+; ...	- more chunks
+; FF	- eof
+;
+_printf:
+		STA		_printf_ofs_tmp
+		STY		_printf_ofs_tmp+1
+		LDY		#0
+.printf_line:
+		LDA		(_printf_ofs_tmp),Y
+		BMI		.printf_eof
+		BIT		_PPU_STATUS
+		STA		_PPU_ADDR
+		INY
+		LDA		(_printf_ofs_tmp),Y
+		STA		_PPU_ADDR
+		INY
+		LDA		(_printf_ofs_tmp),Y
+		STA		_printf_len_tmp
+		INY
+.printf_loop:
+		LDA		(_printf_ofs_tmp),Y
+		STA		_PPU_DATA
+		INCY	_printf_ofs_tmp
+		DEC		_printf_len_tmp
+		BNE		.printf_loop
+		BEQ		.printf_line
+.printf_eof:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================

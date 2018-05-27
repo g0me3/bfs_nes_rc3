@@ -8,7 +8,8 @@ _hud_msg_idx:						.BYTE	0
 _hud_msg_type_pos:					.BYTE	0
 _hud_update_ppu_data_counter:		.BYTE	0
 _ingame_sync_counter:				.BYTE	0
-_intro_txt_ppu_ofs_tmp:				.BYTE	0,0
+_printf_ofs_tmp:					.WORD	0
+_printf_len_tmp:					.BYTE	0
 _irq_regs_backup:					.BYTE	0,0,0
 _last_enemy_hit:					.BYTE	0
 _logo_skip_forbid_flag:				.BYTE	0
@@ -96,13 +97,8 @@ _weapon1_idx:						.BYTE	0
 ;
 		TOBJ	_obj_hndl_idx
 		TOBJ	_obj_x_velocity
-
+		
 _end_of_zero_ram	EQU	.
-
-		ORG	$100
-
-_unused_stack_ram:
-		.BYTE	0
 
 		ORG	$200
 
@@ -128,222 +124,95 @@ _star_field_data2:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		.BYTE	0,0,0,0,0,0,0,0
-_star_field_center_pos_x:
-		.BYTE	0
-_star_field_center_pos_y:
-		.BYTE	0
-_event_idx:
-		.BYTE	0
-_delay_counter:
-		.BYTE	0,0
-_screen_idx:
-		.BYTE	0
-_chr0_bank_shadow:
-		.BYTE	0
-_chr1_bank_shadow:
-		.BYTE	0
-_disp_spr0hit_use:
-		.BYTE	0
-_mul_result_low:
-		.BYTE	0
-_mul_argA:
-		.BYTE	0
-_mul_argB:
-		.BYTE	0
-_star_filed_sign_tmp:
-		.BYTE	0
-_generic_nmi_over_counter:
-		.BYTE	0
-_pad:
-		.BYTE	0
-byte_3B1:
-		.BYTE	0
-_pad_prev:
-		.BYTE	0
-_event_reload_idx:
-		.BYTE	0
-byte_3B4:
-		.BYTE	0
-byte_3B5:
-		.BYTE	0
-byte_3B6:
-		.BYTE	0,0
-byte_3B8:
-		.BYTE	0,0
-word_3BA:
-		.BYTE	0,0
-_repair_cur_body_index:
-		.BYTE	0
-_repair_body_index_request:
-		.BYTE	0
-_dpad:
-		.BYTE	0
-byte_3BF:
-		.BYTE	0
-byte_3C0:
-		.BYTE	0
-_repair_cursor_animate_tmp:
-		.BYTE	0
-;_repair_redundant_idx:
-		.BYTE	0
-_tmp3C3:
-		.BYTE	0,0,0
-;_tmp_score_hex_value:
-		.BYTE	0,0
-_repair_cur_percent_disp_buf_tmp:
-		.BYTE	0,0,0,0,0,0
-_cur_repair_tanks_number_tile_tmp:
-		.BYTE	0
-_disp_spr_send_tmp:
-		.BYTE	0
-_special_controls_flag:
-		.BYTE	0
-_disp_extra_shift:
-		.BYTE	0
-_title_menu_idx:
-		.BYTE	0
-byte_3D3:
-		.BYTE	0
-byte_3D4:
-		.BYTE	0
-byte_3D5:
-		.BYTE	0
-byte_3D6:
-		.BYTE	0
-byte_3D7:
-		.BYTE	0
-;_dec_score_chr_ofs_delta:
-		.BYTE	0
-_log_msg_skip_forbid:
-		.BYTE	0
-_cur_head_percent_backup:
-		.BYTE	0
-_cur_arms_percent_backup:
-		.BYTE	0
-_cur_body_percent_backup:
-		.BYTE	0
-_cur_legs_percent_backup:
-		.BYTE	0
-_cur_repair_tanks_backup:
-		.BYTE	0
+		
+_chr0_bank_shadow:					.BYTE	0
+_chr1_bank_shadow:					.BYTE	0
+_cur_arms_percent_backup:			.BYTE	0
+_cur_body_percent_backup:			.BYTE	0
+_cur_head_percent_backup:			.BYTE	0
+_cur_legs_percent_backup:			.BYTE	0
+_cur_repair_tanks_backup:			.BYTE	0
+_cur_repair_tanks_number_tile_tmp:	.BYTE	0
+_delay_counter:						.BYTE	0,0
+_disp_extra_shift:					.BYTE	0
+_disp_spr0hit_use:					.BYTE	0
+_disp_spr_send_tmp:					.BYTE	0
+_dpad:								.BYTE	0
+_event_idx:							.BYTE	0
+_event_reload_idx:					.BYTE	0
+_generic_nmi_over_counter:			.BYTE	0
+_hi_score_entry_display_lock:		.BYTE	0
+_log_msg_skip_forbid:				.BYTE	0
+_mul_argA:							.BYTE	0
+_mul_argB:							.BYTE	0
+_mul_result_low:					.BYTE	0
+_pad:								.BYTE	0
+_pad_prev0:							.BYTE	0
+_pad_prev1:							.BYTE	0
+_repair_body_index_request:			.BYTE	0
+_repair_cur_body_index:				.BYTE	0
+_repair_cur_percent_disp_buf_tmp:	.BYTE	0,0,0,0,0,0
+_repair_cursor_animate_in_progress:	.BYTE	0
+_repair_cursor_animate_tmp:			.BYTE	0
+_repair_cursor_pos_dest:			.BYTE	0,0
+_repair_cursor_spr_x_pos:			.BYTE	0
+_repair_cursor_spr_y_pos:			.BYTE	0
+_screen_idx:						.BYTE	0
+_special_controls_flag:				.BYTE	0
+_star_field_center_pos_x:			.BYTE	0
+_star_field_center_pos_y:			.BYTE	0
+_star_filed_sign_tmp:				.BYTE	0
+_title_menu_idx:					.BYTE	0
+_title_menu_spr_num_tmp:			.BYTE	0
+_tmp_idx0:							.BYTE	0
+_tmp_idx1:							.BYTE	0
+_tmp_idx2:							.BYTE	0
 
 		ORG	$400
 
-_apu_voictest:
-		.BYTE	0,0,0,0
-_apu_stpindex:
-		.BYTE	0,0,0,0
-_apu_seqindex:
-		.BYTE	0,0,0,0
-_apu_seqposit:
-		.BYTE	0,0,0,0
-_apu_repstcnt:
-		.BYTE	0,0,0,0
-_apu_stepnumb:
-		.BYTE	0,0,0,0
-_apu_spdcount:
-		.BYTE	0,0,0,0
-_apu_spdcheck:
-		.BYTE	0,0,0,0
-_apu_realplay:
-		.BYTE	0,0,0,0
-_apu_noteinit:
-		.BYTE	0,0,0,0
-_apu_realsoun:
-		.BYTE	0,0,0,0
-_apu_noteleng:
-		.BYTE	0,0,0,0
-_apu_realleng:
-		.BYTE	0,0,0,0
-;_apu_gateleng:
-		.BYTE	0,0,0,0
-_apu_realnote:
-		.BYTE	0,0,0,0
-_apu_lofrqwrd:
-		.BYTE	0,0,0,0
-_apu_hifrqwrd:
-		.BYTE	0,0,0,0
-_apu_tranbyte:
-		.BYTE	0,0,0,0
-_apu_sfxtrans:
-		.BYTE	0,0,0,0
-_apu_arptrans:
-		.BYTE	0,0,0,0
-_apu_arpindex:
-		.BYTE	0,0,0,0
-_apu_arpnumbo:
-		.BYTE	0,0,0,0
-_apu_arpspeed:
-		.BYTE	0,0,0,0
-_apu_arponoto:
-		.BYTE	0,0,0,0
-;_apu_vibglbyt:
-		.BYTE	0,0,0,0
-_apu_gldspeed:
-		.BYTE	0,0,0,0
-_apu_glddirec:
-		.BYTE	0,0,0,0
-_apu_glddelay:
-		.BYTE	0,0,0,0
-_apu_destnote:
-		.BYTE	0,0,0,0
-_apu_vibdelay:
-		.BYTE	0,0,0,0
-_apu_vibindex:
-		.BYTE	0,0,0,0
-_apu_continos:
-		.BYTE	0,0,0,0
-_apu_amplitud:
-		.BYTE	0,0,0,0
-_apu_ampindex:
-		.BYTE	0,0,0,0
-_apu_fx01:
-		.BYTE	0,0,0,0
-_apu_fx02:
-		.BYTE	0,0,0,0
-_apu_fx03:
-		.BYTE	0,0,0,0
-;_unused:
-		.BYTE	0,0,0,0
-;_unused:
-		.BYTE	0,0,0,0
-_apu_pulindex:
-		.BYTE	0,0,0,0
-_apu_pulsbyt1:
-		.BYTE	0,0,0,0
+_apu_voictest:		.BYTE	0,0,0,0
+_apu_stpindex:		.BYTE	0,0,0,0
+_apu_seqindex:		.BYTE	0,0,0,0
+_apu_seqposit:		.BYTE	0,0,0,0
+_apu_repstcnt:		.BYTE	0,0,0,0
+_apu_stepnumb:		.BYTE	0,0,0,0
+_apu_spdcount:		.BYTE	0,0,0,0
+_apu_spdcheck:		.BYTE	0,0,0,0
+_apu_realplay:		.BYTE	0,0,0,0
+_apu_noteinit:		.BYTE	0,0,0,0
+_apu_realsoun:		.BYTE	0,0,0,0
+_apu_noteleng:		.BYTE	0,0,0,0
+_apu_realleng:		.BYTE	0,0,0,0
+_apu_realnote:		.BYTE	0,0,0,0
+_apu_lofrqwrd:		.BYTE	0,0,0,0
+_apu_hifrqwrd:		.BYTE	0,0,0,0
+_apu_tranbyte:		.BYTE	0,0,0,0
+_apu_sfxtrans:		.BYTE	0,0,0,0
+_apu_arptrans:		.BYTE	0,0,0,0
+_apu_arpindex:		.BYTE	0,0,0,0
+_apu_arpnumbo:		.BYTE	0,0,0,0
+_apu_arpspeed:		.BYTE	0,0,0,0
+_apu_arponoto:		.BYTE	0,0,0,0
+_apu_gldspeed:		.BYTE	0,0,0,0
+_apu_glddirec:		.BYTE	0,0,0,0
+_apu_glddelay:		.BYTE	0,0,0,0
+_apu_destnote:		.BYTE	0,0,0,0
+_apu_vibdelay:		.BYTE	0,0,0,0
+_apu_vibindex:		.BYTE	0,0,0,0
+_apu_continos:		.BYTE	0,0,0,0
+_apu_amplitud:		.BYTE	0,0,0,0
+_apu_ampindex:		.BYTE	0,0,0,0
+_apu_fx01:			.BYTE	0,0,0,0
+_apu_fx02:			.BYTE	0,0,0,0
+_apu_fx03:			.BYTE	0,0,0,0
+_apu_pulindex:		.BYTE	0,0,0,0
+_apu_pulsbyt1:		.BYTE	0,0,0,0
 
 		ORG	$500
 
-_tmp500:
-		.BYTE	0
-_tmp501:
-		.BYTE	0
-_tmp502:
-		.BYTE	0
-;_tmp503:
-;		.BYTE	0
-;_tmp505:
-;		.BYTE	0
-;_tmp506:
-;		.BYTE	0
-;_tmp507:
-;		.BYTE	0
-;_tmp508:
-;		.BYTE	0
-;_tmp509:
-;		.BYTE	0
-;_tmp50A:
-;		.BYTE	0
-;_tmp50B:
-;		.BYTE	0
-;_tmp50C:
-;		.BYTE	0
-;_tmp50D:
-;		.BYTE	0
-;_tmp50E:
-;		.BYTE	0
-;_tmp50F:
-;		.BYTE	0
+_tmp500:			.BYTE	0
+_tmp501:			.BYTE	0
+_tmp502:			.BYTE	0
 
 		TOBJ	_obj_var0
 		TOBJ	_obj_var1

@@ -18,60 +18,15 @@ loc_440C1:
 ; event with logos, title and hi-score table
 ;
 _attract_display:
-		LDA		#4
-		STA		_screen_idx
-		JSR		_screen_display
-; --
-; text display routine, print out a text resource at once on the screen
-; they used the same routine in many other places, but with typing method
-;
-		LDY		#0
-		STY		_PPU_CTRL
-		STY		_PPU_MASK
-		BIT		_PPU_STATUS
-		LDA		#$21
-		STA		_intro_txt_ppu_ofs_tmp+1
-		STA		_PPU_ADDR
-		LDA		#$22
-		STA		_intro_txt_ppu_ofs_tmp
-		STA		_PPU_ADDR
-		LDA		#<[_msg5_copyrights]					; here X were used before, it is 0 at this point
-		STA		_txt_ptr
-		LDA		#>[_msg5_copyrights]
-		STA		_txt_ptr+1								; display copyrights
-loc_44059:
-		LDA		(_txt_ptr),Y
-		CMP		#$FE
-		BEQ		.do_next_line							; $FE - return symbol
-		CMP		#$FA
-		BEQ		.do_music_and_delay						; $FA - stop symbol
-		STA		_PPU_DATA
-loc_4406A0:
-		INC		_txt_ptr
-		BNE		loc_44059
-		INC		_txt_ptr+1
-		JMP		loc_44059
-.do_next_line:
-		LDA		_intro_txt_ppu_ofs_tmp					; set ppu offset to the next line
-		CLC
-		ADC		#$20
-		STA		_intro_txt_ppu_ofs_tmp
-		LDA		_intro_txt_ppu_ofs_tmp+1
-		ADC		#0
-		STA		_intro_txt_ppu_ofs_tmp+1
-		BIT		_PPU_STATUS								; reset ppu offset state just in case
-		LDA		_intro_txt_ppu_ofs_tmp+1				; reload new offset
-		STA		_PPU_ADDR
-		LDA		_intro_txt_ppu_ofs_tmp
-		STA		_PPU_ADDR
-		JMP		loc_4406A0
-; --
-.do_music_and_delay:
-		JSR		_star_field_init
-		LDA		#$81
-		STA		_PPU_CTRL								; enable NMI back, select scroll high nt bit
 		LDA		#$1D
 		JSR		_far_apu_mus_load_prg5_safe				; init title sound
+		JSR		_star_field_init
+		LDA		#4
+		JSR		_screen_display							; disables ppu as well
+		PRINTF	_res_copyrights							; display copyrights
+.do_music_and_delay:
+		LDA		#$81
+		STA		_PPU_CTRL								; enable NMI back, select scroll high nt bit
 		LDA		#1
 		STA		_event_reload_idx						; set dummy reload nmi
 		LDX		#$FF
@@ -96,11 +51,34 @@ loc_4406A0:
 		STA		_screen_idx
 		LDA		#2
 		STA		_event_reload_idx						; set actual title event session index
-		LDA		#$FF
-		STA		byte_3B1
+;		LDA		#$FF
+;		STA		byte_3B1								; redundant
 		LDA		#$80
 		STA		_PPU_CTRL								; do actual event, not it's NMI-based
 		JMP		_event_exec
+
+_res_copyrights:
+		.BYTE	$21,$2B
+		STRING	_R,_O,_B,_O,_C,_O,_P,_TM,_,_3
+		.BYTE	$21,$66
+		STRING	_T,_M,_,_A,_N,_D,_,_C,_O,_P,_Y,_R,_I,_G,_H,_T,_,_1,_9,_9,_2
+		.BYTE	$21,$83
+		STRING	_O,_R,_I,_O,_N,_,_P,_I,_C,_T,_U,_R,_E,_S,_,_C,_O,_R,_P,_O,_R,_A,_T,_I,_O,_N
+		.BYTE	$21,$A7
+		STRING	_A,_L,_L,_,_R,_I,_G,_H,_T,_S,_,_R,_E,_S,_E,_R,_V,_E,_D
+		.BYTE	$21,$C2
+		STRING	_T,_M,_,_D,_E,_S,_I,_G,_N,_A,_T,_E,_S,_,_A,_,_T,_R,_A,_D,_E,_M,_A,_R,_K,_,_O,_F
+		.BYTE	$21,$E3
+		STRING	_O,_R,_I,_O,_N,_,_P,_I,_C,_T,_U,_R,_E,_S,_,_C,_O,_R,_P,_O,_R,_A,_T,_I,_O,_N
+		.BYTE	$22,$29
+		STRING	_C,_O,_P,_Y,_R,_I,_G,_H,_T,_,_1,_9,_9,_2
+		.BYTE	$22,$46
+		STRING	_O,_C,_E,_A,_N,_,_O,_F,_,_A,_M,_E,_R,_I,_C,_A,_CO,_I,_N,_C,_DT
+		.BYTE	$22,$66
+		STRING	_L,_I,_C,_E,_N,_S,_E,_D,_,_B,_Y,_,_N,_I,_N,_T,_E,_N,_D,_O,_DT
+		.BYTE	$22,$86
+		STRING	_C,_A,_H,_4,_E,_3,_,_B,_F,_S,_,_G,_M,_B,_H,_,_2,_O,_1,_6
+		.BYTE	$FF
 
 ; =============== S U B	R O U T	I N E =======================================
 ; start a new game, display the initial intro sequence before the common
@@ -109,24 +87,23 @@ loc_4406A0:
 _intro_display:
 		LDA		#0
 		STA		_event_idx
-		STA		byte_3B4
-		STA		byte_3B5
-		STA		byte_3D7
-		STA		_PPU_CTRL
-		STA		_PPU_MASK
+		STA		_tmp_idx0
+		STA		_tmp_idx1
+		STA		_tmp_idx2
+;		STA		_PPU_CTRL
+;		STA		_PPU_MASK
 		STA		_delay_counter
 		LDA		#8										; init pad prev value with START button to make sure it won't
-		STA		_pad_prev								; skip intro immediately after you press start at the title screen
+		STA		_pad_prev0								; skip intro immediately after you press start at the title screen
 		LDA		#1
-		STA		byte_3D3
+		STA		_pad_prev1
 		LDA		#3
 		STA		_event_reload_idx
-		LDA		#$FF
-		STA		byte_3B1
+;		LDA		#$FF
+;		STA		byte_3B1								; redundant
 ;		JSR		_spr_buf_clear
 		JSR		_log_clear_buf
 		LDA		#4
-		STA		_screen_idx
 		JSR		_screen_display
 		LDA		#$81
 		STA		_PPU_CTRL
@@ -138,80 +115,23 @@ _intro_display:
 _ending_display:
 		LDA		#0
 		STA		_event_idx
-		STA		_PPU_CTRL
-		STA		_PPU_MASK
-		STA		byte_3D4
+;		STA		_PPU_CTRL
+;		STA		_PPU_MASK
+		STA		_hi_score_entry_display_lock
 		STA		_delay_counter
 		STA		_delay_counter+1
 		STA		_pl_bkcp_continues
-		STA		_pad_prev
+		STA		_pad_prev0
+		LDA		#1
+		STA		_pad_prev1
 		LDA		#4
 		STA		_event_reload_idx
-		LDA		#$FF
-		STA		byte_3B1
-		LDA		#1
-		STA		byte_3D3
-		LDA		#7
-		STA		_screen_idx
-		JSR		_screen_display
-; --
-;		JSR		_spr_buf_clear
-;		LDA		#$7F
-;		STA		_spr_buf+4
-;		STA		_spr_buf+8
-;		STA		_spr_buf+$C
-;		STA		_spr_buf+$10
-;		STA		_spr_buf+$14
-;		LDA		#$87
-;		STA		_spr_buf+$18
-;		STA		_spr_buf+$1C
-;		STA		_spr_buf+$20
-;		STA		_spr_buf+$24
-;		LDA		#2
-;		STA		_spr_buf+6
-;		STA		_spr_buf+$A
-;		STA		_spr_buf+$E
-;		STA		_spr_buf+$12
-;		STA		_spr_buf+$16
-;		STA		_spr_buf+$1A
-;		STA		_spr_buf+$1E
-;		STA		_spr_buf+$22
-;		STA		_spr_buf+$26
-;		LDX		#$F7
-;		STX		_spr_buf+5
-;		LDA		#$80
-;		STA		_spr_buf+7
-;		STA		_spr_buf+$1B
-;		LDA		#$43
-;		STA		_spr_buf+9
-;		LDA		#$88
-;		STA		_spr_buf+$B
-;		STA		_spr_buf+$1F
-;		INX
-;		STX		_spr_buf+$D
-;		LDA		#$90
-;		STA		_spr_buf+$F
-;		STA		_spr_buf+$23
-;		INX
-;		STX		_spr_buf+$11
-;		LDA		#$98
-;		STA		_spr_buf+$13
-;		STA		_spr_buf+$27
-;		INX
-;		STX		_spr_buf+$15
-;		LDA		#$A0
-;		STA		_spr_buf+$17
-;		LDX		#$FB
-;		STX		_spr_buf+$19
-;		INX
-;		STX		_spr_buf+$1D
-;		INX
-;		STX		_spr_buf+$21
-;		INX
-;		STX		_spr_buf+$25
-; --
+;		LDA		#$FF
+;		STA		byte_3B1								; redundant
 		LDA		#$1F
 		JSR		_far_apu_mus_load_prg5_safe
+		LDA		#7
+		JSR		_screen_display
 		LDA		#$81
 		STA		_PPU_CTRL
 		JMP		_event_exec
@@ -225,24 +145,15 @@ _repair_lab_display:
 		STA		_event_idx
 		LDA		#5
 		STA		_event_reload_idx
-		LDA		#$FF
-		STA		byte_3B1
-		LDA		#8
-		STA		_screen_idx
-		JSR		_screen_display
-		JSR		_repair_ppu_head_upgrade_display
-		JSR		_repair_ppu_body_upgrade_display
-		JSR		_repair_ppu_arms_upgrade_display
-		JSR		_repair_ppu_legs_upgrade_display
+;		LDA		#$FF
+;		STA		byte_3B1								; redundant
 		LDA		#$A8
-		STA		byte_3B8
+		STA		_repair_cursor_spr_y_pos
 		LDA		#$40
-		STA		_tmp3C3
+		STA		_repair_cursor_spr_x_pos
 		LDA		#2
 		STA		_repair_cur_body_index
 		STA		_repair_body_index_request
-		LDA		#$1E
-		JSR		_far_apu_mus_load_prg5_safe
 		LDA		_cur_head_percent
 		STA		_cur_head_percent_backup
 		LDA		_cur_body_percent
@@ -253,6 +164,14 @@ _repair_lab_display:
 		STA		_cur_legs_percent_backup
 		LDA		_cur_repair_tanks
 		STA		_cur_repair_tanks_backup
+		LDA		#$1E
+		JSR		_far_apu_mus_load_prg5_safe
+		LDA		#8
+		JSR		_screen_display
+		JSR		_repair_ppu_head_upgrade_display
+		JSR		_repair_ppu_body_upgrade_display
+		JSR		_repair_ppu_arms_upgrade_display
+		JSR		_repair_ppu_legs_upgrade_display
 		LDA		#6
 		STA		_PPU_MASK
 		LDA		#$80
@@ -265,21 +184,21 @@ _repair_lab_display:
 _game_over_display:
 		LDA		#0
 		STA		_event_idx
-		STA		byte_3B4
-		STA		byte_3B5
-		STA		byte_3D7
-		STA		_PPU_CTRL
-		STA		_PPU_MASK
+		STA		_tmp_idx0
+		STA		_tmp_idx1
+		STA		_tmp_idx2
+;		STA		_PPU_CTRL								; no need to off it here, will be disabled later
+;		STA		_PPU_MASK
 		STA		_delay_counter
 		STA		_delay_counter+1
 		LDA		#8
-		STA		_pad_prev
+		STA		_pad_prev0
 		LDA		#1
-		STA		byte_3D3
+		STA		_pad_prev1
 		LDA		#6
 		STA		_event_reload_idx
-		LDA		#$FF
-		STA		byte_3B1
+;		LDA		#$FF
+;		STA		byte_3B1								; redundant
 		LDA		_pl_bkcp_continues						; test for player 1 continues, as against other
 		BEQ		loc_4429E								; 2-player code, this assuming there is only 1 player
 		LDA		#1
@@ -294,31 +213,20 @@ loc_4429E:
 loc_442AB:
 ;		JSR		_spr_buf_clear
 		JSR		_log_clear_buf
-		LDA		#4
-		STA		_screen_idx
-		JSR		_screen_display							; draw regular frame tilemap
 		JSR		_star_field_init
-		BIT		_PPU_STATUS
-		LDA		#$21
-		STA		_PPU_ADDR
-		LDA		#$CB
-		STA		_PPU_ADDR
-		LDX		#0
-loc_442E2:
-		LDA		_txt_game_over,X
-		STA		_PPU_DATA
-		INX
-		CPX		#$A
-		BCC		loc_442E2
-loc_442ED:
 		LDA		#$20
 		JSR		_far_apu_mus_load_prg5_safe
+		LDA		#4
+		JSR		_screen_display							; draw regular frame tilemap
+		PRINTF	_res_game_over							; display game over
 		LDA		#$81
 		STA		_PPU_CTRL
 		JMP		_event_exec
 
-_txt_game_over:
-		.BYTE	_G,_A,_M,_E,_,_,_O,_V,_E,_R
+_res_game_over:
+		.BYTE	$21,$CB
+		STRING	_G,_A,_M,_E,_,_,_O,_V,_E,_R
+		.BYTE	$FF
 
 ; =============== S U B	R O U T	I N E =======================================
 ;_spr_buf_clear:
@@ -380,7 +288,7 @@ _title_screen_change:
 loc_443B5:
 ;		JSR		_spr_buf_clear
 		LDA		_screen_idx
-		JSR		_screen_display
+		JSR		_screen_display_ex
 		LDA		_screen_idx
 ;		CMP		#0
 ;		BNE		.probe_logo_overlay_display
@@ -500,7 +408,7 @@ loc_444AD:
 		LDY		_title_menu_idx
 		LDX		_title_menu_spr_ofs_list,Y
 		LDA		_title_menu_spr_num_list,Y
-		STA		_tmp3C3+2
+		STA		_title_menu_spr_num_tmp
 		LDA		_generic_nmi_over_counter
 		AND		#$1F
 		CMP		#$15
@@ -518,19 +426,19 @@ loc_444E6:
 		STA		_logo_skip_forbid_flag
 loc_444EA:
 		LDA		_pad
-		CMP		_pad_prev
+		CMP		_pad_prev0
 		BNE		loc_444FC
-		STA		_pad_prev
+		STA		_pad_prev0
 		LDA		_generic_nmi_over_counter
 		AND		#$1F
 		BNE		.title_menu_update
 loc_444FC:
 		LDA		_pad
 		AND		#4
-		STA		_pad_prev
+		STA		_pad_prev0
 		BNE		loc_44510
 		LDA		_pad
-		STA		_pad_prev
+		STA		_pad_prev0
 		AND		#$20
 		BEQ		loc_44526
 loc_44510:
@@ -559,7 +467,7 @@ loc_44543:
 		INX
 		INX
 		INX
-		DEC		_tmp3C3+2								; previously saved size of menu item in sprites
+		DEC		_title_menu_spr_num_tmp								; previously saved size of menu item in sprites
 		BNE		loc_44543
 		LDA		_apu_sound_enable
 		BEQ		.menu_sound_off							; if SOUND is on
@@ -590,7 +498,7 @@ loc_44583:
 		LDA		_pad
 		AND		#9
 		BEQ		loc_4459F
-		STA		_pad_prev
+		STA		_pad_prev0
 		LDA		#0
 		STA		_new_game_start_flag
 		STA		_cur_lvl_idx
@@ -607,7 +515,7 @@ loc_4459F:
 		BNE		loc_445BD
 		LDA		#0
 		STA		_new_game_start_flag
-		STA		byte_3B4
+		STA		_tmp_idx0
 		JMP		.wait_for_midscreen_change
 loc_445BD:
 		LDA		#1
@@ -618,9 +526,9 @@ loc_445C3:
 		CMP		#2
 		BNE		loc_445E7
 		LDA		_pad
-		CMP		byte_3D3
+		CMP		_pad_prev1
 		BEQ		loc_445E7
-		STA		byte_3D3
+		STA		_pad_prev1
 		AND		#9
 		BEQ		loc_445E7
 		JSR		_reload_delay_counter_2
@@ -634,9 +542,9 @@ loc_445E7:
 		CMP		#3
 		BNE		.wait_for_midscreen_change
 		LDA		_pad
-		CMP		byte_3D3
+		CMP		_pad_prev1
 		BEQ		.wait_for_midscreen_change
-		STA		byte_3D3
+		STA		_pad_prev1
 		AND		#9
 		BEQ		.wait_for_midscreen_change
 		JSR		_reload_delay_counter_2
@@ -725,15 +633,15 @@ _event3_intro:
 		JSR		_delay
 		JSR		_read_pad
 		LDA		_pad
-		CMP		_pad_prev
+		CMP		_pad_prev0
 		BEQ		loc_44684
-		STA		_pad_prev
+		STA		_pad_prev0
 		AND		#9
 		BEQ		loc_44684								; test if button is pressed to skip
 .i_cmdFA_break:
 		RTS
 loc_44684:
-		LDA		byte_3B4								; 3B4 screen index temp value
+		LDA		_tmp_idx0								; 3B4 screen index temp value
 		ASL
 		TAX
 		LDA		_lvl0_intro_log_lib,X
@@ -741,7 +649,7 @@ loc_44684:
 		INX
 		LDA		_lvl0_intro_log_lib,X
 		STA		_txt_ptr+1
-		LDY		byte_3B5								; cur message pos temp value
+		LDY		_tmp_idx1								; cur message pos temp value
 		LDA		(_txt_ptr),Y							; check for special symbols
 		CMP		#$FF
 		BEQ		.i_cmdFF_next_screen					; $FF - next screen code
@@ -754,23 +662,23 @@ loc_44684:
 		BEQ		.i_cmdFB_clear_buf						; $FB - clear current buf
 		CMP		#$FA
 		BEQ		.i_cmdFA_break							; $FA code - end of messages
-		LDX		byte_3D7								; output buf pos temp value
+		LDX		_tmp_idx2								; output buf pos temp value
 		STA		_log_msg_buf+$54,X						; start to display at the bottom line of the buf
-		INC		byte_3B5
-		INC		byte_3D7
+		INC		_tmp_idx1
+		INC		_tmp_idx2
 		LDA		#0
 		STA		_generic_nmi_over_counter
 .j_event_exec0:
 		JMP		_event_exec
 ; --------------------------------
 .i_cmdFF_next_screen:
-		INC		byte_3B4
+		INC		_tmp_idx0
 		LDA		#0
-		STA		byte_3D7
-		STA		byte_3B5
+		STA		_tmp_idx2
+		STA		_tmp_idx1
 		INC		_screen_idx
 		LDA		_screen_idx
-		JSR		_screen_display
+		JSR		_screen_display_ex
 		LDA		#$81
 		STA		_PPU_CTRL
 		JMP		_event_exec
@@ -780,9 +688,9 @@ loc_44684:
 		AND		#$F
 		BNE		.j_event_exec0
 		JSR		_log_msg_buf_scroll_up
-		INC		byte_3B5
+		INC		_tmp_idx1
 		LDA		#0
-		STA		byte_3D7
+		STA		_tmp_idx2
 		JMP		_event_exec
 ; --------------------------------
 .i_cmdFB_clear_buf:
@@ -792,9 +700,9 @@ loc_446FF:
 		STA		_log_msg_buf,X
 		DEX
 		BPL		loc_446FF
-		INC		byte_3B5
+		INC		_tmp_idx1
 		LDA		#0
-		STA		byte_3D7
+		STA		_tmp_idx2
 		JMP		_event_exec
 ; --------------------------------
 .i_cmdFC_delay:
@@ -804,9 +712,9 @@ loc_446FF:
 		STA		_delay_counter
 		CMP		#$3F
 		BCC		.j_event_exec0
-		INC		byte_3B5
+		INC		_tmp_idx1
 		LDA		#0
-		STA		byte_3D7
+		STA		_tmp_idx2
 		STA		_delay_counter
 		JMP		_event_exec
 
@@ -859,9 +767,9 @@ loc_44858:
 		JSR		_read_pad
 		LDA		_pad
 		AND		#1
-		CMP		byte_3D3
+		CMP		_pad_prev1
 		BEQ		loc_44871
-		STA		byte_3D3
+		STA		_pad_prev1
 		CMP		#1
 		BNE		loc_44871
 		LDA		#3
@@ -908,58 +816,54 @@ loc_448B8:
 ;
 _title_screen_display:
 		LDA		#0
-		STA		_PPU_CTRL
-		STA		_PPU_MASK
+;		STA		_PPU_CTRL
+;		STA		_PPU_MASK
 		STA		_event_idx
-		STA		_delay_counter
-		STA		_delay_counter+1
-		STA		_screen_idx
+;		STA		_delay_counter
+;		STA		_delay_counter+1
+;		STA		_screen_idx
 		LDA		#2
 		STA		_event_reload_idx
-		LDA		#$FF
-		STA		byte_3B1
-		LDA		#2
-		STA		_screen_idx
-		JSR		_screen_display
+;		LDA		#$FF
+;		STA		byte_3B1								; redundant
 		LDA		#1
-		STA		byte_3D3
-		LDX		#2
+		STA		_pad_prev0
+		STA		_pad_prev1
+;		LDX		#2										; next should be ,X opcode, but they use direct offset
 		LDA		_delays_list_lo+2
 		STA		_delay_counter+1
 		LDA		_delays_list_hi+2
 		STA		_delay_counter
-		LDA		#$80
-		STA		_PPU_CTRL
 		LDA		#$1D
 		JSR		_far_apu_mus_load_prg5_safe
-		LDA		#1
-		STA		_pad_prev
-		STA		byte_3D3
+		LDA		#2
+		JSR		_screen_display
+		LDA		#$80
+		STA		_PPU_CTRL
 		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
 _hi_score_entry_event:
-		LDA		byte_3D4
+		LDA		_hi_score_entry_display_lock
 		BNE		loc_44965
+		LDA		#$FF
+		STA		_hi_score_entry_display_lock
 		JSR		_sort_hiscore_test
 		LDA		_hi_score_line_idx
 		CMP		#6
 		BCS		_title_screen_display
-		ASL
-		TAX
-		LDA		_hi_score_ppu_ofs_list+1,X
-		STA		byte_3D5
-		LDA		_hi_score_ppu_ofs_list,X
-		STA		byte_3D6
+;		ASL												; unused, used direct table read instead
+;		TAX
+;		LDA		_hi_score_ppu_ofs_list+1,X
+;		STA		byte_3D5
+;		LDA		_hi_score_ppu_ofs_list,X
+;		STA		byte_3D6
 		LDA		#0
-		STA		byte_3D7
+		STA		_tmp_idx2
+		JSR		_star_field_init
 		LDA		#3
-		STA		_screen_idx
 		JSR		_screen_display
 		JSR		_draw_hiscore_table
-		JSR		_star_field_init
-		LDA		#$FF
-		STA		byte_3D4
 		LDA		#$81
 		STA		_PPU_CTRL
 loc_44965:
@@ -968,12 +872,12 @@ loc_44965:
 		LDX		_hi_score_line_idx
 		LDA		_hi_score_ram_ofs_list,X
 		CLC
-		ADC		byte_3D7
+		ADC		_tmp_idx2
 		TAX
 		LDA		_pad
-		CMP		_pad_prev
+		CMP		_pad_prev0
 		BEQ		loc_44987
-		STA		_pad_prev
+		STA		_pad_prev0
 		JMP		loc_44992
 loc_44987:
 		LDA		_generic_nmi_over_counter
@@ -1016,10 +920,10 @@ loc_449D2:
 		LDA		_pad
 		AND		#$80
 		BEQ		loc_449EE
-		LDA		byte_3D7
+		LDA		_tmp_idx2
 		CMP		#9
 		BCS		loc_449EE
-		INC		byte_3D7
+		INC		_tmp_idx2
 		LDA		#3
 		STA		_delay_counter+1
 		STA		_generic_nmi_over_counter
@@ -1028,9 +932,9 @@ loc_449EE:
 		LDA		_pad
 		AND		#$40
 		BEQ		loc_44A05
-		LDA		byte_3D7
+		LDA		_tmp_idx2
 		BEQ		loc_44A05
-		DEC		byte_3D7
+		DEC		_tmp_idx2
 		LDA		#3
 		STA		_delay_counter+1
 		STA		_generic_nmi_over_counter
@@ -1281,16 +1185,19 @@ loc_45C27:
 		BCC		loc_45C27
 		RTS
 
+_res_hi_score:
+
+
 ; =============== S U B	R O U T	I N E =======================================
 _event5_repair:
 		LDX		#1
 		JSR		_delay
-		LDA		_tmp3C3									; update cursor position
+		LDA		_repair_cursor_spr_x_pos									; update cursor position
 		STA		_spr_buf+4
 		CLC
 		ADC		#8
 		STA		_spr_buf+8
-		LDA		byte_3B8
+		LDA		_repair_cursor_spr_y_pos
 		STA		_spr_buf+7
 		STA		_spr_buf+$B
 ;		LDA		#$F6
@@ -1347,9 +1254,9 @@ loc_44AC1:
 		STA		_cur_repair_tanks_number_tile_tmp
 		LDA		_pad
 		AND		#1
-		CMP		_pad_prev
+		CMP		_pad_prev0
 		BEQ		loc_44AF1
-		STA		_pad_prev
+		STA		_pad_prev0
 		CMP		#1
 		BNE		loc_44AF1
 		LDA		_cur_repair_tanks
@@ -1415,7 +1322,7 @@ loc_45C39:
 		BEQ		locret_45CAF
 		STA		_repair_body_index_request
 		LDA		#1
-		STA		byte_3BF
+		STA		_repair_cursor_animate_in_progress
 locret_45CAF:
 		RTS
 loc_45C54:
@@ -1427,7 +1334,7 @@ loc_45C54:
 		BEQ		locret_45C6A
 		STA		_repair_body_index_request
 		LDA		#1
-		STA		byte_3BF
+		STA		_repair_cursor_animate_in_progress
 locret_45C6A:
 		RTS
 loc_45C6B:
@@ -1439,7 +1346,7 @@ loc_45C6B:
 		BEQ		locret_45C81
 		STA		_repair_body_index_request
 		LDA		#1
-		STA		byte_3BF
+		STA		_repair_cursor_animate_in_progress
 locret_45C81:
 		RTS
 loc_45C82:
@@ -1451,7 +1358,7 @@ loc_45C82:
 		BEQ		locret_45C98
 		STA		_repair_body_index_request
 		LDA		#1
-		STA		byte_3BF
+		STA		_repair_cursor_animate_in_progress
 locret_45C98:
 		RTS
 
@@ -1473,7 +1380,7 @@ _get_cursor_allow_list_ptr:
 
 ; =============== S U B	R O U T	I N E =======================================
 _repair_cursor_animate:
-		LDA		byte_3BF
+		LDA		_repair_cursor_animate_in_progress
 		BNE		loc_45CD4
 		RTS
 loc_45CD4:
@@ -1489,66 +1396,66 @@ loc_45CDF:
 		ASL
 		TAX
 		LDA		_repair_cursor_anim_data,X
-		STA		word_3BA
+		STA		_repair_cursor_pos_dest
 		LDA		_repair_cursor_anim_data+1,X
-		STA		word_3BA+1
-		LDA		byte_3B8
-		CMP		word_3BA
+		STA		_repair_cursor_pos_dest+1
+		LDA		_repair_cursor_spr_y_pos
+		CMP		_repair_cursor_pos_dest
 		BCS		loc_45D1D
-		LDA		word_3BA
+		LDA		_repair_cursor_pos_dest
 		SEC
-		SBC		byte_3B8
+		SBC		_repair_cursor_spr_y_pos
 		LSR
 		LSR
-		STA		word_3BA
-		LDA		byte_3B8
+		STA		_repair_cursor_pos_dest
+		LDA		_repair_cursor_spr_y_pos
 		CLC
-		ADC		word_3BA
-		STA		byte_3B8
+		ADC		_repair_cursor_pos_dest
+		STA		_repair_cursor_spr_y_pos
 		JMP		loc_45D33
 loc_45D1D:
-		LDA		byte_3B8
+		LDA		_repair_cursor_spr_y_pos
 		SEC
-		SBC		word_3BA
+		SBC		_repair_cursor_pos_dest
 		LSR
 		LSR
-		STA		word_3BA
-		LDA		byte_3B8
+		STA		_repair_cursor_pos_dest
+		LDA		_repair_cursor_spr_y_pos
 		SEC
-		SBC		word_3BA
-		STA		byte_3B8
+		SBC		_repair_cursor_pos_dest
+		STA		_repair_cursor_spr_y_pos
 loc_45D33:
-		LDA		_tmp3C3
-		CMP		word_3BA+1
+		LDA		_repair_cursor_spr_x_pos
+		CMP		_repair_cursor_pos_dest+1
 		BCS		loc_45D54
-		LDA		word_3BA+1
+		LDA		_repair_cursor_pos_dest+1
 		SEC
-		SBC		_tmp3C3
+		SBC		_repair_cursor_spr_x_pos
 		LSR
 		LSR
-		STA		word_3BA+1
-		LDA		_tmp3C3
+		STA		_repair_cursor_pos_dest+1
+		LDA		_repair_cursor_spr_x_pos
 		CLC
-		ADC		word_3BA+1
-		STA		_tmp3C3
+		ADC		_repair_cursor_pos_dest+1
+		STA		_repair_cursor_spr_x_pos
 		JMP		loc_45D6A
 loc_45D54:
-		LDA		_tmp3C3
+		LDA		_repair_cursor_spr_x_pos
 		SEC
-		SBC		word_3BA+1
+		SBC		_repair_cursor_pos_dest+1
 		LSR
 		LSR
-		STA		word_3BA+1
-		LDA		_tmp3C3
+		STA		_repair_cursor_pos_dest+1
+		LDA		_repair_cursor_spr_x_pos
 		SEC
-		SBC		word_3BA+1
-		STA		_tmp3C3
+		SBC		_repair_cursor_pos_dest+1
+		STA		_repair_cursor_spr_x_pos
 loc_45D6A:
-		LDA		word_3BA
-		ORA		word_3BA+1
+		LDA		_repair_cursor_pos_dest
+		ORA		_repair_cursor_pos_dest+1
 		BNE		locret_45D7D
 		LDA		#0
-		STA		byte_3BF
+		STA		_repair_cursor_animate_in_progress
 		LDA		_repair_body_index_request
 		STA		_repair_cur_body_index
 locret_45D7D:
@@ -1577,12 +1484,12 @@ _event6_game_over:
 		JSR		_read_pad								; read pad
 		LDA		_pad
 		BEQ		loc_44B5A								; if nothing is pressed, do times
-		LDA		_pad_prev								; check if _pad_prev is zero, so we has released any buttons before
+		LDA		_pad_prev0								; check if _pad_prev0 is zero, so we has released any buttons before
 		BEQ		.game_over_set_max_timers				; then jump to max timers set!
 		JMP		.game_over_timers_increase
 loc_44B5A:
 		LDA		#0
-		STA		_pad_prev
+		STA		_pad_prev0
 		BEQ		.game_over_timers_increase
 .game_over_set_max_timers:
 		LDA		#2										; here we set timers to max value and jump to test it and so skip!
@@ -1609,7 +1516,7 @@ loc_44B5A:
 		STA		_delay_counter+1
 		STA		_event_reload_idx
 		LDA		#0
-		STA		byte_3D4
+		STA		_hi_score_entry_display_lock
 		LDA		#3
 		STA		_screen_idx
 		JMP		_hi_score_entry_event
@@ -1625,20 +1532,20 @@ _event7_log_msg:
 		JSR		_read_pad
 		LDA		_pad
 		AND		#1
-		CMP		byte_3D3
+		CMP		_pad_prev1
 		BEQ		loc_44BCA
-		STA		byte_3D3
+		STA		_pad_prev1
 		CMP		#1
 		BNE		loc_44BCA
 		RTS
 loc_44BCA:
-		LDY		byte_3B5								; msg pos temp value
+		LDY		_tmp_idx1								; msg pos temp value
 		LDA		(_txt_ptr),Y
 		CMP		#$FD
 		BNE		loc_44BE1								; special $FD cmd, force forbid input skip
 		LDA		#$FF									; used only in repair lab confirm message
 		STA		_log_msg_skip_forbid
-		INC		byte_3B5
+		INC		_tmp_idx1
 		JMP		_event_exec
 loc_44BE1:
 		CMP		#$F9
@@ -1653,10 +1560,10 @@ loc_44BE1:
 		BNE		loc_44BFC								; cmd $FA, break
 		RTS
 loc_44BFC:
-		LDX		byte_3D7
+		LDX		_tmp_idx2
 		STA		_log_msg_buf+$54,X
-		INC		byte_3B5
-		INC		byte_3D7
+		INC		_tmp_idx1
+		INC		_tmp_idx2
 		LDA		#0
 		STA		_generic_nmi_over_counter
 .j_event_exec1:
@@ -1667,9 +1574,9 @@ loc_44BFC:
 		AND		#$F
 		BNE		.j_event_exec1
 		JSR		_log_msg_buf_scroll_up
-		INC		byte_3B5
+		INC		_tmp_idx1
 		LDA		#0
-		STA		byte_3D7
+		STA		_tmp_idx2
 		JMP		_event_exec
 ; --------------------------------
 .l_cmdFC_delay:
@@ -1679,9 +1586,9 @@ loc_44BFC:
 		STA		_delay_counter
 		CMP		#$3F
 		BCC		.j_event_exec1
-		INC		byte_3B5
+		INC		_tmp_idx1
 		LDA		#0
-		STA		byte_3D7
+		STA		_tmp_idx2
 		STA		_delay_counter
 		JMP		_event_exec
 ; --------------------------------
@@ -1692,9 +1599,9 @@ loc_44C65:
 		STA		_log_msg_buf,X
 		DEX
 		BPL		loc_44C65
-		INC		byte_3B5
+		INC		_tmp_idx1
 		LDA		#0
-		STA		byte_3D7
+		STA		_tmp_idx2
 		JMP		_event_exec
 ; --------------------------------
 .l_cmdF9_repair_confirmation:
@@ -1714,7 +1621,7 @@ loc_44C65:
 		STA		_pl_bckp_legs_percent,X
 		LDA		_cur_repair_tanks
 		STA		_pl_bckp_repair_tanks,X
-		INC		byte_3B5
+		INC		_tmp_idx1
 		JMP		_event_exec
 loc_44CA9:
 		LDA		_pad
@@ -2570,16 +2477,26 @@ _nmi0_common:
 		JMP		.nmi0_finish
 ; --------------------------------
 .nmi0_hiscore_entry_ppu_update:
-		LDA		#0										; calc the hiscore table data offset
-		CLC												; ofs = hi_score_line_idx * 15
-		LDX		_hi_score_line_idx
-loc_45371:
-		CPX		#0
-		BEQ		loc_4537B
-		ADC		#$F
-		DEX
-		JMP		loc_45371
-loc_4537B:
+; --
+;		LDA		#0										; calc the hiscore table data offset
+;		CLC												; ofs = hi_score_line_idx * 15
+;		LDX		_hi_score_line_idx
+;loc_45371:
+;		CPX		#0
+;		BEQ		loc_4537B
+;		ADC		#$F
+;		DEX
+;		JMP		loc_45371
+;loc_4537B:
+; --
+		LDA		_hi_score_line_idx
+		ASL
+		ASL
+		ASL
+		ASL
+		SEC
+		SBC		_hi_score_line_idx
+; --
 		TAY
 		BIT		_PPU_STATUS
 		LDA		_hi_score_line_idx
@@ -2613,7 +2530,7 @@ loc_4539C:
 		STA		_PPU_ADDR
 		LDA		_tmpE7
 		CLC
-		ADC		byte_3D7
+		ADC		_tmp_idx2
 		STA		_PPU_ADDR
 		LDA		_generic_nmi_over_counter
 		AND		#$1F
@@ -2896,6 +2813,10 @@ _star_field_params2:
 
 ; =============== S U B	R O U T	I N E =======================================
 _screen_display:
+		STA		_screen_idx
+
+; =============== S U B	R O U T	I N E =======================================
+_screen_display_ex:
 		TAX
 		LDY		#0
 		STY		_PPU_CTRL
@@ -3451,6 +3372,7 @@ _ovl_repair_head:
 		.BYTE	$84,$85,$86,$7F
 		.BYTE	$1B,$1C,$87,$1E
 		.BYTE	$27,$28,$29,$2A
+		
 _ovl_repair_rarm0:
 		.BYTE	$38,$39,$3A
 		.BYTE	$44,$45,$46
@@ -3602,7 +3524,7 @@ _bios_msg_display:
 
 ; =============== S U B	R O U T	I N E =======================================
 _bios_msg_display_ex:
-		STA		byte_3B4
+		STA		_tmp_idx0
 		ASL
 		TAX
 		LDA		_msg_lib,X
@@ -3611,65 +3533,69 @@ _bios_msg_display_ex:
 		STA		_txt_ptr+1
 		LDA		#0
 		STA		_event_idx
-		STA		byte_3B5
-		STA		byte_3D7
-		STA		_PPU_CTRL
-		STA		_PPU_MASK
+		STA		_tmp_idx1
+		STA		_tmp_idx2
+;		STA		_PPU_CTRL
+;		STA		_PPU_MASK
 		STA		_delay_counter
 		LDA		#8
-		STA		_pad_prev
+		STA		_pad_prev0
 		LDA		#1
-		STA		byte_3D3
+		STA		_pad_prev1
 		LDA		#7
 		STA		_event_reload_idx
-		LDA		#$FF
-		STA		byte_3B1
+;		LDA		#$FF
+;		STA		byte_3B1								; redundant
 ;		JSR		_spr_buf_clear
 		JSR		_log_clear_buf
 		LDA		#4
-		STA		_screen_idx
 		JSR		_screen_display
-		LDX		#0
-		STX		_PPU_CTRL
-		STX		_PPU_MASK
-		BIT		_PPU_STATUS
-		LDA		#$21
-		STA		_PPU_ADDR
-		LDA		#$23
-		STA		_PPU_ADDR
-		JSR		_rom_bios_hdr_display
-		BIT		_PPU_STATUS
-		LDA		#$21
-		STA		_PPU_ADDR
-		LDA		#$43
-		STA		_PPU_ADDR
-		JSR		_rom_bios_hdr_display
-		BIT		_PPU_STATUS
-		LDA		#$21
-		STA		_PPU_ADDR
-		LDA		#$63
-		STA		_PPU_ADDR
-		JSR		_rom_bios_hdr_display
+;		LDX		#0
+;		STX		_PPU_CTRL
+;		STX		_PPU_MASK
+;		BIT		_PPU_STATUS
+;		LDA		#$21
+;		STA		_PPU_ADDR
+;		LDA		#$23
+;		STA		_PPU_ADDR
+;		JSR		_res_bios_hdr_display
+;		BIT		_PPU_STATUS
+;		LDA		#$21
+;		STA		_PPU_ADDR
+;		LDA		#$43
+;		STA		_PPU_ADDR
+;		JSR		_res_bios_hdr_display
+;		BIT		_PPU_STATUS
+;		LDA		#$21
+;		STA		_PPU_ADDR
+;		LDA		#$63
+;		STA		_PPU_ADDR
+;		JSR		_res_bios_hdr_display
+		PRINTF	_res_bios_hdr
 		LDA		#$80
 		STA		_PPU_CTRL
 		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
-_rom_bios_hdr_display:
-		LDA		_rom_bios_hdr,X
-		CMP		#_SCL
-		BEQ		loc_4784A
-		STA		_PPU_DATA
-		INX
-		BNE		_rom_bios_hdr_display
-loc_4784A:
-		INX
-		RTS
+;_res_bios_hdr_display:
+;		LDA		_res_bios_hdr,X
+;		CMP		#_SCL
+;		BEQ		loc_4784A
+;		STA		_PPU_DATA
+;		INX
+;		BNE		_res_bios_hdr_display
+;loc_4784A:
+;		INX
+;		RTS
 
-_rom_bios_hdr:
-		.BYTE	_R,_O,_M,_,_B,_I,_O,_S,_SCL
-		.BYTE	_D,_A,_T,_A,_,_R,_E,_T,_R,_I,_E,_V,_A,_L,_,_S,_Y,_S,_T,_E,_M,_SCL
-		.BYTE	_V,_E,_R,_S,_I,_O,_N,_,_3,_DT,_O,_SCL
+_res_bios_hdr:
+		.BYTE	$21,$23
+		STRING	_R,_O,_M,_,_B,_I,_O,_S
+		.BYTE	$21,$43
+		STRING	_D,_A,_T,_A,_,_R,_E,_T,_R,_I,_E,_V,_A,_L,_,_S,_Y,_S,_T,_E,_M
+		.BYTE	$21,$63
+		STRING	_V,_E,_R,_S,_I,_O,_N,_,_3,_DT,_O
+		.BYTE	$FF
 
 _msg_lib:
 		.WORD _msg0_lvl0_briefing
@@ -3677,7 +3603,7 @@ _msg_lib:
 		.WORD _msg2_lvl2_briefing
 		.WORD _msg3_lvl3_briefing
 		.WORD _msg4_lvl4_briefing
-		.WORD _msg5_copyrights
+		.WORD 0 ; _res_copyrights
 		.WORD _msg6_prepare_to_repair
 		.WORD _msg7_confirm_repair
 		.WORD _msg8_get_out_of_there
@@ -3756,20 +3682,6 @@ _msg8_get_out_of_there:
 		.BYTE	_N,_O,_W,_,_G,_E,_T,_,_O,_U,_T,_,_O,_F,_,_T,_H,_E,_R,_E,_DT,_SCL
 		.BYTE	_SCL
 		.BYTE	_DLY,_END
-
-_msg5_copyrights:
-		.BYTE	 _, _, _, _, _, _, _, _, _,_R,_O,_B,_O,_C,_O,_P,_TM, _,_3,_SCL
-		.BYTE	_SCL
-		.BYTE	 _, _, _, _,_T,_M, _,_A,_N,_D, _,_C,_O,_P,_Y,_R,_I,_G,_H,_T, _,_1,_9,_9,_2,_SCL
-		.BYTE	 _,_O,_R,_I,_O,_N, _,_P,_I,_C,_T,_U,_R,_E,_S, _,_C,_O,_R,_P,_O,_R,_A,_T,_I,_O,_N,_SCL
-		.BYTE	 _, _, _, _, _,_A,_L,_L, _,_R,_I,_G,_H,_T,_S, _,_R,_E,_S,_E,_R,_V,_E,_D,_SCL
-		.BYTE	_T,_M, _,_D,_E,_S,_I,_G,_N,_A,_T,_E,_S, _,_A, _,_T,_R,_A,_D,_E,_M,_A,_R,_K, _,_O,_F,_SCL
-		.BYTE	 _,_O,_R,_I,_O,_N, _,_P,_I,_C,_T,_U,_R,_E,_S, _,_C,_O,_R,_P,_O,_R,_A,_T,_I,_O,_N,_SCL
-		.BYTE	_SCL
-		.BYTE	 _, _, _, _, _, _, _,_C,_O,_P,_Y,_R,_I,_G,_H,_T, _,_1,_9, _9,_2,_SCL
-		.BYTE	 _, _, _, _,_O,_C,_E,_A,_N, _,_O,_F, _,_A,_M,_E,_R,_I,_C,_A,_CO,_I,_N,_C,_DT,_SCL
-		.BYTE	 _, _, _, _,_L,_I,_C,_E,_N,_S,_E,_D, _,_B,_Y, _,_N,_I,_N, _T,_E,_N,_D,_O,_DT,_SCL
-		.BYTE	 _, _, _, _,_C,_A,_H,_4,_E,_3, _,_B,_F,_S, _,_G,_M,_B,_H, _,_2,_O,_1,_6,_END
 
 _msg6_prepare_to_repair:
 		.BYTE	_W,_E,_L,_L,_,_D,_O,_N,_E,_CO,_,_O,_F,_F,_I,_C,_E,_R,_DT,_SCL

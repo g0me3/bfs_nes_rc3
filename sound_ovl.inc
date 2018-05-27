@@ -1,412 +1,3 @@
-
-		header	'p011'
-    		ext	'PGM'
-
-
-;********************************
-;
-;	equates
-;
-;********************************
-
-wipe		=	0
-
-pcr0		=	$2000	;ppu 	control register 1
-pcr1		=	$2001	;ppu 	control register 2
-pstr		=	$2002	;	status register
-dmacnt		=	$2003	;	DMA page count
-psor		=	$2005	;	scroll offset register
-pmar		=	$2006	;	memory address register
-pmdr		=	$2007	;	memory data register
-;dfreq		=	$4010	;	Irq trigger, Rep designation, Freq
-;volume		=	$4011	;	Sound chip volume register (DAC)
-;dmadr		=	$4012	;	Delta mod address pointer
-;dmlen		=	$4013	;	Sample length Min.17bytes Max.4k
-
-;dma		=	$4014	;D M A	page number register
-
-joy1port	=	$4016	;joystick port 1
-joy2port	=	$4017	;joystick port 2
-;port1		=	$4016
-
-sprypos		=	$200
-sprdef		=	$201
-sprinfo		=	$202
-sprxpos		=	$203
-
-joybuta		=	%10000000
-joybutb		=	%01000000
-joyselect	=	%00100000
-joystart	=	%00010000
-joyup		=	%00001000
-joydown		=	%00000100
-joyleft		=	%00000010
-joyright	=	%00000001
-
-
-ast		=	$00 	;ZEROPAGE ADRESSES
-xst		=	$01
-yst		=	$02
-
-scrnblank	=	$03
-
-joy1last	=	$04
-joy1data	=	$05
-joy1delay	=	$06
-joy1edge	=	$07
-
-shpcr0		=	$08
-shpcr1		=	$09
-hscroll		=	$0a
-vscroll		=	$0b
-
-indlo		=	$0c
-temp		=	$0e
-codestate	=	$10
-scrntoggle	=	$11
-holddel1	=	$12
-charsoff	=	$13
-spronoff	=	$14
-dojoy		=	$15
-ssdelay		=	$16
-xtemp		=	$17
-ytemp		=	$18
-
-starlo		=	$19 
-dgrablo		=	$1b 
-
-progtime	=	$1d
-
-cursorx		=	$1e
-cursory		=	$1f
-cursordef	=	$20
-
-xstemp		=	$32
-ystemp		=	$33
-
-starxoff	=	$0300 	;offset into patterns...32 off
-starpatt	=	$0320	;which star pattern.....32 off
-
-toppalette	=	$0340	;palette for top section of the screen
-sprpalette	=	$0350	;palette for tyhe sprites.
-botpalette	=	$0360	;palette for bottom............INFOBOX	
-
-sfxcount	=	$fc
-sfxdelay	=	$fd
-
-;***************************************
-;	M A C R O S
-;***************************************
-
-	macro	delay value
-	ldy	#value
-:lp	dey
-	bne	:lp
-	endm
-
-	macro	delxy  delx dely
-	ldx	#delx
-:lp1	ldy	#dely
-:lp2	dey
-	bne	:lp2
-	dex
-	bne	:lp1
-    	endm
-
-;*****************************************
-;	M A I N   C O D E
-;*****************************************
-
-	org	$c000
-
-
-
-resetvector	
-	sei
-	lda	#0
-	sta	pcr0	;init the control registers
-	sta	pcr1
-
-:a	lda	pstr	;wait for hardware to stabilise.
-	bpl	:a
-:b	lda	pstr
-	bpl	:b
-:c	lda	pstr
-	bmi	:c
-
-	
-	ldx	#$ff
-	txs
-
-
-skippy
-
-	lda	pstr
-	jsr	systemsetup
-	lda	pstr 
- 
-	lda	#$22	;drop char for coincidence check
-	sta	pmar
-	lda	#$c0
-	sta	pmar
-	lda	#$ff
-	sta	pmdr	
-
-	lda	#$88
-	sta	shpcr0
-	sta	pcr0 
-			;clear scrolling MSB's
-			;set auto inc to +1
-			;sprite chars to $1000
-			;bkgnd chars to  $0000
-			;enable interupts
-
-
-	lda	#$06	;enable color
-	sta	shpcr1	;switch off ... sprites & background
-	sta	pcr1	;tint to zero
-
-	lda	#aa00
-	ldx	#$00
-	jsr	AUDIOIN
-	lda	#aa01
-	ldx	#$01
-	jsr	AUDIOIN
-	lda	#aa02
-	ldx	#$02
-	jsr	AUDIOIN
-	lda	#aa03
-	ldx	#$03
-	jsr	AUDIOIN
-
-       	lda	#$00
-       	sta	sfxcount
-       	lda	#$07
-       	sta	sfxdelay
-
-;       	lda	#$00
-;       	sta	dmadr
-;       	lda	#$00
-;       	sta	dmlen
-;       	lda	#$41
-;       	sta	dfreq
-lockit
-	lda	progtime	;***** IMPORTANT *****
-	beq	lockit		;Program time cannot be started
-	lda	#0		;until the vblank nmi has completely
-	sta	progtime	;finish or the system screws up badly !!!!!!
-
-	delxy	2 250
-
-        	delxy	3 200	
-
-fastfor	lda	#$fe	;switch screen on...only (in hblank)
-       	sta	pcr1
-
-	ldx	#$00
-       	jsr	AUDIOPL	;play audio-routine
-       	ldx	#$01
-       	jsr	AUDIOPL
-       	ldx	#$02
-       	jsr	AUDIOPL
-       	ldx	#$03
-       	jsr	AUDIOPL
-
-  	jsr	docoms
-
-	lda	#$1e
-	sta	pcr1
-
-        	jmp	lockit
-
-irq	rti
-
-nmi
-	php		      	
-	sta	ast
-	stx	xst
-	sty	yst
-	bit	pstr
-	sta	psor
-	sta	psor
-     	lda	#1
-     	sta	progtime
-	lda	pstr
-  	jsr	readjoy
-	lda	#$98
-	sta	pcr0
-	lda	#$1e
-	sta	pcr1
-	lda	#0
-	sta	psor
-    	lda	#0
-	sta	psor
-	lda	ast
-	ldx	xst
-	ldy	yst
-	plp
-	rti
-systemsetup	jsr	clr_all		;blank bkgnd charset. $1000 - $1fff
-	jsr	setsprypos	;set all sprite y positions to off screen ($f8)
-	rts
-
-
-
-
-clr_all	;clears the area of memory for the sprites
-
-	lda	pstr
-	lda	#$00	;sprite hibyte location
-	sta	pmar
-	lda	#$00	;sprite lobyte location
-	sta	pmar
-			  
-	lda	#0
-	tax
-	tay
-:clrlp1	sta	pmdr
-	inx
-	bne	:clrlp1
-	iny
-	cpy	#$28
-	bne	:clrlp1
-
-	lda	pstr
-	lda	#$3f
-	sta	pmar
-	lda	#$00
-	sta	pmar
-
-	ldx	#0
-	lda	#$1c
-:lp	sta	pmdr
-	inx
-	cpx	#32
-	bne	:lp
-	rts
-
-setsprypos	;set sprites to a yposition which is off the screen
-
-	ldx	#0
-	lda	#$f8
-:ssy	sta	sprypos,x	
- 	inx
-	inx
-	inx
-	inx
-	bne	:ssy
-	rts
-
-readjoy
-	ldy	#1
-	sty	joy1port
-	dey
-	sty	joy1port
-
-	ldy	#8	;number of bits to read.
-readj1	pha
-	lda	joy1port
-	sta	joy1last
-	lsr	a
- 	ora	joy1last
-	lsr	a
-	pla
-	rol	a
-	dey
-	bne	readj1
-
-	ldy	joy1data
-	sty	joy1last
-	sta	joy1data
-	eor	joy1last
-	and	joy1data
-	sta	joy1edge
-	ldy	#$10
-	lda	joy1data
-	cmp	joy1last
-	bne	readj2
-	dec	joy1delay
-	bne	readj3
-	sta	joy1edge
-	ldy	#12
-readj2	sty	joy1delay
-readj3	rts
-
-docoms
-   	lda	joy1data
-   	and	#joybuta
-   	beq	:skip
-	
-	ldx	#$00
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	ldx	#$01
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	ldx	#$02
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	ldx	#$03
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-	jsr	AUDIOPL
-
-:skip	lda	joy1data
-   	and	#joybutb
-	beq	hond
-	dec	sfxdelay
-	bpl	hond
-	lda	#$07
-	sta	sfxdelay
-	inc	sfxcount
-hemdaar	ldy	sfxcount
-	lda	sfxtab0,y
-	ldx	#$00
-	jsr	AUDIOIN
-	lda	sfxtab1,y
-	ldx	#$01
-	jsr	AUDIOIN
-	lda	sfxtab2,y
-	ldx	#$02
-	jsr	AUDIOIN
-	lda	sfxtab3,y
-	ldx	#$03
-	jsr	AUDIOIN
-hond
-	lda	joy1data
-	and	#joystart
-	beq	:hond1
-	jmp	hemdaar
-:hond1
-   	rts
-
 ;-----------------------------------------------------------------------------
 ;NES Audio-player written for exclusive use by JEROEN TEL / JT & PROBE (C)1991
 ;-----------------------------------------------------------------------------
@@ -418,28 +9,28 @@ hond
 ;published by	: VIRGIN GAMES U.S.A.
 ;date		: 23/08/91
 
-ssslo        	=	$fe	
-ssshi        	=	$ff
+ssslo	=	$fe	
+ssshi	=	$ff
 
 variable	=	$0700
-voictest 	=	variable+$00*$04
-stpindex 	=	variable+$01*$04
-seqindex 	=	variable+$02*$04
-seqposit 	=	variable+$03*$04
+voictest	=	variable+$00*$04
+stpindex	=	variable+$01*$04
+seqindex	=	variable+$02*$04
+seqposit	=	variable+$03*$04
 repstcnt	=	variable+$04*$04
-stepnumb 	=	variable+$05*$04
-spdcount 	=	variable+$06*$04
-spdcheck 	=	variable+$07*$04
+stepnumb	=	variable+$05*$04
+spdcount	=	variable+$06*$04
+spdcheck	=	variable+$07*$04
 realplay	=	variable+$08*$04
 noteinit	=	variable+$09*$04
-realsoun 	=	variable+$0a*$04
-noteleng 	=	variable+$0b*$04
-realleng 	=	variable+$0c*$04
-gateleng      	=	variable+$0d*$04
-realnote 	=	variable+$0e*$04
+realsoun	=	variable+$0a*$04
+noteleng	=	variable+$0b*$04
+realleng	=	variable+$0c*$04
+gateleng	=	variable+$0d*$04
+realnote	=	variable+$0e*$04
 lofrqwrd	=	variable+$0f*$04
 hifrqwrd	=	variable+$10*$04
-tranbyte 	=	variable+$11*$04
+tranbyte	=	variable+$11*$04
 sfxtrans	=	variable+$12*$04
 arptrans	=	variable+$13*$04
 arpindex	=	variable+$14*$04
@@ -454,21 +45,21 @@ destnote	=	variable+$1c*$04
 vibdelay	=	variable+$1d*$04
 vibindex	=	variable+$1e*$04
 continos	=	variable+$1f*$04
-amplitud 	=	variable+$20*$04
+amplitud	=	variable+$20*$04
 ampindex	=	variable+$21*$04
 fx01	=	variable+$22*$04
 fx02	=	variable+$23*$04
 fx03	=	variable+$24*$04
 pulindex	=	variable+$27*$04
-pulsbyt1 	=	variable+$28*$04
-spacespd 	=	variable+$29*$04
-spacecnt 	=	variable+$2a*$04
+pulsbyt1	=	variable+$28*$04
+spacespd	=	variable+$29*$04
+spacecnt	=	variable+$2a*$04
 ;---------------------------------------------------------------------------------------------------------------------------------
 4015wrd		=	$0f	
 spacedl		=	$0b
 
-       	jmp	AUDIOIN
-       	jmp	AUDIOPL
+	jmp	AUDIOIN
+	jmp	AUDIOPL
 	jmp	MUSICIN
 	jmp	MUSICPL
 
@@ -477,7 +68,7 @@ MUSICIN	asl	a
 	sta	seqposit,x	
 
 	lda	#sex-s00-1
- 	sta	stpindex,x
+	sta	stpindex,x
 	jmp	INITREALOS	 
 	   
 MUSICPL	
@@ -485,12 +76,12 @@ MUSICPL
 	beq	AUDIOEX
 	cpx	#$00
 	beq	VOICE01
-       	cpx	#$01
-       	beq	VOICE02
-       	cpx	#$02
-       	beq	VOICE03
-       	cpx	#$03
-       	beq	VOICE04
+	cpx	#$01
+	beq	VOICE02
+	cpx	#$02
+	beq	VOICE03
+	cpx	#$03
+	beq	VOICE04
 AUDIOEX	rts
 
 VOICE04	txa
@@ -498,7 +89,7 @@ VOICE04	txa
 	asl	a
 	tay
 	lda	#$10		;Set Amplitude			<bit 04>
-	ora	#$20  		;Continuous lenght enabled	<bit 05>
+	ora	#$20		;Continuous lenght enabled	<bit 05>
 	ora	amplitud,x	;Amplitude/Envelope Value	<bit 03-00>
 	sta	$4000,y
 	lda	lofrqwrd,x
@@ -520,10 +111,10 @@ setvoi1	txa
 	asl	a
 	asl	a
 	tay
-	lda	pulsbyt1,x    	;setpulse 			<bit 07-06>
-	ora	#$10    	;Set amplitude			<bit 04>
+	lda	pulsbyt1,x	;setpulse			<bit 07-06>
+	ora	#$10	;Set amplitude			<bit 04>
 	ora	#$20		;continuous lenght enabled	<bit 05>
-JMPVO03	ora	amplitud,x	;Amplitude/Envelope Value 	<bit 03-00>
+JMPVO03	ora	amplitud,x	;Amplitude/Envelope Value	<bit 03-00>
 	sta	$4000,y
 
 	lda	#$08		;Hardware-glide down		<bit 03>
@@ -558,7 +149,7 @@ SPDSET1	sta	spdcount,x
 	lda	#$ff
 	sta	realplay,x
 SPDHDX1	
-       	lda	realplay,x	;check if new leng subtraction necessary
+	lda	realplay,x	;check if new leng subtraction necessary
 	bpl	NOSTPH1		;
 
 AUDIPL1	dec	noteleng,x	;decrease speed, if zero then stephandle
@@ -637,7 +228,7 @@ STPHD14	cmp	#$e0		;pause check
 	sta	realleng,x
 	lda	#$ff
 	sta	realnote,x
-       	lda	#$00
+	lda	#$00
 	sta	amplitud,x
 	iny
 	tya
@@ -710,7 +301,7 @@ INITV12 lda	soundfix+$00,y	;check if new pulse to be set
 	bne	NONEWPL		;
 	lda	soundfix+$00,y	;yes, set new pulse
 	and	#$c0		;
-	sta	pulsbyt1,x     	;
+	sta	pulsbyt1,x	;
 INITV03
 INITV04
 NONEWPL	lda	soundfix+$01,y	;set vibrato-byte into fx01 & set effects (arp, etc)
@@ -732,11 +323,11 @@ NONEWG1	lda	soundfix+$03,y	;set effect-values into fx03
 	beq	NFORV04
 
 	ldy	realnote,x	;Read realnote as index
-	lda	frqtablo,y	;Low-frequency read 	<bit 07-00>
+	lda	frqtablo,y	;Low-frequency read	<bit 07-00>
 	sta	lofrqwrd,x	;
 
         lda	#$f8		;hardware length endless	<bit 07-03>
-        ora	frqtabhi,y 	;hi-frequency read 		<bit 02-00>
+        ora	frqtabhi,y	;hi-frequency read		<bit 02-00>
         sta	hifrqwrd,x	;HF set
 	jmp	PAUSEX1
 
@@ -744,7 +335,7 @@ NFORV04	lda	realnote,x
 	sta	lofrqwrd,x
 
 PAUSEX1	lda	realleng,x
-       	sta	noteleng,x
+	sta	noteleng,x
 	rts
 
 ;INITV03	rts
@@ -769,17 +360,17 @@ REFIX01	sta	vibdelay,x
 EXITIN1	jmp	NOVIB01	
 
 PLAYFXR	lda	fx03,x		;amplitude routine		
-       	and	#$7f		;maximum of $7f amplitude tabels
-       	tay
-       	lda	amptabl,y
-       	sta	ssslo
-       	lda	amptabh,y
-       	sta	ssshi
+	and	#$7f		;maximum of $7f amplitude tabels
+	tay
+	lda	amptabl,y
+	sta	ssslo
+	lda	amptabh,y
+	sta	ssshi
        
 	jsr	SHITAMP
 
 
-GLIDE1	ldy	gldspeed,x   	;glide routine
+GLIDE1	ldy	gldspeed,x	;glide routine
 	beq	NOGLD12
 
 	lda	glddelay,x
@@ -815,7 +406,7 @@ NOGLD01	jmp	NOVIB01
 NOGLD12
 
 	
-VIBRA01	lda	fx01,x	 	;vibrato routine
+VIBRA01	lda	fx01,x		;vibrato routine
 	and	#$0f
 	beq	NOVIB01
 	lda	vibdelay,x
@@ -837,28 +428,28 @@ HOGERVB
 	clc
 	adc	(ssslo),y
 	bcc	VIBNO01
-       	clc
+	clc
 VIBNO01	sta	lofrqwrd,x
 	iny
 	tya
 	sta	vibindex,x
 NOVIB01
 
-PULSE1 	cpx	#$02
-       	bcs	NOPULS1
-       	lda	fx02,x		;PULSE ROUTINE
-       	and	#$0f
-       	beq	NOPULS1
-       	tay
-       	lda	pultabl-1,y
-       	sta	ssslo
-       	lda	pultabh-1,y
-       	sta	ssshi
+PULSE1	cpx	#$02
+	bcs	NOPULS1
+	lda	fx02,x		;PULSE ROUTINE
+	and	#$0f
+	beq	NOPULS1
+	tay
+	lda	pultabl-1,y
+	sta	ssslo
+	lda	pultabh-1,y
+	sta	ssshi
 
 	jsr	JSRPUL
 NOPULS1	
 
-SPACE01	lda	fx01,x	     	;SPACE ROUTINE
+SPACE01	lda	fx01,x		;SPACE ROUTINE
 	and	#$20
 	beq	NOSPC01
 	lda	noteleng,x
@@ -891,16 +482,16 @@ YESAR01
 	sta	ssslo
 	lda	arptabhi,y
 	sta	ssshi
-	jmp 	ARPJSR
+	jmp	ARPJSR
 ;---------------------------------------------------------------------------------------------------------------------------------
-frqtablo       	db	$ad,$4a,$ef,$9b,$4b,$fe,$b5,$73,$30,$f5,$bd,$87 ;1
-	       	db	$56,$25,$f8,$cd,$a5,$7f,$5b,$3a,$19,$fb,$de,$c3 ;2
-	       	db	$aa,$92,$7b,$66,$52,$3f,$2d,$1c,$0c,$fd,$ef,$e1 ;3
-	       	db	$d4,$c9,$bd,$b3,$a9,$9f,$96,$8e,$86,$7e,$77,$70 ;4
-	       	db	$6a,$64,$5e,$59,$54,$4f,$4a,$47,$42,$3e,$3b,$38 ;5
-	       	db	$35,$31,$2e,$2c,$29,$27,$25,$23,$21,$1f,$1d,$1b ;6
-	       	db	$1a,$19,$18,$16,$15,$14,$13,$12,$11,$10,$0f,$0e ;7
-		db	$ff	  	
+frqtablo	db	$ad,$4a,$ef,$9b,$4b,$fe,$b5,$73,$30,$f5,$bd,$87 ;1
+		db	$56,$25,$f8,$cd,$a5,$7f,$5b,$3a,$19,$fb,$de,$c3 ;2
+		db	$aa,$92,$7b,$66,$52,$3f,$2d,$1c,$0c,$fd,$ef,$e1 ;3
+		db	$d4,$c9,$bd,$b3,$a9,$9f,$96,$8e,$86,$7e,$77,$70 ;4
+		db	$6a,$64,$5e,$59,$54,$4f,$4a,$47,$42,$3e,$3b,$38 ;5
+		db	$35,$31,$2e,$2c,$29,$27,$25,$23,$21,$1f,$1d,$1b ;6
+		db	$1a,$19,$18,$16,$15,$14,$13,$12,$11,$10,$0f,$0e ;7
+		db	$ff		
 
 frqtabhi	db	$06,$06,$05,$05,$05,$04,$04,$04,$04,$03,$03,$03 ;1
 		db	$03,$03,$02,$02,$02,$02,$02,$02,$02,$01,$01,$01 ;2
@@ -910,50 +501,38 @@ frqtabhi	db	$06,$06,$05,$05,$05,$04,$04,$04,$04,$03,$03,$03 ;1
 		db	$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00 ;6
 		db	$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00 ;7
 		db	$07
-;---------------------------------------------------------------------------------------------------------------------------------
-aa00		=	$16
-aa01		=	$17
-aa02		=	$18
-aa03		=	$19
-
-jtsfx		=	$00
-
-sfxtab0	db	$01,$05,$09,$0d,$16,$11,$14,$00,$00,$00
-sfxtab1	db	$02,$06,$0a,$0e,$17,$12,$15,$00,$00,$00
-sfxtab2	db	$03,$07,$0b,$0f,$18,$13,$00,$1a,$00,$00
-sfxtab3	db	$04,$08,$0c,$10,$19,$00,$00,$1b,$1c,$1d
 
 						; lda ldx
 seqtabel	db	<clearsfx,>clearsfx	; $00 $xx
-		db	<medibad1,>medibad1 	; $01 $00 
-		db	<medibad2,>medibad2 	; $02 $01 
-		db	<medibad3,>medibad3 	; $03 $02 
-		db	<medibad4,>medibad4 	; $04 $03 
-		db	<notgood1,>notgood1 	; $05 $00 
-		db	<notgood2,>notgood2 	; $06 $01 
-		db	<notgood3,>notgood3 	; $07 $02 
-		db	<notgood4,>notgood4 	; $08 $03 
-		db	<betters1,>betters1 	; $09 $00 
-		db	<betters2,>betters2 	; $0a $01 
-		db	<betters3,>betters3 	; $0b $02 
-		db	<betters4,>betters4 	; $0c $03 
-		db	<bestbes1,>bestbes1 	; $0d $00 
-		db	<bestbes2,>bestbes2 	; $0e $01 
-		db	<bestbes3,>bestbes3 	; $0f $02 
-		db	<bestbes4,>bestbes4 	; $10 $03 
-		db	<victory1,>victory1 	; $11 $00 
-		db	<victory2,>victory2 	; $12 $01 
-		db	<victory3,>victory3 	; $13 $02 
-		db	<doomned1,>doomned1 	; $14 $00 
-		db	<doomned2,>doomned2 	; $15 $01 
-		db	<introdu1,>introdu1 	; $16 $00 
-		db	<introdu2,>introdu2 	; $17 $01 
-		db	<introdu3,>introdu3 	; $18 $02 
-		db	<introdu4,>introdu4 	; $19 $03 
-		db	<explosi1,>explosi1 	; $1a $02 
-		db	<explosi2,>explosi2 	; $1b $03 
-		db	<firewrxu,>firewrxu 	; $1c $03 
-		db	<firewrxe,>firewrxe 	; $1d $03 
+		db	<medibad1,>medibad1	; $01 $00 
+		db	<medibad2,>medibad2	; $02 $01 
+		db	<medibad3,>medibad3	; $03 $02 
+		db	<medibad4,>medibad4	; $04 $03 
+		db	<notgood1,>notgood1	; $05 $00 
+		db	<notgood2,>notgood2	; $06 $01 
+		db	<notgood3,>notgood3	; $07 $02 
+		db	<notgood4,>notgood4	; $08 $03 
+		db	<betters1,>betters1	; $09 $00 
+		db	<betters2,>betters2	; $0a $01 
+		db	<betters3,>betters3	; $0b $02 
+		db	<betters4,>betters4	; $0c $03 
+		db	<bestbes1,>bestbes1	; $0d $00 
+		db	<bestbes2,>bestbes2	; $0e $01 
+		db	<bestbes3,>bestbes3	; $0f $02 
+		db	<bestbes4,>bestbes4	; $10 $03 
+		db	<victory1,>victory1	; $11 $00 
+		db	<victory2,>victory2	; $12 $01 
+		db	<victory3,>victory3	; $13 $02 
+		db	<doomned1,>doomned1	; $14 $00 
+		db	<doomned2,>doomned2	; $15 $01 
+		db	<introdu1,>introdu1	; $16 $00 
+		db	<introdu2,>introdu2	; $17 $01 
+		db	<introdu3,>introdu3	; $18 $02 
+		db	<introdu4,>introdu4	; $19 $03 
+		db	<explosi1,>explosi1	; $1a $02 
+		db	<explosi2,>explosi2	; $1b $03 
+		db	<firewrxu,>firewrxu	; $1c $03 
+		db	<firewrxe,>firewrxe	; $1d $03 
 
 
 seqtabes	db	$00,$00			; $00 $xx
@@ -1006,12 +585,12 @@ vibtabh		db	>v01,>v02,>v03,>v04,>v05
 pultabl		db	<p01,<p02,<p03,<p04,<p05,<p06,<p07
 pultabh		db	>p01,>p02,>p03,>p05,>p05,>p06,>p07
 
-arptablo 	db 	<a00,<a01,<a02,<a03,<a04,<a05,<a06,<a07,<a08,<a09,<a0a,<a0b,<a0c,<a0d,<a0e,<a0f
-		db 	<a10,<a11,<a12,<a13,<a14,<a15,<a16,<a17,<a18,<a19,<a1a,<a1b,<a1c
-arptabhi	db 	>a00,>a01,>a02,>a03,>a04,>a05,>a06,>a07,>a08,>a09,>a0a,>a0b,>a0c,>a0d,>a0e,>a0f
-		db 	>a10,>a11,>a12,>a13,>a14,>a15,>a16,>a17,>a18,>a19,>a1a,>a1b,>a1c
+arptablo	db	<a00,<a01,<a02,<a03,<a04,<a05,<a06,<a07,<a08,<a09,<a0a,<a0b,<a0c,<a0d,<a0e,<a0f
+		db	<a10,<a11,<a12,<a13,<a14,<a15,<a16,<a17,<a18,<a19,<a1a,<a1b,<a1c
+arptabhi	db	>a00,>a01,>a02,>a03,>a04,>a05,>a06,>a07,>a08,>a09,>a0a,>a0b,>a0c,>a0d,>a0e,>a0f
+		db	>a10,>a11,>a12,>a13,>a14,>a15,>a16,>a17,>a18,>a19,>a1a,>a1b,>a1c
 ;---------------------------------------------------------------------------------------------------------------------------------
-am00	       	
+am00		
 	db	9,8,7,6,5,5,4,4,3,3,2,$fe
 am01
 	db	1,$fe
@@ -1085,7 +664,7 @@ p04
 	db	$ff,$00
 p05		
 	db	$80,$80,$80,$80,$80,$80,$80,$80
- 	db	$40,$40,$40,$40,$40,$40,$40,$40
+	db	$40,$40,$40,$40,$40,$40,$40,$40
 	db	$00,$00,$00,$00,$00,$00,$00,$00
 	db	$40,$40,$40,$40,$40,$40,$40,$40
 	db	$ff,$00
@@ -1123,7 +702,7 @@ a14	db	$10,12,8,3,0,$ff
 a15	db	$10,12,9,4,0,$ff
 a16	db	$10,12,7,5,0,$ff
 a17	db	$10,12,10,5,0,$ff
-a18 	db	$10,10,9,5,0,$ff
+a18	db	$10,10,9,5,0,$ff
 a19	db	$00,$a1,$9f,$9e,$00,$fe
 a1a	db	$70,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,$fe
 a1b	db	$00
@@ -1636,7 +1215,7 @@ s1a
 		db	$98,$1f
 		db	$ff
 s1b
-		db	$c4,$84,$13	    	;a
+		db	$c4,$84,$13		;a
 		db	$82,$13
 		db	$13
 		db	$13
@@ -1663,7 +1242,7 @@ s1b
 		db	$82,$18
 		db	$1a
 
-		db	$c5,$8a,$1b	    	
+		db	$c5,$8a,$1b		
 		db	$82,$1d
 		db	$86,$18
 		db	$15
@@ -1934,27 +1513,27 @@ s24
 
 
 
-introdu1       	db	$86,$70,$26,$26,$26,$26,$71,$2c	 	;intro
+introdu1	db	$86,$70,$26,$26,$26,$26,$71,$2c		;intro
 		db	$70,$62,$01				;actio
 		db	$04,$71,$2c,$70,$62,$01			;overl
 		db	$08					;OVERL
 		db	$ff,$04
 
-introdu2       	db	$86,$28,$27,$27,$27,$27,$2d,$2c		;intro
+introdu2	db	$86,$28,$27,$27,$27,$27,$2d,$2c		;intro
 		db	$03,$02,$30				;actio
 		db	$05,$2c,$03,$02,$31			;overl
 		db	$09,$28					;OVERL
 		db	$ff,$04
 
-introdu3       	db	$6e,$29,$2a,$2b,$2b			;intro
+introdu3	db	$6e,$29,$2a,$2b,$2b			;intro
 		db	$62,$20					;actio
 		db	$06,$63,$20				;overl
 		db	$2e					;OVERL
 		db	$ff,$04
 
 introdu4        db	$6f,$29,$6f,$29,$67,$25			;intro
-		db	$6b,$21 				;actio
-		db	$63,$07,$6f,$21			    	;overl
+		db	$6b,$21				;actio
+		db	$63,$07,$6f,$21				;overl
 		db	$2f,$67,$25				;OVERL
 		db	$ff,$05
 
@@ -2352,7 +1931,7 @@ AUDIOIN	jmp	MUSICIN
 	sta	seqposit,x	
 
 	lda	#xsex-xs00-1
- 	sta	stpindex,x
+	sta	stpindex,x
 
 	jmp	INITREALOS
 
@@ -2361,12 +1940,12 @@ AUDIOPL	jmp	MUSICPL
 	beq	xAUDIOEX
 	cpx	#$00
 	beq	xVOICE01
-       	cpx	#$01
-       	beq	xVOICE02
-       	cpx	#$02
-       	beq	xVOICE03
-       	cpx	#$03
-       	beq	xVOICE04
+	cpx	#$01
+	beq	xVOICE02
+	cpx	#$02
+	beq	xVOICE03
+	cpx	#$03
+	beq	xVOICE04
 xAUDIOEX	rts
 
 xVOICE04	txa
@@ -2374,7 +1953,7 @@ xVOICE04	txa
 	asl	a
 	tay
 	lda	#$10		;Set Amplitude			<bit 04>
-	ora	#$20  		;Continuous lenght enabled	<bit 05>
+	ora	#$20		;Continuous lenght enabled	<bit 05>
 	ora	amplitud,x	;Amplitude/Envelope Value	<bit 03-00>
 	sta	$4000,y
 	lda	lofrqwrd,x
@@ -2396,10 +1975,10 @@ xsetvoi1	txa
 	asl	a
 	asl	a
 	tay
-	lda	pulsbyt1,x    	;setpulse 			<bit 07-06>
-	ora	#$10    	;Set amplitude			<bit 04>
+	lda	pulsbyt1,x	;setpulse			<bit 07-06>
+	ora	#$10	;Set amplitude			<bit 04>
 	ora	#$20		;continuous lenght enabled	<bit 05>
-xJMPVO03	ora	amplitud,x	;Amplitude/Envelope Value 	<bit 03-00>
+xJMPVO03	ora	amplitud,x	;Amplitude/Envelope Value	<bit 03-00>
 	sta	$4000,y
 
 	lda	#$08		;Hardware-glide down		<bit 03>
@@ -2434,7 +2013,7 @@ xSPDSET1	sta	spdcount,x
 	lda	#$ff
 	sta	realplay,x
 xSPDHDX1	
-       	lda	realplay,x	;check if new leng subtraction necessary
+	lda	realplay,x	;check if new leng subtraction necessary
 	bpl	xNOSTPH1		;
 
 xAUDIPL1	dec	noteleng,x	;decrease speed, if zero then stephandle
@@ -2513,7 +2092,7 @@ xSTPHD14	cmp	#$e0		;pause check
 	sta	realleng,x
 	lda	#$ff
 	sta	realnote,x
-       	lda	#$00
+	lda	#$00
 	sta	amplitud,x
 	iny
 	tya
@@ -2583,7 +2162,7 @@ xINITV12 lda	xsoundfix+$00,y	;check if new pulse to be set
 	bne	xNONEWPL		;
 	lda	xsoundfix+$00,y	;yes, set new pulse
 	and	#$c0		;
-	sta	pulsbyt1,x     	;
+	sta	pulsbyt1,x	;
 xINITV03
 xINITV04
 xNONEWPL	lda	soundfix+$01,y	;set vibrato-byte into fx01 & set effects (arp, etc)
@@ -2597,19 +2176,19 @@ xNONEWG1	lda	soundfix+$03,y	;set effect-values into fx03
 	beq	xNFORV04
 
 	ldy	realnote,x	;Read realnote as index
-	lda	frqtablo,y ;Low-frequency read 	<bit 07-00>
+	lda	frqtablo,y ;Low-frequency read	<bit 07-00>
 	sta	lofrqwrd,x	;
 
-        	lda	#$f8	;hardware length endless	<bit 07-03>
-        	ora	frqtabhi,y ;hi-frequency read 		<bit 02-00>
-        	sta	hifrqwrd,x	;HF set
+	lda	#$f8	;hardware length endless	<bit 07-03>
+	ora	frqtabhi,y ;hi-frequency read		<bit 02-00>
+	sta	hifrqwrd,x	;HF set
 	jmp	xPAUSEX1
 
 xNFORV04	lda	realnote,x
 	sta	lofrqwrd,x
 
 xPAUSEX1	lda	realleng,x
-       	sta	noteleng,x
+	sta	noteleng,x
 	rts
 
 ;INITV03	rts
@@ -2633,12 +2212,12 @@ xREFIX01	sta	vibdelay,x
 xEXITIN1	jmp	xNOVIB01	
 
 xPLAYFXR	lda	fx03,x		;amplitude routine		
-       	and	#$7f		;maximum of $7f amplitude tabels
-       	tay
-       	lda	xamptabl,y
-       	sta	ssslo
-       	lda	xamptabh,y
-       	sta	ssshi
+	and	#$7f		;maximum of $7f amplitude tabels
+	tay
+	lda	xamptabl,y
+	sta	ssslo
+	lda	xamptabh,y
+	sta	ssshi
        
 	jsr	SHITAMP
 
@@ -2677,7 +2256,7 @@ xFROTER1	lda	frqtablo,y
 xNOGLD01	jmp	xNOVIB01
 xNOGLD12
 	
-xVIBRA01	lda	fx01,x	 	;vibrato routine
+xVIBRA01	lda	fx01,x		;vibrato routine
 	and	#$0f
 	beq	xNOVIB01
 	lda	vibdelay,x
@@ -2692,7 +2271,7 @@ xVIBRA01	lda	fx01,x	 	;vibrato routine
 	lda	xvibtabh-1,y
 	sta	ssshi
 
-	jsr 	JSRVIB
+	jsr	JSRVIB
 
 	lda	lofrqwrd,x
 	clc
@@ -2705,22 +2284,22 @@ xVIBNO01	sta	lofrqwrd,x
 	sta	vibindex,x
 xNOVIB01
 
-xPULSE1 	cpx	#$02
-       	bcs	xNOPULS1
-       	lda	fx02,x		;PULSE ROUTINE
-       	and	#$0f
-       	beq	xNOPULS1
-       	tay
-       	lda	xpultabl-1,y
-       	sta	ssslo
-       	lda	xpultabh-1,y
-       	sta	ssshi
+xPULSE1	cpx	#$02
+	bcs	xNOPULS1
+	lda	fx02,x		;PULSE ROUTINE
+	and	#$0f
+	beq	xNOPULS1
+	tay
+	lda	xpultabl-1,y
+	sta	ssslo
+	lda	xpultabh-1,y
+	sta	ssshi
 
 	jsr	JSRPUL
 
 xNOPULS1	
 
-xSPACE01	lda	fx01,x	     	;SPACE ROUTINE
+xSPACE01	lda	fx01,x		;SPACE ROUTINE
 	and	#$20
 	beq	xNOSPC01
 	lda	noteleng,x
@@ -2763,7 +2342,7 @@ xARPEG01	lda	fx01,x		;ARP ROUTINE
 	sta	ssshi
 ARPJSR	ldy	arpindex,x
 	bne	xARP01
-     	lda	(ssslo),y
+	lda	(ssslo),y
 	sta	arpspeed,x
 	iny
 	jmp	xARP02
@@ -2814,7 +2393,7 @@ xNOARP01
 
 
 ;---------------------------------------------------------------------------------------------------------------------------------
-xseqtabel	db	<xclearsfx,>xclearsfx 	; $00 $xx 
+xseqtabel	db	<xclearsfx,>xclearsfx	; $00 $xx 
 		db	<xrainshi4,>xrainshi4	; $01 $03
 		db	<xsmokepuf,>xsmokepuf	; $02 $03
 		db	<xsmokepuh,>xsmokepuh	; $03 $03
@@ -2880,17 +2459,17 @@ xseqtabel	db	<xclearsfx,>xclearsfx 	; $00 $xx
 		db	<xpirats02,>xpirats02	; $3f,$01
 		db	<xpirats03,>xpirats03	; $40,$02
 		db	<xpirats04,>xpirats04	; $41,$03
- 		db	<xprepare1,>xprepare1	; $42,$00
+		db	<xprepare1,>xprepare1	; $42,$00
 		db	<xprepare2,>xprepare2	; $43,$01
-   		db	<xscraper1,>xscraper1	; $44,$00
+		db	<xscraper1,>xscraper1	; $44,$00
 		db	<xscraper2,>xscraper2	; $45,$01
-   		db	<xselecdo1,>xselecdo1	; $46,$00
+		db	<xselecdo1,>xselecdo1	; $46,$00
 		db	<xselecdo2,>xselecdo2	; $47,$01
-   		db	<xselecup1,>xselecup1	; $48,$00
+		db	<xselecup1,>xselecup1	; $48,$00
 		db	<xselecup2,>xselecup2	; $49,$01
-   		db	<xselbeat1,>xselbeat1	; $4a,$02
+		db	<xselbeat1,>xselbeat1	; $4a,$02
 		db	<xselbeat2,>xselbeat2	; $4b,$03
-   		db	<xnintend1,>xnintend1	; $4c,$00
+		db	<xnintend1,>xnintend1	; $4c,$00
 		db	<xnintend2,>xnintend2	; $4d,$01
 		db	<xnintend3,>xnintend3	; $4e,$02
 		db	<xnintend4,>xnintend4	; $4f,$03
@@ -2905,7 +2484,7 @@ xseqtabel	db	<xclearsfx,>xclearsfx 	; $00 $xx
 		db	<xiconhead,>xiconhead	; $58,$03
 
 
-xseqtabes         	db	$00,$00 ; $00 $xx 
+xseqtabes	db	$00,$00 ; $00 $xx 
 		db	$7f,$7f	; $01 $03
 		db	$02,$02	; $02 $03
 		db	$02,$02	; $03 $03
@@ -2971,15 +2550,15 @@ xseqtabes         	db	$00,$00 ; $00 $xx
 		db	$02,$03	; $3f,$01
 		db	$02,$03	; $40,$02
 		db	$02,$03	; $41,$03
- 		db	$02,$02	; $42,$00
+		db	$02,$02	; $42,$00
 		db	$02,$02	; $43,$01
-  		db	$02,$02	; $44,$00
+		db	$02,$02	; $44,$00
 		db	$02,$02	; $45,$01
-   		db	$03,$03	; $46,$00
+		db	$03,$03	; $46,$00
 		db	$03,$03	; $47,$01
-    		db	$03,$03	; $48,$00
+		db	$03,$03	; $48,$00
 		db	$03,$03	; $49,$01
-    		db	$04,$04	; $4a,$02
+		db	$04,$04	; $4a,$02
 		db	$04,$04	; $4b,$03
 		db	$02,$02	; $4c,$00
 		db	$02,$02	; $4d,$01
@@ -2996,7 +2575,7 @@ xseqtabes         	db	$00,$00 ; $00 $xx
 		db	$02,$02	; $58,$03
 	
 ;---------------------------------------------------------------------------------------------------------------------------------
-xam00	       	
+xam00		
 	db	7,6,6,5,5,5,4,4,4,4,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,1,$fe
 xam01
 	db	1,$fe
@@ -3122,11 +2701,11 @@ xp0f
 ;---------------------------------------------------------------------------------------------------------------------------------
 xa00	db	$00,28,30,28,26,24,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0,$fe
 xa01	db	$00,0,$fe		
-xa02	db 	$00,27,30,33,32,30,28,26,24,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,1,0,$fe
+xa02	db	$00,27,30,33,32,30,28,26,24,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,1,0,$fe
 xa03	db	$00,4,5,6,6,6,5,5,5,4,4,3,3,2,2,1,1,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,$fe
 xa04	db	$00,4,3,2,1,0,$fe	
-xa05              	db	$00,9,11,9,7,6,5,4,3,2,1,0,$fe
-xa06              	db	$00,$fd,$fe 			          ;use again
+xa05	db	$00,9,11,9,7,6,5,4,3,2,1,0,$fe
+xa06	db	$00,$fd,$fe			          ;use again
 xa07	db	$00,4,2,1,0,7,5,4,3,5,3,2,1,4,2,1,0,8,6,5,4,7,5,4,3,$ff
 xa08	db	$00,0,1,$ff
 xa09	db	$00,$a4,$a1,$9e,$9b,$98,$95,$fe
@@ -3152,7 +2731,7 @@ xa19	db	$20,0,5,$ff
 xa1a	db	$10,19,15,12,7,1,0,$ff
 xa1b	db	$00,$9a,$94,$90,$00,$fe
 xa1c	db	$00,8,8,8,8,7,8,7,8,7,7,7,7,6,7,6,7,6,6,6,6,5,6,5,6,5,5,5,5,4,5,4,5,4,4,4,4,3,4,3,4,3,3,3,3,2,3,2,3,2,2,2,2,1,2,1,2,1,1,1,1,0,$fe
-xa1d               	db	$10,12,7,4,0,$ff 
+xa1d	db	$10,12,7,4,0,$ff 
 xa1e	db	$10,12,7,3,0,$ff	  
 xa1f	db	1,0,$fe
 ;--------------------------------------------------------------------------------
@@ -3234,12 +2813,12 @@ xclearsfx	db	$00,$fe					;EMPTY SFX to clear voice(s)
 
 xs00		db	$e1,$ff
 xsex
-	       		      
-xrainshi4      	db	$01,$ff,$00				;RAIN SFX for atmosphere processor
+			      
+xrainshi4	db	$01,$ff,$00				;RAIN SFX for atmosphere processor
 
 xs01		db	$c0,$bf,$05,$ff
 
-xsmokepuf      	db	$02,$fe					;SMOKEPUF FOR MECHANIC THING	
+xsmokepuf	db	$02,$fe					;SMOKEPUF FOR MECHANIC THING	
 
 xs02		db	$c1,$90,$02,$ff
 
@@ -3381,14 +2960,14 @@ xfeedbac2	db	$19,$fe
 xs18		db	$cf,$88,$01,$89,$01,$ff
 xs19		db	$e2,$cf,$88,$01,$89,$01,$ff
 
-xexplos01	db	$1a,$fe		  			;EXPLOSION 01
+xexplos01	db	$1a,$fe					;EXPLOSION 01
 xexplos02	db	$1b,$fe
 
 xs1a		db	$d0,$90,$67,$01,$ff
 
 xs1b		db	$d0,$90,$61,$0f,$ff
 
-xexplos11	db	$1c,$fe	      				;EXPLOSION 02
+xexplos11	db	$1c,$fe					;EXPLOSION 02
 xexplos12	db	$1d,$fe
 
 xs1c
@@ -3396,7 +2975,7 @@ xs1c
 xs1d
 		db	$d0,$90,$68,$0e,$ff
 
-xstarspin	db	$1f,$fe	       				;SPINNING STAR
+xstarspin	db	$1f,$fe					;SPINNING STAR
 
 xs1f		db	$c0,$81,0,1,2,3,3,2,1,0,$e1,$ff
 
@@ -3460,7 +3039,7 @@ xs2a		db	$c7,$90,$70,$00
 		db	$c7,$84,$00,$00,$00,$00,$e1
 		db	$ff
 
-xwinner01	db	$83,$2b,$fe		 		;WAR WON!
+xwinner01	db	$83,$2b,$fe				;WAR WON!
 xwinner02	db	$83,$2c,$fe
 xwinner03	db	$83,$2d,$fe
 xwinner04	db	$2e,$fe
@@ -3504,7 +3083,7 @@ xs2e
 		db	$e1
 		db	$ff
 
-xgotplan1	db	$2f,$fe		   			;PLANET YOURS!
+xgotplan1	db	$2f,$fe					;PLANET YOURS!
 xgotplan2	db	$30,$fe
 
 xs2f
@@ -3514,7 +3093,7 @@ xs30
 		db	$e1,$cb,$82,$24,$29,$2b,$30,$e1
 		db	$ff
 
-xlosplan1	db	$31,$fe		   			;PLANET HIS
+xlosplan1	db	$31,$fe					;PLANET HIS
 xlosplan2	db	$32,$fe
 
 xs31
@@ -3572,7 +3151,7 @@ xs37
 		db	$c7,$88,$00,$00,$00,$84,$00,$85,$00,$e3,$85,$00,$e3,$84,$00,$00,$e1
 		db	$ff
 
-xprepare1	db	$38,$fe	   				;SHIP PREPARED
+xprepare1	db	$38,$fe					;SHIP PREPARED
 xprepare2	db	$39,$fe
 
 xs38		db	$d9,$82,$2c,$27,$22,$27,$2c,$e1
@@ -3582,7 +3161,7 @@ xs39
 		db	$da,$82,$2c,$27,$22,$27,$2c,$e2
 		db	$ff
 
-xscraper1	db	$3a,$fe		 			;SHIP SCRAPPED
+xscraper1	db	$3a,$fe					;SHIP SCRAPPED
 xscraper2	db	$3b,$fe
 
 xs3a		db	$d9,$82,$2a,$29,$25,$24,$1d,$e1
@@ -3592,7 +3171,7 @@ xs3b
 		db	$da,$82,$2a,$29,$25,$24,$1d,$e1
 		db	$ff
 
-xselecdo1	db	$3c,$fe		 			;SELECTSCRN DOWN
+xselecdo1	db	$3c,$fe					;SELECTSCRN DOWN
 xselecdo2	db	$3d,$fe
 
 xs3c		db	$d9,$81,$29,$24,$22,$1d,$18,$16,$11,$e1
@@ -3602,15 +3181,15 @@ xs3d
 		db	$da,$81,$29,$24,$22,$1d,$18,$16,$11,$e1
 		db	$ff
 
-xselecup1	db	$3e,$fe		 			;SELECTSCRN UP
+xselecup1	db	$3e,$fe					;SELECTSCRN UP
 xselecup2	db	$3f,$fe
 
 xs3e
- 		db	$d9,$81,$14,$19,$1b,$20,$25,$27,$2c,$e1
+		db	$d9,$81,$14,$19,$1b,$20,$25,$27,$2c,$e1
 		db	$ff
 xs3f
 		db	$e2
- 		db	$da,$81,$14,$19,$1b,$20,$25,$27,$2c,$e1
+		db	$da,$81,$14,$19,$1b,$20,$25,$27,$2c,$e1
 		db	$ff
 
 xselbeat1	db	$81,$40,$ff,$00
@@ -3656,7 +3235,7 @@ xnintend2		db	$91,$43,$fe
 xnintend3		db	$85,$44,$fe
 xnintend4		db	$45,$fe
 
-xs42            		db	$de,$8c,$16,$82,$16,$16,$86,$16,$13,$84,$16,$84,$18,$18,$16,$18,$e1
+xs42		db	$de,$8c,$16,$82,$16,$16,$86,$16,$13,$84,$16,$84,$18,$18,$16,$18,$e1
 		db	$ff
 xs43
 		db	$dd,$8c,$7d,$0a,$82,$0a,$0a,$86,$0a,$7e,$07,$84,$7d,$0a,$0c,$0c,$0a,$0c,$e1
@@ -3684,8 +3263,8 @@ xiconatmo		db	$71,$48,$fe
 xs48		db	$df,$a4,$01,$e1
 		db	$ff
 
-xiconcra1	       	db	$49,$fe
-xiconcra2	       	db	$72,$4a,$fe
+xiconcra1		db	$49,$fe
+xiconcra2		db	$72,$4a,$fe
 
 xs49
 		db	$e2,$c0,$9f,$04,$fa,$a3,$04,$e1
@@ -3702,7 +3281,7 @@ xs4b		db	$e5,$dc,$86,$7f,$00,$82,$02,$03,$e2,$82,$00,$e2,$90,$06,$e1
 xiconfis1		db	$89,$4c,$fe		
 xiconfis2		db	$73,$4d,$fe		
 
-xs4c	       	db	$e2
+xs4c		db	$e2
 		db	$ca,$83,$65,0,$e1,$82,0,0,$83,0,$e1,$82,0,0,0,0
 		db	$83,0,$e1,$83,0,$e1
 		db	$ff
@@ -3712,7 +3291,7 @@ xs4d
 		db	$83,0,$e1,$83,0,$e1
 		db	$ff
 
-xiconhead	       	db	$4e,$fe
+xiconhead		db	$4e,$fe
 
 xs4e		db	$fc,$c0,$81
 		db	0,0,1,1,2,1,2,2,3,2,3,3,4,3,4,4,5,4,5,5,6,5,6,6,7
@@ -3747,10 +3326,10 @@ xvibtabh	db	>xv01,>xv02,>xv03,>xv04,>xv05,>xv06,>xv07,>xv08,>xv09,>xv0a,>xv0b,>x
 xpultabl	db	<xp01,<xp02,<xp03,<xp04,<xp05,<xp06,<xp07,<xp08,<xp09,<xp0a,<xp0b,<xp0c,<xp0d,<xp0e,<xp0f
 xpultabh	db	>xp01,>xp02,>xp03,>xp05,>xp05,>xp06,>xp07,>xp08,>xp09,>xp0a,>xp0b,>xp0c,>xp0d,>xp0e,>xp0f
 
-xarptablo 	db 	<xa00,<xa01,<xa02,<xa03,<xa04,<xa05,<xa06,<xa07,<xa08,<xa09,<xa0a,<xa0b,<xa0c,<xa0d,<xa0e,<xa0f
-		db 	<xa10,<xa11,<xa12,<xa13,<xa14,<xa15,<xa16,<xa17,<xa18,<xa19,<xa1a,<xa1b,<xa1c,<xa1d,<xa1e,<xa1f
-xarptabhi	db 	>xa00,>xa01,>xa02,>xa03,>xa04,>xa05,>xa06,>xa07,>xa08,>xa09,>xa0a,>xa0b,>xa0c,>xa0d,>xa0e,>xa0f
-		db 	>xa10,>xa11,>xa12,>xa13,>xa14,>xa15,>xa16,>xa17,>xa18,>xa19,>xa1a,>xa1b,>xa1c,>xa1d,>xa1e,>xa1f
+xarptablo	db	<xa00,<xa01,<xa02,<xa03,<xa04,<xa05,<xa06,<xa07,<xa08,<xa09,<xa0a,<xa0b,<xa0c,<xa0d,<xa0e,<xa0f
+		db	<xa10,<xa11,<xa12,<xa13,<xa14,<xa15,<xa16,<xa17,<xa18,<xa19,<xa1a,<xa1b,<xa1c,<xa1d,<xa1e,<xa1f
+xarptabhi	db	>xa00,>xa01,>xa02,>xa03,>xa04,>xa05,>xa06,>xa07,>xa08,>xa09,>xa0a,>xa0b,>xa0c,>xa0d,>xa0e,>xa0f
+		db	>xa10,>xa11,>xa12,>xa13,>xa14,>xa15,>xa16,>xa17,>xa18,>xa19,>xa1a,>xa1b,>xa1c,>xa1d,>xa1e,>xa1f
 
 INTPLAYOS
 	lda	gldspeed,x
@@ -3776,11 +3355,11 @@ INTPLAYOS
 INTPLAYOSOUT
 
 CLEARZOOI	lda	#$00
-      	sta	ampindex,x
+	sta	ampindex,x
 	sta	pulindex,x
 	sta	vibindex,x
-       	sta	spacecnt,x
-       	sta	arpindex,x
+	sta	spacecnt,x
+	sta	arpindex,x
 
 	lda	fx02,x
 	lsr	a
@@ -3791,35 +3370,35 @@ CLEARZOOI	lda	#$00
 	rts
 
 SHITAMP
-       	ldy	ampindex,x
-       	lda	(ssslo),y
-       	cmp	#$ff
-       	bne	xAMPL00
-       	iny
-       	lda	(ssslo),y
-       	sta	ampindex,x
-       	tay
-       	lda	(ssslo),y
+	ldy	ampindex,x
+	lda	(ssslo),y
+	cmp	#$ff
+	bne	xAMPL00
+	iny
+	lda	(ssslo),y
+	sta	ampindex,x
+	tay
+	lda	(ssslo),y
        
-xAMPL00 	cmp	#$fe
-       	beq	xNOAMPL1
-       	sta	amplitud,x
-       	iny
-       	tya
-       	sta	ampindex,x
+xAMPL00	cmp	#$fe
+	beq	xNOAMPL1
+	sta	amplitud,x
+	iny
+	tya
+	sta	ampindex,x
 xNOAMPL1
 	rts	
 
 INITREALOS
 	lda	#$00	 
 	sta	seqindex,x
- 	sta	spdcheck,x
-       	cpx	#$02
-       	bne	xMORESP1
-       	lda	#$01
-       	sta	spdcount,x
-       	lda	#$00
-       	beq	xMORESP2
+	sta	spdcheck,x
+	cpx	#$02
+	bne	xMORESP1
+	lda	#$01
+	sta	spdcount,x
+	lda	#$00
+	beq	xMORESP2
 xMORESP1 sta	spdcount,x
 xMORESP2	sta	noteinit,x
 	sta	tranbyte,x
@@ -3857,7 +3436,7 @@ SEQHD12	cmp	#$fe		;check sequence on end-real
 SEQHD13	
 SEQHD15	cmp	#$80		;note transpose	check
 	bcc     SEQHD16  
-       	and	#$7f
+	and	#$7f
 	sta	tranbyte,x
 	iny
 	lda	(ssslo),y
@@ -3896,22 +3475,22 @@ JSRVIB	ldy	vibindex,x
 	lda	(ssslo),y
 xVIB01	rts
 
-JSRPUL 	ldy	pulindex,x
-       	lda	(ssslo),y
-       	cmp	#$ff
-       	bne	xPULS01
-       	iny
-       	lda	(ssslo),y
-       	sta	pulindex,x
-       	tay
-       	lda	(ssslo),y
+JSRPUL	ldy	pulindex,x
+	lda	(ssslo),y
+	cmp	#$ff
+	bne	xPULS01
+	iny
+	lda	(ssslo),y
+	sta	pulindex,x
+	tay
+	lda	(ssslo),y
 
-xPULS01 	cmp	#$fe
-       	beq	JSRPULOUT
-       	sta	pulsbyt1,x
-       	iny
-       	tya
-       	sta	pulindex,x	
+xPULS01	cmp	#$fe
+	beq	JSRPULOUT
+	sta	pulsbyt1,x
+	iny
+	tya
+	sta	pulindex,x	
 JSRPULOUT rts
 ;---------------------------------------------------------------------------------------------------------------------------------
 

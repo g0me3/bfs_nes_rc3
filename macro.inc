@@ -88,6 +88,20 @@ _NXT	EQU	$FF
 .1:
 	ENDM
 	
+	MAC	PRINTF
+		LDA		#<{1}
+		LDY		#>{1}
+		JSR		_printf
+	ENDM
+	
+; == DATA ==
+
+	MAC	STRING
+	.BYTE	[.1-.-1]
+	.BYTE	{#}
+.1	EQU	.
+	ENDM
+
 ; == STUB ==
 
 	MAC	SAFE_STUB0

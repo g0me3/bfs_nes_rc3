@@ -3,9 +3,6 @@
 ; SOUND ENGINE
 ; --------------------------------
 
-; Final Version by Jeroen Tel (c) 1992
-; Disasm by CaH4e3 (c) 2016
-
 ; =============== S U B	R O U T	I N E =======================================
 _apu_load_chnl:
 		ASL
@@ -117,11 +114,11 @@ loc_500B5:
 		STA		_apu_spdcheck,X
 		BPL		loc_500D2
 		LDY		_apu_seqposit,X
-		LDA		_apu_seqtabes,Y
+		LDA		_ptr_seqtabes,Y
 		JMP		loc_500D8
 loc_500D2:
 		LDY		_apu_seqposit,X
-		LDA		_apu_seqtabes+1,Y
+		LDA		_ptr_seqtabes+1,Y
 loc_500D8:
 		STA		_apu_spdcount,X
 		LDA		#$FF
@@ -142,9 +139,9 @@ loc_500F4:
 		RTS
 loc_500FA:
 		LDY		_apu_stepnumb,X
-		LDA		_apu_stptablo,Y
+		LDA		_ptr_stptablo,Y
 		STA		_apu_tmp0
-		LDA		_apu_stptabhi,Y
+		LDA		_ptr_stptabhi,Y
 		STA		_apu_tmp0+1
 		LDA		#0
 		STA		_apu_gldspeed,X
@@ -163,9 +160,9 @@ loc_50118:
 		JMP		loc_5019D
 loc_50128:
 		LDY		_apu_seqposit,X
-		LDA		_apu_seqtabel,Y
+		LDA		_ptr_seqtabel,Y
 		STA		_apu_tmp0
-		LDA		_apu_seqtabel+1,Y
+		LDA		_ptr_seqtabel+1,Y
 		STA		_apu_tmp0+1
 		LDY		_apu_seqindex,X
 		LDA		(_apu_tmp0),Y
@@ -394,9 +391,9 @@ loc_502E0:
 		LDA		_apu_fx03,X
 		AND		#$7F
 		TAY
-		LDA		_apu_amptabl,Y
+		LDA		_ptr_amptabl,Y
 		STA		_apu_tmp0
-		LDA		_apu_amptabh,Y
+		LDA		_ptr_amptabh,Y
 		STA		_apu_tmp0+1
 		LDY		_apu_ampindex,X
 		LDA		(_apu_tmp0),Y
@@ -457,9 +454,9 @@ loc_5035B:
 		LDA		_apu_fx01,X
 		AND		#$F
 		TAY
-		LDA		_apu_vibtabl-1,Y
+		LDA		_ptr_vibtabl-1,Y
 		STA		_apu_tmp0
-		LDA		_apu_vibtabh-1,Y
+		LDA		_ptr_vibtabh-1,Y
 		STA		_apu_tmp0+1
 		LDY		_apu_vibindex,X
 		LDA		(_apu_tmp0),Y
@@ -499,9 +496,9 @@ loc_503B4:
 		AND		#$F
 		BEQ		loc_503E5
 		TAY
-		LDA		_apu_pultabl-1,Y
+		LDA		_ptr_pultabl-1,Y
 		STA		_apu_tmp0
-		LDA		_apu_pultabh-1,Y
+		LDA		_ptr_pultabh-1,Y
 		STA		_apu_tmp0+1
 		LDY		_apu_pulindex,X
 		LDA		(_apu_tmp0),Y
@@ -523,9 +520,9 @@ loc_503E5:
 		AND		#$40
 		BEQ		locret_5045D
 		LDY		_apu_arpnumbo,X
-		LDA		_apu_arptablo,Y
+		LDA		_ptr_arptablo,Y
 		STA		_apu_tmp0
-		LDA		_apu_arptabhi,Y
+		LDA		_ptr_arptabhi,Y
 		STA		_apu_tmp0+1
 		LDY		_apu_arpindex,X
 		BNE		loc_50407
@@ -601,7 +598,7 @@ _apu_frqtabhi:
 		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 ;7
 		.BYTE	  7
 
-_apu_seqtabel:
+_ptr_seqtabel:
 		.WORD	_seq00
 		.WORD	_seq01
 		.WORD	_seq02
@@ -663,7 +660,7 @@ _apu_seqtabel:
 		.WORD	_seq3A
 		.WORD	_seq3B
 
-_apu_seqtabes:
+_ptr_seqtabes:
 		.BYTE	  0,  0
 		.BYTE	  2,  2
 		.BYTE	  2,  2
@@ -725,41 +722,41 @@ _apu_seqtabes:
 		.BYTE	  3,  3
 		.BYTE	  2,  2
 
-_apu_stptablo:
+_ptr_stptablo:
 		.BYTE	<s00,<s01,<s02,<s03,<s04,<s05,<s06,<s07,<s08,<s09,<s0A,<s0B,<s0C,<s0D,<s0E,<s0F
 		.BYTE	<s10,<s11,<s12,<s13,<s14,<s15,<s16,<s17,<s18,<s19,<s1A,<s1B,<s1C,<s1D,<s1E,<s1F
 		.BYTE	<s20,<s21,<s22,<s23,<s24,<s25,<s26,<s27,<s28,<s29,<s2A,<s2B,<s2C,<s2D,<s2E,<s2F
 		.BYTE	<s30,<s31,<s32,<s33,<s34,<s35,<s36,<s37,<s38,<s39,<s3A,<s3B,<s3C,<s3D,<s3E,<s3F
 		.BYTE	<s40,<s41,<s42,<s43
-_apu_stptabhi:
+_ptr_stptabhi:
 		.BYTE	>s00,>s01,>s02,>s03,>s04,>s05,>s06,>s07,>s08,>s09,>s0A,>s0B,>s0C,>s0D,>s0E,>s0F
 		.BYTE	>s10,>s11,>s12,>s13,>s14,>s15,>s16,>s17,>s18,>s19,>s1A,>s1B,>s1C,>s1D,>s1E,>s1F
 		.BYTE	>s20,>s21,>s22,>s23,>s24,>s25,>s26,>s27,>s28,>s29,>s2A,>s2B,>s2C,>s2D,>s2E,>s2F
 		.BYTE	>s30,>s31,>s32,>s33,>s34,>s35,>s36,>s37,>s38,>s39,>s3A,>s3B,>s3C,>s3D,>s3E,>s3F
 		.BYTE	>s40,>s41,>s42,>s43
 
-_apu_amptabl:
+_ptr_amptabl:
 		.BYTE	<am00,<am01,<am02,<am03,<am04,<am05,<am06,<am07,<am08,<am09,<am0A,<am0B,<am0C,<am0D,<am0E,<am0F
 		.BYTE	<am10,<am11,<am12,<am13,<am14,<am15,<am16,<am17
-_apu_amptabh:
+_ptr_amptabh:
 		.BYTE	>am00,>am01,>am02,>am03,>am04,>am05,>am06,>am07,>am08,>am09,>am0A,>am0B,>am0C,>am0D,>am0E,>am0F
 		.BYTE	>am10,>am11,>am12,>am13,>am14,>am15,>am16,>am17
 
-_apu_vibtabl:
+_ptr_vibtabl:
 		.BYTE	<v00,<v01,<v02,<v03
-_apu_vibtabh:
+_ptr_vibtabh:
 		.BYTE	>v00,>v01,>v02,>v03
 
-_apu_pultabl:
+_ptr_pultabl:
 		.BYTE	<p00,<p01,<p02,<p03,<p04,<p05
-_apu_pultabh:
+_ptr_pultabh:
 		.BYTE	>p00,>p01,>p02,>p03,>p04,>p05
 
-_apu_arptablo:
+_ptr_arptablo:
 		.BYTE	<a00,<a01,<a02,<a03,<a04,<a05,<a06,<a07,<a08,<a09,<a0A,<a0B,<a0C,<a0D,<a0E,<a0F
 		.BYTE	<a10,<a11,<a12,<a13,<a14,<a15,<a16,<a17,<a18,<a19,<a1A,<a1B,<a1C,<a1D,<a1E,<a1F
 		.BYTE	<a20,<a21
-_apu_arptabhi:
+_ptr_arptabhi:
 		.BYTE	>a00,>a01,>a02,>a03,>a04,>a05,>a06,>a07,>a08,>a09,>a0A,>a0B,>a0C,>a0D,>a0E,>a0F
 		.BYTE	>a10,>a11,>a12,>a13,>a14,>a15,>a16,>a17,>a18,>a19,>a1A,>a1B,>a1C,>a1D,>a1E,>a1F
 		.BYTE	>a20,>a21
