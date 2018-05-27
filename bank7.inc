@@ -6452,7 +6452,6 @@ _exit:
 _obj_misc_collision_test:
 		LDA		_obj_flags._misc
 		BEQ		loc_63220
-;		LDA		_obj_flags._misc						; redundant
 		CMP		#$FF
 		BEQ		loc_63220
 		LDA		_obj_var1._misc
