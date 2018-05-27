@@ -93,9 +93,9 @@ _lvl_player_start_x_lo_list:
 		.BYTE	  0,  0,$EC
 _lvl_player_start_x_hi_list:
 		.BYTE	  0,  0,  2
-_lvl_cur_spr_chr_bank_up_list:
+_lvl_spr_chr_bank_up_list:
 		.BYTE	  2,  2,  2
-_lvl_cur_spr_chr_bank_down_list:
+_lvl_spr_chr_bank_down_list:
 		.BYTE	  3,  3,  3
 _lvl_obj_num_at_start:
 		.BYTE	  2,  2,  0

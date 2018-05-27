@@ -79,6 +79,18 @@ _NXT	EQU	$FF
 		.BYTE 0
 	ENDM
 
+	MAC	TPOW
+{1}				EQU	.
+{1}.head		EQU	.
+		.BYTE 0
+{1}.body		EQU .
+		.BYTE 0
+{1}.arms		EQU	.
+		.BYTE 0
+{1}.legs		EQU	.
+		.BYTE 0
+	ENDM
+
 ; == OPCODE ==
 
 	MAC	INCY

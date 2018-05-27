@@ -111,7 +111,8 @@ _ending_display:
 		STA		_hi_score_entry_display_lock
 		STA		_delay_counter
 		STA		_delay_counter+1
-		STA		_pl_bkcp_continues
+		STA		_continues								; to prevent game continue after the completion
+		STA		_title_menu_idx							; to disable the title menu change
 		STA		_pad_prev0
 		LDA		#1
 		STA		_pad_prev1
@@ -139,18 +140,18 @@ _repair_lab_display:
 		LDA		#$40
 		STA		_repair_cursor_spr_x_pos
 		LDA		#2
-		STA		_repair_cur_body_index
+		STA		_repair_body_index
 		STA		_repair_body_index_request
-		LDA		_cur_head_percent
-		STA		_cur_head_percent_backup
-		LDA		_cur_body_percent
-		STA		_cur_body_percent_backup
-		LDA		_cur_arms_percent
-		STA		_cur_arms_percent_backup
-		LDA		_cur_legs_percent
-		STA		_cur_legs_percent_backup
-		LDA		_cur_repair_tanks
-		STA		_cur_repair_tanks_backup
+		LDA		_percents.head
+		STA		_head_percent_backup
+		LDA		_percents.body
+		STA		_body_percent_backup
+		LDA		_percents.arms
+		STA		_arms_percent_backup
+		LDA		_percents.legs
+		STA		_legs_percent_backup
+		LDA		_repair_tanks
+		STA		_repair_tanks_backup
 		LDA		#$1E
 		JSR		_far_apu_mus_load_prg5_safe
 		LDA		#8
@@ -182,18 +183,14 @@ _game_over_display:
 		STA		_pad_prev1
 		LDA		#6
 		STA		_event_reload_idx
-		LDA		_pl_bkcp_continues						; test for player 1 continues, as against other
-		BEQ		loc_4429E								; 2-player code, this assuming there is only 1 player
+		LDA		_continues								; test for player continues
+		BEQ		loc_4429E
 		LDA		#1
-		STA		_title_menu_idx							; continue are left, set the menu cursor to CONTINUE
 		BNE		loc_442AB
 loc_4429E:
 		LDA		#0
-		STA		_title_menu_idx							; or to START and disable continues
-		STA		_new_game_start_flag
-		LDA		_cur_lvl_idx
-		STA		_pl_bckp_lvl_idx
 loc_442AB:
+		STA		_title_menu_idx							; or to START and disable continues
 		JSR		_log_clear_buf
 		JSR		_star_field_init
 		LDA		#$20
@@ -391,33 +388,33 @@ loc_44569:
 		STA		[_spr_buf+_m3onoff]
 		STA		[_spr_buf+_m3onoff+4]
 loc_44583:
-		LDA		_title_menu_idx
+		LDA		_title_menu_idx							; test for title menu idx
 		BNE		loc_4459F
-		LDA		_pad
+		LDA		_pad									; start menu idx, test A or Start
 		AND		#9
 		BEQ		loc_4459F
 		STA		_pad_prev0
-		LDA		#0
-		STA		_new_game_start_flag
-		STA		_cur_lvl_idx
-		STA		_pl_bckp_lvl_idx
-		JMP		_intro_display
+		JSR		_player_vars_init						; start new game, reset all players params
+		JMP		_intro_display							; begin intro always, one-player code too
 loc_4459F:
 		LDA		_title_menu_idx
 		CMP		#1
-		BNE		loc_445C3
+		BNE		loc_445C3								; continue option
 		LDA		_pad
 		AND		#9
 		BEQ		loc_445C3
-		LDA		_pl_bkcp_continues
+		LDA		_continues								; recheck the continues for first player
 		BNE		loc_445BD
 		LDA		#0
-		STA		_new_game_start_flag
 		STA		_tmp_idx0
-		JMP		.wait_for_midscreen_change
+		JMP		.wait_for_midscreen_change				; do nothing, reset counters
 loc_445BD:
-		LDA		#1
-		STA		_new_game_start_flag
+		LDA		#0										; clear the hi-scores before continue
+		STA		_score_hex
+		STA		_score_hex+1							; just exit and begin a new game without intro
+		STA		_weapon0_idx							; clear weapon if continue too
+		STA		_weapon1_idx
+		STA		_weapon_type
 		RTS
 loc_445C3:
 		LDA		_title_menu_idx
@@ -812,9 +809,9 @@ loc_44A05:
 
 ; =============== S U B	R O U T	I N E =======================================
 _sort_hiscore_test:
-		LDA		_cur_score_hex
+		LDA		_score_hex
 		STA		_str_ptr							; erased in any case after this screen
-		LDA		_cur_score_hex+1
+		LDA		_score_hex+1
 		STA		_str_ptr+1
 		LDA		#0
 		STA		_hex2dec_tile_delta
@@ -1008,12 +1005,12 @@ _event5_repair:
 		STA		_str_ptr+1
 		LDX		_repair_body_index_request
 		LDY		_repair_update_flag_list,X
-		LDA		_cur_head_percent,Y
+		LDA		_percents,Y
 		STA		_str_ptr
 		LDA		#$E6
 		STA		_hex2dec_tile_delta
-		LDX		#<[_repair_cur_percent_disp_buf_tmp]
-		LDY		#>[_repair_cur_percent_disp_buf_tmp]
+		LDX		#<[_repair_percent_disp_buf_tmp]
+		LDY		#>[_repair_percent_disp_buf_tmp]
 		JSR		_hex2str
 		JSR		_read_pad
 		LDA		_pad
@@ -1025,14 +1022,14 @@ _event5_repair:
 		JMP		_bios_msg_display_ex
 		RTS
 loc_44AB8:
-		LDA		_cur_repair_tanks						; draw only single digit of tanks if more than 9, draw always 9
+		LDA		_repair_tanks						; draw only single digit of tanks if more than 9, draw always 9
 		CMP		#$A										; there were original bug, drawing % instead, since you doubtly
 		BCC		loc_44AC1								; obtain more than 10 at once and this case never tested
 		LDA		#9
 loc_44AC1:
 		CLC
 		ADC		#$E6
-		STA		_cur_repair_tanks_number_tile_tmp
+		STA		_repair_tanks_number_tile_tmp
 		LDA		_pad
 		AND		#1
 		CMP		_pad_prev0
@@ -1040,16 +1037,16 @@ loc_44AC1:
 		STA		_pad_prev0
 		CMP		#1
 		BNE		loc_44AF1
-		LDA		_cur_repair_tanks
+		LDA		_repair_tanks
 		BEQ		loc_44AF1
 		LDX		_repair_body_index_request
 		LDY		_repair_update_flag_list,X
-		LDA		_cur_head_percent,Y
+		LDA		_percents,Y
 		CLC
 		ADC		#$A
 		BCS		loc_44AF1
-		STA		_cur_head_percent,Y
-		DEC		_cur_repair_tanks
+		STA		_percents,Y
+		DEC		_repair_tanks
 loc_44AF1:
 		BIT		_PPU_STATUS
 		BMI		loc_44B2B
@@ -1147,7 +1144,7 @@ locret_45C98:
 _get_cursor_allow_list_ptr:
 		LDA		#0
 		STA		_tptr0+1
-		LDA		_repair_cur_body_index
+		LDA		_repair_body_index
 		ASL
 		ASL
 		ROL		_tptr0+1
@@ -1238,7 +1235,7 @@ loc_45D6A:
 		LDA		#0
 		STA		_repair_cursor_animate_in_progress
 		LDA		_repair_body_index_request
-		STA		_repair_cur_body_index
+		STA		_repair_body_index
 locret_45D7D:
 		RTS
 
@@ -1390,18 +1387,6 @@ loc_44C65:
 		LDA		_pad
 		AND		#1
 		BEQ		loc_44CA9
-		LDX		#0										; instead of _player_number they use this zero initialized X
-		STX		_new_game_start_flag
-		LDA		_cur_head_percent
-		STA		_pl_bckp_head_percent,X
-		LDA		_cur_body_percent
-		STA		_pl_bckp_body_percent,X
-		LDA		_cur_arms_percent
-		STA		_pl_bckp_arms_percent,X
-		LDA		_cur_legs_percent
-		STA		_pl_bckp_legs_percent,X
-		LDA		_cur_repair_tanks
-		STA		_pl_bckp_repair_tanks,X
 		INC		_tmp_idx1
 		JMP		_event_exec
 loc_44CA9:
@@ -1410,16 +1395,16 @@ loc_44CA9:
 		BNE		loc_44CB3
 		JMP		_event_exec
 loc_44CB3:
-		LDA		_cur_head_percent_backup
-		STA		_cur_head_percent
-		LDA		_cur_body_percent_backup
-		STA		_cur_body_percent
-		LDA		_cur_arms_percent_backup
-		STA		_cur_arms_percent
-		LDA		_cur_legs_percent_backup
-		STA		_cur_legs_percent
-		LDA		_cur_repair_tanks_backup
-		STA		_cur_repair_tanks
+		LDA		_head_percent_backup
+		STA		_percents.head
+		LDA		_body_percent_backup
+		STA		_percents.body
+		LDA		_arms_percent_backup
+		STA		_percents.arms
+		LDA		_legs_percent_backup
+		STA		_percents.legs
+		LDA		_repair_tanks_backup
+		STA		_repair_tanks
 		JMP		_repair_lab_display
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -1698,11 +1683,11 @@ loc_44F6E:
 		STA		_PPU_ADDR
 		LDA		#$25
 		STA		_PPU_ADDR
-		LDA		_repair_cur_percent_disp_buf_tmp+2
+		LDA		_repair_percent_disp_buf_tmp+2
 		STA		_PPU_DATA
-		LDA		_repair_cur_percent_disp_buf_tmp+3
+		LDA		_repair_percent_disp_buf_tmp+3
 		STA		_PPU_DATA
-		LDA		_repair_cur_percent_disp_buf_tmp+4
+		LDA		_repair_percent_disp_buf_tmp+4
 		STA		_PPU_DATA
 		LDA		#$F0
 		STA		_PPU_DATA
@@ -1717,7 +1702,7 @@ loc_44F6E:
 		LDX		#$44
 		STX		_PPU_ADDR
 		STA		_PPU_DATA
-		LDA		_cur_repair_tanks_number_tile_tmp
+		LDA		_repair_tanks_number_tile_tmp
 		STA		_PPU_DATA
 		LDA		_generic_nmi_over_counter
 		AND		#1
@@ -1827,7 +1812,7 @@ loc_4508D:
 
 ; =============== S U B	R O U T	I N E =======================================
 _repair_ppu_head_upgrade_display:
-		LDA		_cur_head_percent
+		LDA		_percents.head
 		CMP		#$B
 		BCC		loc_450A2
 		CMP		#$15
@@ -1890,7 +1875,7 @@ loc_450FC:
 
 ; =============== S U B	R O U T	I N E =======================================
 _repair_ppu_arms_upgrade_display:
-		LDA		_cur_arms_percent
+		LDA		_percents.arms
 		CMP		#$B
 		BCC		loc_45116
 		CMP		#$15
@@ -1970,7 +1955,7 @@ loc_45199:
 		INY
 		DEX
 		BNE		loc_45199
-		LDA		_cur_arms_percent
+		LDA		_percents.arms
 		CMP		#$B
 		BCC		loc_451B6
 		CMP		#$15
@@ -2028,7 +2013,7 @@ loc_451B8:
 ; experimental re-enable the left palm hand damage display for repair lab
 ; no doubt it looks creepy and weid, so they decided to remove it at all
 ;
-;		LDA		_cur_arms_percent
+;		LDA		_percents.arms
 ;		CMP		#$B
 ;		BCC		loc_451160
 ;		CMP		#$15
@@ -2079,7 +2064,7 @@ loc_451B8:
 
 ; =============== S U B	R O U T	I N E =======================================
 _repair_ppu_body_upgrade_display:
-		LDA		_cur_body_percent
+		LDA		_percents.body
 		CMP		#$B
 		BCC		loc_45231
 		CMP		#$15
@@ -2144,7 +2129,7 @@ loc_4528D:
 
 ; =============== S U B	R O U T	I N E =======================================
 _repair_ppu_legs_upgrade_display:
-		LDA		_cur_legs_percent
+		LDA		_percents.legs
 		CMP		#$B
 		BCC		loc_452AB
 		CMP		#$15
@@ -2576,6 +2561,10 @@ _screen_display:
 		STA		_screen_idx
 
 ; =============== S U B	R O U T	I N E =======================================
+; disables the PPU/RENDER/NMI, no need to clear the screen before, all
+; tilemaps are redraw it completely here, no restore PPU on exit, so
+; the code must do it personally
+;
 _screen_display_ex:
 		TAX
 		LDY		#0
@@ -2584,29 +2573,6 @@ _screen_display_ex:
 		BIT		_PPU_STATUS
 		BPL		_screen_display
 		BIT		_PPU_STATUS
-;		LDA		#$20									; every screen start from 2000 and redraw the whole screen!
-;		STA		_PPU_ADDR								; don't need this here at all!
-;		TYA
-;		STA		_PPU_ADDR								; Y already 0
-;loc_45855:
-;		STA		_PPU_DATA
-;		STA		_PPU_DATA
-;		STA		_PPU_DATA
-;		STA		_PPU_DATA
-;		INY
-;		BNE		loc_45855
-;		BIT		_PPU_STATUS
-;		LDA		#$24
-;		STA		_PPU_ADDR
-;		TYA
-;		STA		_PPU_ADDR
-;loc_45872:
-;		STA		_PPU_DATA
-;		STA		_PPU_DATA
-;		STA		_PPU_DATA
-;		STA		_PPU_DATA
-;		INY
-;		BNE		loc_45872
 		LDA		#$F0									; Y already 0
 loc_45885:
 		STA		_spr_buf,Y
@@ -2705,7 +2671,7 @@ loc_45959:
 		STA		_spr_buf,Y
 		RTS
 ; --
-; old autogenerating sprite function
+; old autogenerating sprite function, maybe will need later
 ;		LDA		#$C
 ;		STA		_tptr0
 ;		LDA		#$FF
@@ -2941,7 +2907,7 @@ _tlm1_probe:
 _tlm2_title:
 		INCBIN	"tlm\tlm2.pak"
 ;_tlm3_hiscore:
-;		INCBIN	"tlm\tlm3.pak"
+;		INCBIN	"tlm\tlm3.pak"							; actual tilemap unused, used regular frame instead
 _tlm4_frame:
 		INCBIN	"tlm\tlm4.pak"
 _tlm5_lewis:

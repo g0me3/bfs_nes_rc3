@@ -1,33 +1,31 @@
 	ORG $0000
 
 _apu_tmp0:							.BYTE	0,0
-_cur_lvl_idx:						.BYTE	0
-_cur_lvl_state_idx:					.BYTE	0
 _enemy_bullet_y_pos_global_arg:		.BYTE	0
 _hud_msg_idx:						.BYTE	0
 _hud_msg_type_pos:					.BYTE	0
 _hud_update_ppu_data_counter:		.BYTE	0
 _ingame_sync_counter:				.BYTE	0
-_printf_ofs_tmp:					.WORD	0
-_printf_len_tmp:					.BYTE	0
 _irq_regs_backup:					.BYTE	0,0,0
 _last_enemy_hit:					.BYTE	0
 _logo_skip_forbid_flag:				.BYTE	0
 _lvl1_player_pal_acid_lockup:		.BYTE	0
+_lvl_bg_chr_bank:					.BYTE	0
 _lvl_bg_chr_treshold:				.BYTE	0,0
+_lvl_bonus_portal_delay:			.BYTE	0
 _lvl_collision_data0_ptr:			.BYTE	0,0
 _lvl_collision_data1_ptr:			.BYTE	0,0
 _lvl_collision_data2_ptr:			.BYTE	0,0
-_lvl_cur_bg_chr_bank:				.BYTE	0
-_lvl_cur_spr_chr_bank_down:			.BYTE	0
-_lvl_cur_spr_chr_bank_up:			.BYTE	0
-_lvl_bonus_portal_delay:			.BYTE	0
+_lvl_idx:							.BYTE	0
 _lvl_nt_value:						.BYTE	0
 _lvl_obj_list_ptr:					.BYTE	0,0
 _lvl_phase_bg_chr_banks_list:		.BYTE	0,0,0
 _lvl_room_data_ptr:					.BYTE	0,0
 _lvl_scroll_tile_hit_flag:			.BYTE	0
 _lvl_scroll_value:					.BYTE	0
+_lvl_spr_chr_bank_down:				.BYTE	0
+_lvl_spr_chr_bank_up:				.BYTE	0
+_lvl_state_idx:						.BYTE	0
 _lvl_stop_sctoll_room_idx:			.BYTE	0
 _nmi_hndl_idx:						.BYTE	0
 _nmi_is_over_flag:					.BYTE	0
@@ -42,7 +40,7 @@ _pad_tmp:							.BYTE	0
 _pads:								.BYTE	0,0,0
 _pal_update_redundant:				.BYTE	0
 _pause_flag:						.BYTE	0
-_player_cur_bullet_shot_state:		.BYTE	0
+_player_bullet_shot_state:			.BYTE	0
 _player_damage_blink_timer:			.BYTE	0
 _player_diagonal_fire_delta:		.BYTE	0
 _player_explode_spr_remove_cnt:		.BYTE	0
@@ -58,6 +56,8 @@ _player_wnd_tile_number:			.BYTE	0
 _player_y_meta16_tile_tmp:			.BYTE	0
 _ppu_ctrl_shadow:					.BYTE	0
 _ppu_mask_shadow:					.BYTE	0
+_printf_len_tmp:					.BYTE	0
+_printf_ofs_tmp:					.WORD	0
 _ptr0:								.BYTE	0,0
 _ptr1:								.BYTE	0,0
 _rand_seed:							.BYTE	0,0,0,0
@@ -127,12 +127,12 @@ _star_field_data2:
 		
 _chr0_bank_shadow:					.BYTE	0
 _chr1_bank_shadow:					.BYTE	0
-_cur_arms_percent_backup:			.BYTE	0
-_cur_body_percent_backup:			.BYTE	0
-_cur_head_percent_backup:			.BYTE	0
-_cur_legs_percent_backup:			.BYTE	0
-_cur_repair_tanks_backup:			.BYTE	0
-_cur_repair_tanks_number_tile_tmp:	.BYTE	0
+_arms_percent_backup:				.BYTE	0
+_body_percent_backup:				.BYTE	0
+_head_percent_backup:				.BYTE	0
+_legs_percent_backup:				.BYTE	0
+_repair_tanks_backup:				.BYTE	0
+_repair_tanks_number_tile_tmp:		.BYTE	0
 _delay_counter:						.BYTE	0,0
 _disp_extra_shift:					.BYTE	0
 _disp_spr0hit_use:					.BYTE	0
@@ -150,8 +150,8 @@ _pad:								.BYTE	0
 _pad_prev0:							.BYTE	0
 _pad_prev1:							.BYTE	0
 _repair_body_index_request:			.BYTE	0
-_repair_cur_body_index:				.BYTE	0
-_repair_cur_percent_disp_buf_tmp:	.BYTE	0,0,0,0,0,0
+_repair_body_index:					.BYTE	0
+_repair_percent_disp_buf_tmp:		.BYTE	0,0,0,0,0,0
 _repair_cursor_animate_in_progress:	.BYTE	0
 _repair_cursor_animate_tmp:			.BYTE	0
 _repair_cursor_pos_dest:			.BYTE	0,0
@@ -242,9 +242,9 @@ _lvl_rooms_walked_count_unused:
 		.BYTE	0
 _hex2dec_tile_delta:
 		.BYTE	0
-_cur_score_hex:
+_score_hex:
 		.BYTE	0,0
-_cur_overal_armor_sum:
+_overal_armor_sum:
 		.BYTE	0
 		.BYTE	0
 _lvl2_jetpack_fuel_tanks:
@@ -264,11 +264,11 @@ _smart_bomb_timer:
 		.BYTE	0
 _player_tile_x:
 		.BYTE	0,0
-_hud_msg_cur_blink_timer:
+_hud_msg_cursor_blink_timer:
 		.BYTE	0
-_lvl_cur_spr_chr_bank_up_backup:
+_lvl_spr_chr_bank_up_backup:
 		.BYTE	0
-_lvl_cur_spr_chr_bank_down_backup:
+_lvl_spr_chr_bank_down_backup:
 		.BYTE	0
 		.BYTE	0,0,0
 _hud_random_msg_timeout:
@@ -345,29 +345,21 @@ _lvl2_tank_weapon_position_switch:
 _lvl2_tank_weapon_disable_flag:
 		.BYTE	0
 		.BYTE	0
-_cur_head_percent:
-		.BYTE	0
-_cur_body_percent:
-		.BYTE	0
-_cur_arms_percent:
-		.BYTE	0
-_cur_legs_percent:
-		.BYTE	0
-_cur_repair_tanks:
-		.BYTE	0
-_new_game_start_flag:
+
+		TPOW	_percents
+
+_repair_tanks:
 		.BYTE	0
 _unused_32:
+		.BYTE	0
 		.BYTE	0
 _apu_music_enable:
 		.BYTE	0
 _apu_sound_enable:
 		.BYTE	0
-_player_number:
-		.BYTE	0
 _unused_31:
+		.BYTE	0
 		.BYTE	0,0,0,0,0,0
-_failure_treshold_list:
 		.BYTE	0,0,0,0
 _failure_duration_period:
 		.BYTE	0
@@ -375,32 +367,13 @@ _failure_mode:
 		.BYTE	0
 _unused_30:
 		.BYTE	0,0,0,0,0,0,0,0,0,0
-_pl_bckp_head_percent:
-		.BYTE	0,0
-_pl_bckp_body_percent:
-		.BYTE	0,0
-_pl_bckp_arms_percent:
-		.BYTE	0,0
-_pl_bckp_legs_percent:
-		.BYTE	0,0
-_pl_bckp_repair_tanks:
-		.BYTE	0,0
-_pl_bckp_lvl_idx:
-		.BYTE	0,0
-_pl_bckp_score_hex_lo:
-		.BYTE	0,0
-_pl_bckp_score_hex_hi:
-		.BYTE	0,0
-_pl_bkcp_continues:
-		.BYTE	0,0
-_hud_weap0_attr_overlay:
-		.BYTE	0,0
-_hud_weap1_attr_overlay:
-		.BYTE	0,0
-_hud_weapon_blink_timer:
-		.BYTE	0
-byte_6F5:
-		.BYTE	0
+
+_continues:						.BYTE	0
+
+_hud_weap0_attr_overlay:		.BYTE	0,0
+_hud_weap1_attr_overlay:		.BYTE	0,0
+_hud_weapon_blink_timer:		.BYTE	0
+_game_delay_nmi_counter:		.BYTE	0
 
 _log_msg_buf:
 		.BYTE	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
