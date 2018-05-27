@@ -202,7 +202,7 @@ _cur_repair_tanks_number_tile_tmp:
 		.BYTE	0
 _disp_spr_send_tmp:
 		.BYTE	0
-_disp_extra_ctrl:
+_special_controls_flag:
 		.BYTE	0
 _disp_extra_shift:
 		.BYTE	0
@@ -448,9 +448,9 @@ _new_game_start_flag:
 		.BYTE	0
 _unused_32:
 		.BYTE	0
-_apu_sound_enable:
-		.BYTE	0
 _apu_music_enable:
+		.BYTE	0
+_apu_sound_enable:
 		.BYTE	0
 _player_number:
 		.BYTE	0

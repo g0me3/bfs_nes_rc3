@@ -39,6 +39,18 @@ loc_50027:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
+_apu_play:
+		LDX		#0
+		JSR		_apu_play_chnl
+		LDX		#1
+		JSR		_apu_play_chnl
+		LDX		#2
+		JSR		_apu_play_chnl
+		LDX		#3
+		JSR		_apu_play_chnl
+		RTS
+
+; =============== S U B	R O U T	I N E =======================================
 _apu_play_chnl:
 		LDA		byte_1400,X
 		BEQ		locret_50065

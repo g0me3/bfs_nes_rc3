@@ -18,8 +18,9 @@ loc_440C1:
 ; event with logos, title and hi-score table
 ;
 _attract_display:
-		LDA		#9
-		JSR		_bios_msg_display_ex					; draw window frame with default empty message
+		LDA		#4
+		STA		_screen_idx
+		JSR		_screen_display
 ; --
 ; text display routine, print out a text resource at once on the screen
 ; they used the same routine in many other places, but with typing method
@@ -34,9 +35,9 @@ _attract_display:
 		LDA		#$22
 		STA		_intro_txt_ppu_ofs_tmp
 		STA		_PPU_ADDR
-		LDA		#<[_asci_copyrights]					; here X were used before, it is 0 at this point
+		LDA		#<[_msg5_copyrights]					; here X were used before, it is 0 at this point
 		STA		_txt_ptr
-		LDA		#>[_asci_copyrights]
+		LDA		#>[_msg5_copyrights]
 		STA		_txt_ptr+1								; display copyrights
 loc_44059:
 		LDA		(_txt_ptr),Y
@@ -44,11 +45,11 @@ loc_44059:
 		BEQ		.do_next_line							; $FE - return symbol
 		CMP		#$FA
 		BEQ		.do_music_and_delay						; $FA - stop symbol
-		CMP		#$C0
-		BCS		loc_4406A								; tiles above $C0 goes unchanged
-		SEC
-		SBC		#$40									; fonts are at 00, so they used delta $40 for regular ascii symbols
-loc_4406A:
+;		CMP		#$C0
+;		BCS		loc_4406A								; tiles above $C0 goes unchanged
+;		SEC
+;		SBC		#$40									; fonts are at 00, so they used delta $40 for regular ascii symbols
+;loc_4406A:
 		STA		_PPU_DATA
 loc_4406A0:
 		INC		_txt_ptr
@@ -75,7 +76,7 @@ loc_4406A0:
 		LDA		#$81
 		STA		_PPU_CTRL								; enable NMI back, select scroll high nt bit
 		LDA		#$1D
-		JSR		_apu_mus_start							; init title sound
+		JSR		_far_apu_mus_load_prg5_safe				; init title sound
 		LDA		#1
 		STA		_event_reload_idx						; set dummy reload nmi
 		LDX		#$FF
@@ -88,7 +89,7 @@ loc_4406A0:
 		PHA
 		LDX		#3
 		JSR		_delay
-		JSR		_far_apu_play							; do play sync 
+;		JSR		_far_apu_play_prg5_safe					; do play sync 
 		JSR		_star_field_animate
 		PLA
 		TAX
@@ -216,7 +217,7 @@ _ending_display:
 		INX
 		STX		_spr_buf+$25
 		LDA		#$1F
-		JSR		_apu_mus_start
+		JSR		_far_apu_mus_load_prg5_safe
 		LDA		#$81
 		STA		_PPU_CTRL
 		JMP		_event_exec
@@ -247,7 +248,7 @@ _repair_lab_display:
 		STA		_repair_cur_body_index
 		STA		_repair_body_index_request
 		LDA		#$1E
-		JSR		_apu_mus_start
+		JSR		_far_apu_mus_load_prg5_safe
 		LDA		_cur_head_percent
 		STA		_cur_head_percent_backup
 		LDA		_cur_body_percent
@@ -311,18 +312,18 @@ loc_442AB:
 		LDX		#0
 loc_442E2:
 		LDA		_txt_game_over,X
-		BMI		loc_442ED
 		STA		_PPU_DATA
 		INX
-		BNE		loc_442E2
+		CPX		#$A
+		BCC		loc_442E2
 loc_442ED:
 		LDA		#$20
-		JSR		_apu_mus_start
+		JSR		_far_apu_mus_load_prg5_safe
 		LDA		#$81
 		STA		_PPU_CTRL
 		JMP		_event_exec
 _txt_game_over:
-		.BYTE	  7, 1, $D,  5, 0, 0, $F, $16, 5, $12, $FF
+		.BYTE	_G,_A,_M,_E,_,_,_O,_V,_E,_R
 
 ; =============== S U B	R O U T	I N E =======================================
 _spr_buf_clear:
@@ -360,9 +361,9 @@ _events_lib:
 		.WORD _event7_log_msg
 
 _spr_presents:
-		.BYTE	$10, $12,  5, $13,  5, $E, $14, $13
+		.BYTE	_P,_R,_E,_S,_E,_N,_T,_S
 _spr_oduction:
-		.BYTE	 $F, 4, $15, 3, $14, 9, $F, $E
+		.BYTE	_O,_D,_U,_C,_T,_I,_O,_N
 
 ; =============== S U B	R O U T	I N E =======================================
 _event2_title:
@@ -492,7 +493,7 @@ loc_4444F:
 		LDA		_delays_list_hi,X
 		STA		_delay_counter
 loc_4448B:
-		JSR		_far_apu_play
+;		JSR		_far_apu_play_prg5_safe
 		JMP		_event_exec
 loc_44491:
 		LDA		_disp_spr0hit_use
@@ -500,14 +501,14 @@ loc_44491:
 		LDX		#3
 		JSR		_delay
 		JSR		_read_pad
-		JSR		_far_apu_play
+;		JSR		_far_apu_play_prg5_safe
 		LDA		#1
 		STA		_logo_skip_forbid_flag
 		JMP		_event_exec
 loc_444AD:
 		LDX		#1
 		JSR		_delay
-		JSR		_far_apu_play
+;		JSR		_far_apu_play_prg5_safe
 		JSR		_read_pad
 		LDY		_title_menu_idx
 		LDX		byte_44651,Y
@@ -579,7 +580,7 @@ loc_44543:
 		INX
 		DEC		_tmp3C3+2
 		BNE		loc_44543
-		LDA		_apu_music_enable
+		LDA		_apu_sound_enable
 		BEQ		loc_44561
 		LDA		#$4F
 		STA		_spr_buf+$A9
@@ -591,7 +592,7 @@ loc_44561:
 		STA		_spr_buf+$A9
 		STA		_spr_buf+$AD
 loc_44569:
-		LDA		_apu_sound_enable
+		LDA		_apu_music_enable
 		BEQ		loc_4457B
 		LDA		#$4F
 		STA		_spr_buf+$C9
@@ -642,11 +643,11 @@ loc_445C3:
 		AND		#9
 		BEQ		loc_445E7
 		JSR		_reload_delay_counter_2
-		LDA		_apu_music_enable
+		LDA		_apu_sound_enable
 		CLC
 		ADC		#1
 		AND		#1
-		STA		_apu_music_enable
+		STA		_apu_sound_enable
 loc_445E7:
 		LDA		_title_menu_idx
 		CMP		#3
@@ -658,18 +659,18 @@ loc_445E7:
 		AND		#9
 		BEQ		_wait_for_midscreen_change
 		JSR		_reload_delay_counter_2
-		LDA		_apu_sound_enable
+		LDA		_apu_music_enable
 		CLC
 		ADC		#1
 		AND		#1
-		STA		_apu_sound_enable
+		STA		_apu_music_enable
 		BEQ		loc_44615
 		LDA		#$1D
-		JSR		_apu_mus_start
+		JSR		_far_apu_mus_load_prg5_safe
 		JMP		_wait_for_midscreen_change
 loc_44615:
 		LDA		#0
-		JSR		_apu_mus_start
+		JSR		_far_apu_mus_load_prg5_safe
 _wait_for_midscreen_change:
 		BIT		_PPU_STATUS
 		BMI		loc_44623
@@ -713,7 +714,7 @@ byte_44659:
 _event3_intro:
 		LDX		#4
 		JSR		_delay
-		JSR		_far_apu_play
+;		JSR		_far_apu_play_prg5_safe
 		JSR		_read_pad
 		LDA		_pad
 		CMP		_pad_prev
@@ -746,7 +747,7 @@ loc_44684:
 ;		JMP		.i_cmdFD_short_delay					; $FD - unused short delay
 ;loc_446A8:
 		CMP		#$FC
-		BEQ		.i_cmdFC_delay							; $FC - long typing generic delay
+		BEQ		.i_cmdFC_delay							; $FC - long delay
 		CMP		#$FB
 		BEQ		.i_cmdFB_clear_buf						; $FB - clear current buf
 		CMP		#$FA
@@ -827,21 +828,21 @@ _lvl0_intro_log_lib:
 		.WORD _lvl0_intro_log2
 		
 _lvl0_intro_log0:
-		.BYTE	  3, $F, $D, $D,  1, $E,  4,$24,  3, $F, $D,$FE
-		.BYTE	 $C, $F,  1,  4,  0,  2,  9, $F,$13,$FE
-		.BYTE	 $D,  5, $D, $F,$12,$19,  0,$13,  5,$14,$FE
-		.BYTE	$13,$19,$13,$14,  5, $D,  0,$13,$14,  1,$14,$15,$13,$FE
-		.BYTE	 $F, $B,$24,$FE,$FC,$FB
-		.BYTE	  3,$12,  9, $D,  5,  0,  9, $E,  0,$10,$12, $F,  7,$12,  5,$13,$13,$24,$FE
-		.BYTE	$10,  5, $E,  1, $C,  0,  3, $F,  4,  5,  0,$1B,$1D,$23,$24,$1B,$FE
-		.BYTE	  9, $E,  0,$10,$15,$12,$13,$15,  9,$14,$FE,$FC,$FB,$FF
+		.BYTE	_C,_O,_M,_M,_A,_N,_D,_DT,_C,_O,_M,_SCL
+		.BYTE	_L,_O,_A,_D,_,_B,_I,_O,_S,_SCL
+		.BYTE	_M,_E,_M,_O,_R,_Y,_,_S,_E,_T,_SCL
+		.BYTE	_S,_Y,_S,_T,_E,_M,_,_S,_T,_A,_T,_U,_S,_SCL
+		.BYTE	_O,_K,_DT,_SCL,_DLY,_CLR
+		.BYTE	_C,_R,_I,_M,_E,_,_I,_N,_,_P,_R,_O,_G,_R,_E,_S,_S,_DT,_SCL
+		.BYTE	_P,_E,_N,_A,_L,_,_C,_O,_D,_E,_,_1,_3,_9,_DT,_1,_SCL
+		.BYTE	_I,_N,_,_P,_U,_R,_S,_U,_I,_T,_SCL,_DLY,_CLR,_NXT
 _lvl0_intro_log1:
-		.BYTE	$16, $F,  9,  3,  5,  0,  1, $E,  1, $C,$19,$13,  9,$13,$FE
-		.BYTE	 $F,  6,  6,  9,  3,  5,$12,  0, $C,  5,$17,  9,$13,$26,  1, $E, $E,  5,$FE,$FC,$FE
-		.BYTE	  3,$15,$12,$12,  5, $E,$14,  0,$10, $F,$13,  9,$14,  9, $F, $E,$24,$FE
-		.BYTE	  5,$13,$10, $F,$13,  9,$14, $F,  0,  1, $E,  4,  0,  3,  8,  1, $C, $D,  5,$12,$13,  0,  2, $C,$16,  4,$24,$FE,$FC,$FB,$FF
+		.BYTE	_V,_O,_I,_C,_E,_,_A,_N,_A,_L,_Y,_S,_I,_S,_SCL
+		.BYTE	_O,_F,_F,_I,_C,_E,_R,_,_L,_E,_W,_I,_S,_CO,_A,_N,_N,_E,_SCL,_DLY,_SCL
+		.BYTE	_C,_U,_R,_R,_E,_N,_T,_,_P,_O,_S,_I,_T,_I,_O,_N,_DT,_SCL
+		.BYTE	_E,_S,_P,_O,_S,_I,_T,_O,_,_A,_N,_D,_,_C,_H,_A,_L,_M,_E,_R,_S,_,_B,_L,_V,_D,_DT,_SCL,_DLY,_CLR,_NXT
 _lvl0_intro_log2:
-		.BYTE	  9,  0,  1, $D,  0, $F, $E,  0, $D,$19,  0,$17,  1,$19,  0, $C,  5,$17,  9,$13,$24,$24,$24,$FE,$FC,$FA
+		.BYTE	_I,_,_A,_M,_,_O,_N,_,_M,_Y,_,_W,_A,_Y,_,_L,_E,_W,_I,_S,_DT,_DT,_DT,_SCL,_DLY,_END
 
 ; =============== S U B	R O U T	I N E =======================================
 _event4_ending:
@@ -864,10 +865,8 @@ _event4_ending:
 		CMP		#3
 		BCC		loc_44858
 		CMP		#$D
-		BCS		loc_44855
+		BCS		loc_448BE
 		JMP		loc_44914
-loc_44855:
-		JMP		loc_448BE
 loc_44858:
 		JSR		_read_pad
 		LDA		_pad
@@ -930,7 +929,7 @@ loc_4487B:
 		LSR
 		STA		$BFFF
 loc_448B8:
-		JSR		_far_apu_play
+;		JSR		_far_apu_play_prg5_safe
 		JMP		_event_exec
 loc_448BE:
 		LDA		#0
@@ -959,7 +958,7 @@ loc_448BE:
 		LDA		#$80
 		STA		_PPU_CTRL
 		LDA		#$1D
-		JSR		_apu_mus_start
+		JSR		_far_apu_mus_load_prg5_safe
 		LDA		#1
 		STA		_pad_prev
 		STA		byte_3D3
@@ -992,7 +991,7 @@ loc_44914:
 		STA		_PPU_CTRL
 loc_44965:
 		JSR		_star_field_animate
-		JSR		_far_apu_play
+;		JSR		_far_apu_play_prg5_safe
 		JSR		_read_pad
 		LDX		_hi_score_line_idx
 		LDA		_hi_score_ram_ofs_list,X
@@ -1210,14 +1209,14 @@ loc_44B2B:
 		JSR		_repair_cursor_input
 		JSR		_repair_cursor_animate
 		JSR		_dpad_convert
-		JSR		_far_apu_play
+;		JSR		_far_apu_play_prg5_safe
 		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
 _event6_game_over:
 		LDX		#3
 		JSR		_delay
-		JSR		_far_apu_play
+;		JSR		_far_apu_play_prg5_safe
 		JSR		_star_field_animate
 		JSR		_read_pad
 		LDA		_pad
@@ -1265,7 +1264,7 @@ loc_44BA3:
 _event7_log_msg:
 		LDX		#3
 		JSR		_delay
-		JSR		_far_apu_play
+;		JSR		_far_apu_play_prg5_safe
 		LDA		_log_msg_skip_forbid
 		BNE		loc_44BCA
 		JSR		_read_pad
@@ -1301,8 +1300,8 @@ loc_44BE1:
 loc_44BFC:
 		LDX		byte_3D7
 ;		LDA		(_txt_ptr),Y							; no need to read it one more time
-		SEC
-		SBC		#$40
+;		SEC
+;		SBC		#$40
 		STA		_log_msg_buf+$54,X
 		INC		byte_3B5
 		INC		byte_3D7
@@ -1311,6 +1310,7 @@ loc_44BFC:
 .j_event_exec1:
 		JMP		_event_exec
 ; --------------------------------
+; unused here, but used in intro copy of this code, no debug though
 ;.l_cmdFF_next_screen:
 ;		INC		byte_3B4
 ;		LDA		#0
@@ -2226,28 +2226,30 @@ _nmi0_common:
 		STA		_event_idx
 		LDA		#$1E
 		STA		_PPU_MASK
-		LDA		_disp_extra_ctrl
-		BEQ		loc_4535A
+		LDA		_special_controls_flag					; used only for title screen, overrides generic
+		BEQ		.nmi0_generic_input						; input controls for the rest of the screens displayed
 		LDA		#$A8
 ;		ORA		_nmi_ppu_ctrl_override_redundant
 		STA		_PPU_CTRL
 		INC		_generic_nmi_over_counter
-		LDA		_irq_regs_backup
+		JSR		_far_apu_play_prg5_safe					; put it here, because we always run in prg5 during
+		LDA		_irq_regs_backup						; intro sequences, removed from event loops
 		LDX		_irq_regs_backup+1
 		LDY		_irq_regs_backup+2
 		RTI
-loc_4535A:
+.nmi0_generic_input:
 		LDA		_event_reload_idx
 		CMP		#4
-		BNE		loc_45368
+		BNE		.j_nmi0_finish
 		LDA		_screen_idx
 		CMP		#3
-		BEQ		loc_4536B
-loc_45368:
-		JMP		loc_453F2
-loc_4536B:
-		LDA		#0
-		CLC
+		BEQ		.nmi0_hiscore_entry_input
+.j_nmi0_finish:
+		JMP		.nmi0_finish
+; --------------------------------
+.nmi0_hiscore_entry_input:
+		LDA		#0										; calc the hiscore table data offset
+		CLC												; ofs = hi_score_line_idx * 15
 		LDX		_hi_score_line_idx
 loc_45371:
 		CPX		#0
@@ -2311,21 +2313,18 @@ loc_453E8:
 		STA		_PPU_ADDR
 		LDA		#0
 		STA		_PPU_ADDR
-loc_453F2:
+; --------------------------------
+.nmi0_finish:
 		LDA		#$88
 ;		ORA		_nmi_ppu_ctrl_override_redundant
 		STA		_PPU_CTRL
 		INC		_generic_nmi_over_counter
-		LDA		_irq_regs_backup
+		JSR		_far_apu_play_prg5_safe					; put it here, because we always run in prg5 during
+		LDA		_irq_regs_backup						; intro sequences, removed from event loops
 		LDX		_irq_regs_backup+1
 		LDY		_irq_regs_backup+2
 		RTI
-_repair_small_frame_txt_lib:
-		.WORD _repair_small_frame_txt0
-		.WORD _repair_small_frame_txt1
-		.WORD _repair_small_frame_txt3
-		.WORD _repair_small_frame_txt1
-		.WORD _repair_small_frame_txt2
+		
 _hi_score_ppu_ofs_list:
 		.WORD $2151
 		.WORD $2191
@@ -2333,6 +2332,13 @@ _hi_score_ppu_ofs_list:
 		.WORD $2211
 		.WORD $2251
 		.WORD $2291
+		
+_repair_small_frame_txt_lib:
+		.WORD _repair_small_frame_txt0
+		.WORD _repair_small_frame_txt1
+		.WORD _repair_small_frame_txt3
+		.WORD _repair_small_frame_txt1
+		.WORD _repair_small_frame_txt2
 
 ; =============== S U B	R O U T	I N E =======================================
 _ppu_pal_send:
@@ -2706,7 +2712,7 @@ _disp_spr0hit_y:
 		.BYTE	  0,  0,$65,  0,  0,  0,  0,$7C,$66
 _disp_spr0hit_tile:
 		.BYTE	  0,  0,$FF,  0,  0,  0,  0,$30,$30
-_disp_extra_ctrl_flags_list:
+_special_controls_flag_flags_list:
 		.BYTE	  0,  0,$FF,  0,  0,  0,  0,  0,  0
 _disp_extra_shifts_list:
 		.BYTE	  0,  0,$10,  0,  0,  0,  0,$10,$10
@@ -2759,8 +2765,8 @@ loc_45885:
 		STA		_chr1_bank_shadow
 		LDA		_disp_chr1_list,X
 		STA		_chr0_bank_shadow
-		LDA		_disp_extra_ctrl_flags_list,X
-		STA		_disp_extra_ctrl
+		LDA		_special_controls_flag_flags_list,X
+		STA		_special_controls_flag
 		LDA		_disp_extra_shifts_list,X
 		STA		_disp_extra_shift
 		LDA		_disp_spr0hit_use_flags,X
@@ -3016,8 +3022,8 @@ loc_45A69:
 		BMI		loc_45A55
 locret_45A7A:
 		RTS
-_chars_table:
-		.BYTE	 $F,$1B,$1C,$1D,$1E,$1F,$20,$21,$22,$23
+_nums_table:
+		.BYTE	_O,_1,_2,_3,_4,_5,_6,_7,_8,_9
 
 ; =============== S U B	R O U T	I N E =======================================
 ; draws an actual hi-score table data from RAM at the fixed position
@@ -3032,7 +3038,7 @@ _draw_hiscore_table:
 		LDX		#0
 loc_45AEE:
 		LDY		_hi0_score,X
-		LDA		_chars_table,Y
+		LDA		_nums_table,Y
 		STA		_PPU_DATA
 		INX
 		CPX		#5
@@ -3057,7 +3063,7 @@ loc_45B0F:
 		LDX		#0
 loc_45B26:
 		LDY		_hi1_score,X
-		LDA		_chars_table,Y
+		LDA		_nums_table,Y
 		STA		_PPU_DATA
 		INX
 		CPX		#5
@@ -3082,7 +3088,7 @@ loc_45B47:
 		LDX		#0
 loc_45B5E:
 		LDY		_hi2_score,X
-		LDA		_chars_table,Y
+		LDA		_nums_table,Y
 		STA		_PPU_DATA
 		INX
 		CPX		#5
@@ -3107,7 +3113,7 @@ loc_45B7F:
 		LDX		#0
 loc_45B96:
 		LDY		_hi3_score,X
-		LDA		_chars_table,Y
+		LDA		_nums_table,Y
 		STA		_PPU_DATA
 		INX
 		CPX		#5
@@ -3132,7 +3138,7 @@ loc_45BB7:
 		LDX		#0
 loc_45BCE:
 		LDY		_hi4_score,X
-		LDA		_chars_table,Y
+		LDA		_nums_table,Y
 		STA		_PPU_DATA
 		INX
 		CPX		#5
@@ -3157,7 +3163,7 @@ loc_45BEF:
 		LDX		#0
 loc_45C06:
 		LDY		_hi5_score,X
-		LDA		_chars_table,Y
+		LDA		_nums_table,Y
 		STA		_PPU_DATA
 		INX
 		CPX		#5
@@ -3732,9 +3738,9 @@ _bios_msg_display_ex:
 		STA		byte_3B4
 		ASL
 		TAX
-		LDA		_asci_msg_lib,X
+		LDA		_msg_lib,X
 		STA		_txt_ptr
-		LDA		_asci_msg_lib+1,X
+		LDA		_msg_lib+1,X
 		STA		_txt_ptr+1
 		LDA		#0
 		STA		_event_idx
@@ -3764,145 +3770,157 @@ _bios_msg_display_ex:
 		STA		_PPU_ADDR
 		LDA		#$23
 		STA		_PPU_ADDR
-		JSR		_asci_rom_bios_hdr_display
+		JSR		_rom_bios_hdr_display
 		BIT		_PPU_STATUS
 		LDA		#$21
 		STA		_PPU_ADDR
 		LDA		#$43
 		STA		_PPU_ADDR
-		JSR		_asci_rom_bios_hdr_display
+		JSR		_rom_bios_hdr_display
 		BIT		_PPU_STATUS
 		LDA		#$21
 		STA		_PPU_ADDR
 		LDA		#$63
 		STA		_PPU_ADDR
-		JSR		_asci_rom_bios_hdr_display
+		JSR		_rom_bios_hdr_display
 		LDA		#$80
 		STA		_PPU_CTRL
 		JMP		_event_exec
 
 ; =============== S U B	R O U T	I N E =======================================
-_asci_rom_bios_hdr_display:
-		LDA		_asci_rom_bios_hdr,X
-		CMP		#$FE
+_rom_bios_hdr_display:
+		LDA		_rom_bios_hdr,X
+		CMP		#_SCL
 		BEQ		loc_4784A
-		SEC
-		SBC		#$40
+;		SEC
+;		SBC		#$40
 		STA		_PPU_DATA
 		INX
-		BNE		_asci_rom_bios_hdr_display
+		BNE		_rom_bios_hdr_display
 loc_4784A:
 		INX
 		RTS
 		
-_asci_rom_bios_hdr:
-		.BYTE	$52,$4F,$4D,$40,$42,$49,$4F,$53,$FE
-		.BYTE	$44,$41,$54,$41,$40,$52,$45,$54,$52,$49,$45,$56,$41,$4C,$40,$53,$59,$53,$54,$45,$4D,$FE
-		.BYTE	$56,$45,$52,$53,$49,$4F,$4E,$40,$5D,$64,$4F,$FE
+_rom_bios_hdr:
+		.BYTE	_R,_O,_M,_,_B,_I,_O,_S,_SCL
+		.BYTE	_D,_A,_T,_A,_,_R,_E,_T,_R,_I,_E,_V,_A,_L,_,_S,_Y,_S,_T,_E,_M,_SCL
+		.BYTE	_V,_E,_R,_S,_I,_O,_N,_,_3,_DT,_O,_SCL
 
-_asci_msg_lib:
-		.WORD _asci_msg0_lvl0_briefing
-		.WORD _asci_msg1_lvl1_briefing
-		.WORD _asci_msg2_lvl2_briefing
-		.WORD _asci_msg3_lvl3_briefing
-		.WORD _asci_msg4_lvl4_briefing
-		.WORD _asci_copyrights
-		.WORD _asci_prepare_to_repair
-		.WORD _asci_confirm_repair
-		.WORD _asci_get_out_of_there
-		.WORD _asci_dummy
+_msg_lib:
+		.WORD _msg0_lvl0_briefing
+		.WORD _msg1_lvl1_briefing
+		.WORD _msg2_lvl2_briefing
+		.WORD _msg3_lvl3_briefing
+		.WORD _msg4_lvl4_briefing
+		.WORD _msg5_copyrights
+		.WORD _msg6_prepare_to_repair
+		.WORD _msg7_confirm_repair
+		.WORD _msg8_get_out_of_there
 		
-_asci_msg0_lvl0_briefing:
-		.BYTE	$43,$41,$44,$49,$4C,$4C,$41,$43,$40,$48,$45,$49,$47,$48,$54,$53,$66,$40,$44,$55,$53,$4B,$64,$FE,$FC,$FE
-		.BYTE	$52,$45,$53,$43,$55,$45,$40,$59,$4F,$55,$52,$40,$54,$52,$41,$50,$50,$45,$44,$FE
-		.BYTE	$43,$4F,$4C,$4C,$45,$41,$47,$55,$45,$53,$40,$46,$52,$4F,$4D,$40,$54,$48,$45,$FE
-		.BYTE	$43,$4C,$55,$54,$43,$48,$45,$53,$40,$4F,$46,$40,$54,$48,$45,$FE
-		.BYTE	$45,$56,$49,$4C,$40,$53,$50,$4C,$41,$54,$54,$45,$52,$50,$55,$4E,$4B,$53,$64,$64,$FC,$FE,$FE
-		.BYTE	$54,$48,$49,$4E,$47,$53,$40,$4D,$41,$59,$40,$47,$4F,$40,$4F,$4E,$FE
-		.BYTE	$42,$45,$48,$49,$4E,$44,$40,$43,$4C,$4F,$53,$45,$44,$40,$44,$4F,$4F,$52,$53,$64,$64,$64,$FE,$FC,$FA
-_asci_msg1_lvl1_briefing:
-		.BYTE	$52,$4F,$43,$4B,$45,$54,$40,$4D,$4F,$54,$4F,$52,$53,$40,$46,$41,$43,$54,$4F,$52,$59,$64,$FE,$FC,$FE
-		.BYTE	$4E,$45,$47,$4F,$54,$49,$41,$54,$45,$40,$54,$48,$45,$FE
-		.BYTE	$50,$45,$52,$49,$4C,$4F,$55,$53,$40,$4F,$42,$53,$54,$41,$43,$4C,$45,$53,$FE
-		.BYTE	$49,$4E,$40,$54,$48,$45,$40,$4F,$4C,$44,$40,$41,$42,$41,$4E,$44,$4F,$4E,$45,$44,$FE
-		.BYTE	$46,$41,$43,$54,$4F,$52,$59,$64,$FC,$FE,$FE
-		.BYTE	$41,$4E,$44,$40,$4D,$41,$4B,$45,$40,$59,$4F,$55,$52,$40,$57,$41,$59,$40,$54,$4F,$40,$54,$48,$45,$FE
-		.BYTE	$55,$4C,$54,$49,$4D,$41,$54,$45,$40,$43,$4F,$4E,$46,$4C,$49,$43,$54,$64,$64,$64,$FE,$FC,$FA
-_asci_msg2_lvl2_briefing:
-		.BYTE	$43,$41,$44,$49,$4C,$4C,$41,$43,$40,$48,$45,$49,$47,$48,$54,$53
-		.BYTE	$66,$40,$44,$41,$59,$64,$FE,$FC,$FE,$48,$41,$56,$49,$4E,$47,$40
-		.BYTE	$44,$4F,$4E,$4E,$45,$44,$40,$59,$4F,$55,$52,$FE,$50,$4F,$57,$45
-		.BYTE	$52,$46,$55,$4C,$40,$4A,$45,$54,$40,$50,$41,$43,$4B,$66,$FE,$59
-		.BYTE	$4F,$55,$40,$53,$54,$4F,$52,$4D,$40,$54,$48,$52,$4F,$55,$47,$48
-		.BYTE	$40,$54,$48,$45,$FE,$57,$52,$45,$43,$4B,$45,$44,$40,$53,$54,$52
-		.BYTE	$45,$45,$54,$53,$64,$64,$64,$FC,$FE,$FE,$54,$4F,$57,$41,$52,$44
-		.BYTE	$40,$54,$48,$45,$40,$52,$45,$48,$41,$42,$53,$FE,$53,$55,$50,$45
-		.BYTE	$52,$40,$54,$41,$4E,$4B,$64,$64,$64,$FE,$FC,$FE,$54,$48,$45,$40
-		.BYTE	$4D,$41,$49,$4E,$40,$47,$55,$4E,$40,$49,$53,$FE,$41,$49,$4D,$45
-		.BYTE	$44,$40,$41,$54,$40,$49,$4E,$4E,$4F,$43,$45,$4E,$54,$FE,$43,$49
-		.BYTE	$54,$49,$5A,$45,$4E,$53,$64,$64,$64,$40,$41,$4E,$44,$40,$59,$4F
-		.BYTE	$55,$64,$FE,$FC,$FA
-_asci_msg3_lvl3_briefing:
-		.BYTE	$57,$41,$4C,$4B,$40,$42,$41,$43,$4B,$FE,$54,$4F,$40,$54,$48,$45
-		.BYTE	$40,$4F,$43,$50,$40,$54,$4F,$57,$45,$52,$64,$FE,$FC,$FE,$FE,$59
-		.BYTE	$4F,$55,$52,$40,$4A,$45,$54,$40,$50,$41,$43,$4B,$40,$49,$53,$40
-		.BYTE	$45,$4D,$50,$54,$59,$64,$64,$64,$FE,$FC,$FE,$4D,$41,$4B,$45,$40
-		.BYTE	$59,$4F,$55,$52,$40,$57,$41,$59,$40,$46,$52,$4F,$4D,$FE,$4F,$4E
-		.BYTE	$45,$40,$44,$49,$53,$54,$41,$4E,$54,$40,$45,$4E,$44,$40,$4F,$46
-		.BYTE	$40,$54,$4F,$57,$4E,$FE,$42,$41,$43,$4B,$40,$54,$4F,$40,$54,$41
-		.BYTE	$4B,$45,$40,$4F,$4E,$40,$4D,$43,$64,$44,$41,$47,$47,$45,$54,$54
-		.BYTE	$FE,$FC,$FE,$FE,$52,$45,$53,$43,$55,$45,$40,$4D,$41,$52,$49,$45
-		.BYTE	$40,$41,$4E,$44,$40,$4B,$45,$49,$4B,$4F,$FE,$FC,$FE,$49,$54,$40
-		.BYTE	$49,$53,$40,$4E,$4F,$54,$40,$47,$4F,$49,$4E,$47,$40,$54,$4F,$40
-		.BYTE	$42,$45,$FE,$45,$41,$53,$59,$64,$FE,$FC,$FA
-_asci_msg4_lvl4_briefing:
-		.BYTE	$54,$48,$45,$40,$54,$4F,$50,$40,$4F,$46,$40,$54,$48,$45,$40,$4F
-		.BYTE	$43,$50,$40,$54,$4F,$57,$45,$52,$64,$FE,$FC,$FE,$55,$53,$45,$40
-		.BYTE	$59,$4F,$55,$52,$40,$41,$43,$43,$45,$53,$53,$40,$53,$50,$49,$4B
-		.BYTE	$45,$FE,$54,$4F,$40,$54,$41,$50,$40,$49,$4E,$54,$4F,$40,$54,$48
-		.BYTE	$45,$40,$4B,$41,$4E,$45,$4D,$49,$54,$53,$55,$FE,$43,$4F,$4D,$50
-		.BYTE	$55,$54,$45,$52,$64,$FE,$FC,$FE,$FE,$49,$54,$40,$50,$52,$4F,$56
-		.BYTE	$49,$44,$45,$53,$FE,$4B,$45,$49,$4B,$4F,$40,$57,$49,$54,$48,$40
-		.BYTE	$49,$4E,$46,$4F,$52,$4D,$41,$54,$49,$4F,$4E,$FE,$56,$49,$54,$41
-		.BYTE	$4C,$40,$54,$4F,$40,$59,$4F,$55,$52,$40,$53,$41,$46,$45,$54,$59
-		.BYTE	$64,$64,$64,$FE,$FC,$FE,$FE,$4C,$4F,$4F,$4B,$40,$42,$4F,$54,$48
-		.BYTE	$40,$57,$41,$59,$53,$64,$64,$64,$FE,$FC,$FA
-_asci_copyrights:
-		.BYTE	$40,$40,$40,$40,$40,$40,$40,$40,$40,$52,$4F,$42,$4F,$43,$4F,$50
-		.BYTE	$65,$40,$5D,$40,$FE,$40,$40,$40,$40,$40,$40,$40,$40,$40,$40,$40
-		.BYTE	$40,$40,$40,$40,$40,$40,$40,$40,$40,$40,$40,$40,$40,$40,$40,$40
-		.BYTE	$40,$FE,$40,$40,$40,$40,$54,$4D,$40,$41,$4E,$44,$40,$43,$4F,$50
-		.BYTE	$59,$52,$49,$47,$48,$54,$40,$5B,$63,$63,$5C,$40,$FE,$40,$4F,$52
-		.BYTE	$49,$4F,$4E,$40,$50,$49,$43,$54,$55,$52,$45,$53,$40,$43,$4F,$52
-		.BYTE	$50,$4F,$52,$41,$54,$49,$4F,$4E,$FE,$40,$40,$40,$40,$40,$41,$4C
-		.BYTE	$4C,$40,$52,$49,$47,$48,$54,$53,$40,$52,$45,$53,$45,$52,$56,$45
-		.BYTE	$44,$40,$40,$40,$FE,$54,$4D,$40,$44,$45,$53,$49,$47,$4E,$41,$54
-		.BYTE	$45,$53,$40,$41,$40,$54,$52,$41,$44,$45,$4D,$41,$52,$4B,$40,$4F
-		.BYTE	$46,$FE,$40,$4F,$52,$49,$4F,$4E,$40,$50,$49,$43,$54,$55,$52,$45
-		.BYTE	$53,$40,$43,$4F,$52,$50,$4F,$52,$41,$54,$49,$4F,$4E,$FE,$FE,$40
-		.BYTE	$40,$40,$40,$40,$40,$40,$43,$4F,$50,$59,$52,$49,$47,$48,$54,$40
-		.BYTE	$5B,$63,$63,$5C,$FE,$40,$40,$40,$4F,$43,$45,$41,$4E,$40,$4F,$46
-		.BYTE	$40,$41,$4D,$45,$52,$49,$43,$41,$66,$40,$49,$4E,$43,$64,$FE,$40
-		.BYTE	$40,$40,$40,$40,$40,$40,$40,$4C,$49,$43,$45,$4E,$53,$45,$44,$40
-		.BYTE	$42,$59,$FE,$40,$40,$40,$40,$40,$40,$40,$40,$40,$4E,$49,$4E,$54
-		.BYTE	$45,$4E,$44,$4F,$64,$40,$40,$40,$40,$40,$40,$40,$40,$40,$FA
-_asci_prepare_to_repair:
-		.BYTE	$57,$45,$4C,$4C,$40,$44,$4F,$4E,$45,$66,$40,$4F,$46,$46,$49,$43
-		.BYTE	$45,$52,$64,$FE,$FC,$FE,$50,$52,$45,$50,$41,$52,$45,$40,$54,$4F
-		.BYTE	$40,$45,$4E,$54,$45,$52,$FE,$52,$45,$50,$41,$49,$52,$40,$4C,$41
-		.BYTE	$42,$4F,$52,$41,$54,$4F,$52,$59,$64,$64,$64,$FE,$FC,$FA
-_asci_confirm_repair:
-		.BYTE	$FD,$50,$4C,$45,$41,$53,$45,$40,$43,$4F,$4E,$46,$49,$52,$4D,$40
-		.BYTE	$52,$45,$50,$41,$49,$52,$53,$64,$64,$64,$FE,$FD,$FE,$50,$52,$45
-		.BYTE	$53,$53,$40,$41,$40,$54,$4F,$40,$41,$43,$43,$45,$50,$54,$FE,$50
-		.BYTE	$52,$45,$53,$53,$40,$42,$40,$54,$4F,$40,$52,$45,$41,$4C,$4C,$4F
-		.BYTE	$43,$41,$54,$45,$FE,$F9,$FB,$43,$4F,$4E,$46,$49,$52,$4D,$45,$44
-		.BYTE	$64,$FE,$FD,$FA
-_asci_get_out_of_there:
-		.BYTE	$53,$55,$43,$43,$45,$53,$53,$64,$64,$64,$FE
-		.BYTE	$4E,$4F,$57,$40,$47,$45,$54,$40,$4F,$55,$54,$40,$4F,$46,$40,$54,$48,$45,$52,$45,$64,$FE,$FE,$FC,$FA
-_asci_dummy:
-		.BYTE	$FA
+_msg0_lvl0_briefing:
+		.BYTE	_C,_A,_D,_I,_L,_L,_A,_C,_,_H,_E,_I,_G,_H,_T,_S,_CO,_,_D,_U,_S,_K,_DT,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_R,_E,_S,_C,_U,_E,_,_Y,_O,_U,_R,_,_T,_R,_A,_P,_P,_E,_D,_SCL
+		.BYTE	_C,_O,_L,_L,_E,_A,_G,_U,_E,_S,_,_F,_R,_O,_M,_,_T,_H,_E,_SCL
+		.BYTE	_C,_L,_U,_T,_C,_H,_E,_S,_,_O,_F,_,_T,_H,_E,_SCL
+		.BYTE	_E,_V,_I,_L,_,_S,_P,_L,_A,_T,_T,_E,_R,_P,_U,_N,_K,_S,_DT,_DT,_DLY,_SCL
+		.BYTE	_SCL
+		.BYTE	_T,_H,_I,_N,_G,_S,_,_M,_A,_Y,_,_G,_O,_,_O,_N,_SCL
+		.BYTE	_B,_E,_H,_I,_N,_D,_,_C,_L,_O,_S,_E,_D,_,_D,_O,_O,_R,_S,_DT,_DT,_DT,_SCL
+		.BYTE	_DLY,_END
+_msg1_lvl1_briefing:
+		.BYTE	_R,_O,_C,_K,_E,_T,_,_M,_O,_T,_O,_R,_S,_,_F,_A,_C,_T,_O,_R,_Y,_DT,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_N,_E,_G,_O,_T,_I,_A,_T,_E,_,_T,_H,_E,_SCL
+		.BYTE	_P,_E,_R,_I,_L,_O,_U,_S,_,_O,_B,_S,_T,_A,_C,_L,_E,_S,_SCL
+		.BYTE	_I,_N,_,_T,_H,_E,_,_O,_L,_D,_,_A,_B,_A,_N,_D,_O,_N,_E,_D,_SCL
+		.BYTE	_F,_A,_C,_T,_O,_R,_Y,_DT,_DLY,_SCL
+		.BYTE	_SCL
+		.BYTE	_A,_N,_D,_,_M,_A,_K,_E,_,_Y,_O,_U,_R,_,_W,_A,_Y,_,_T,_O,_,_T,_H,_E,_SCL
+		.BYTE	_U,_L,_T,_I,_M,_A,_T,_E,_,_C,_O,_N,_F,_L,_I,_C,_T,_DT,_DT,_DT,_SCL
+		.BYTE	_DLY,_END
+_msg2_lvl2_briefing:
+		.BYTE	_C,_A,_D,_I,_L,_L,_A,_C,_,_H,_E,_I,_G,_H,_T,_S,_CO,_,_D,_A,_Y,_DT,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_H,_A,_V,_I,_N,_G,_,_D,_O,_N,_N,_E,_D,_,_Y,_O,_U,_R,_SCL
+		.BYTE	_P,_O,_W,_E,_R,_F,_U,_L,_,_J,_E,_T,_,_P,_A,_C,_K,_CO,_SCL
+		.BYTE	_Y,_O,_U,_,_S,_T,_O,_R,_M,_,_T,_H,_R,_O,_U,_G,_H,_,_T,_H,_E,_SCL
+		.BYTE	_W,_R,_E,_C,_K,_E,_D,_,_S,_T,_R,_E,_E,_T,_S,_DT,_DT,_DT,_DLY,_SCL
+		.BYTE	_SCL
+		.BYTE	_T,_O,_W,_A,_R,_D,_,_T,_H,_E,_,_R,_E,_H,_A,_B,_S,_SCL
+		.BYTE	_S,_U,_P,_E,_R,_,_T,_A,_N,_K,_DT,_DT,_DT,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_T,_H,_E,_,_M,_A,_I,_N,_,_G,_U,_N,_,_I,_S,_SCL
+		.BYTE	_A,_I,_M,_E,_D,_,_A,_T,_,_I,_N,_N,_O,_C,_E,_N,_T,_SCL
+		.BYTE	_C,_I,_T,_I,_Z,_E,_N,_S,_DT,_DT,_DT,_,_A,_N,_D,_,_Y,_O,_U,_DT,_SCL
+		.BYTE	_DLY,_END
+_msg3_lvl3_briefing:
+		.BYTE	_W,_A,_L,_K,_,_B,_A,_C,_K,_SCL
+		.BYTE	_T,_O,_,_T,_H,_E,_,_O,_C,_P,_,_T,_O,_W,_E,_R,_DT,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_SCL
+		.BYTE	_Y,_O,_U,_R,_,_J,_E,_T,_,_P,_A,_C,_K,_,_I,_S,_,_E,_M,_P,_T,_Y,_DT,_DT,_DT,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_M,_A,_K,_E,_,_Y,_O,_U,_R,_,_W,_A,_Y,_,_F,_R,_O,_M,_SCL
+		.BYTE	_O,_N,_E,_,_D,_I,_S,_T,_A,_N,_T,_,_E,_N,_D,_,_O,_F,_,_T,_O,_W,_N,_SCL
+		.BYTE	_B,_A,_C,_K,_,_T,_O,_,_T,_A,_K,_E,_,_O,_N,_,_M,_C,_DT,_D,_A,_G,_G,_E,_T,_T,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_SCL
+		.BYTE	_R,_E,_S,_C,_U,_E,_,_M,_A,_R,_I,_E,_,_A,_N,_D,_,_K,_E,_I,_K,_O,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_I,_T,_,_I,_S,_,_N,_O,_T,_,_G,_O,_I,_N,_G,_,_T,_O,_,_B,_E,_SCL
+		.BYTE	_E,_A,_S,_Y,_DT,_SCL
+		.BYTE	_DLY,_END
+_msg4_lvl4_briefing:
+		.BYTE	_T,_H,_E,_,_T,_O,_P,_,_O,_F,_,_T,_H,_E,_,_O,_C,_P,_,_T,_O,_W,_E,_R,_DT,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_U,_S,_E,_,_Y,_O,_U,_R,_,_A,_C,_C,_E,_S,_S,_,_S,_P,_I,_K,_E,_SCL
+		.BYTE	_T,_O,_,_T,_A,_P,_,_I,_N,_T,_O,_,_T,_H,_E,_,_K,_A,_N,_E,_M,_I,_T,_S,_U,_SCL
+		.BYTE	_C,_O,_M,_P,_U,_T,_E,_R,_DT,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_SCL
+		.BYTE	_I,_T,_,_P,_R,_O,_V,_I,_D,_E,_S,_SCL
+		.BYTE	_K,_E,_I,_K,_O,_,_W,_I,_T,_H,_,_I,_N,_F,_O,_R,_M,_A,_T,_I,_O,_N,_SCL
+		.BYTE	_V,_I,_T,_A,_L,_,_T,_O,_,_Y,_O,_U,_R,_,_S,_A,_F,_E,_T,_Y,_DT,_DT,_DT,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_SCL
+		.BYTE	_L,_O,_O,_K,_,_B,_O,_T,_H,_,_W,_A,_Y,_S,_DT,_DT,_DT,_SCL
+		.BYTE	_DLY,_END
+_msg8_get_out_of_there:
+		.BYTE	_S,_U,_C,_C,_E,_S,_S,_DT,_DT,_DT,_SCL
+		.BYTE	_N,_O,_W,_,_G,_E,_T,_,_O,_U,_T,_,_O,_F,_,_T,_H,_E,_R,_E,_DT,_SCL
+		.BYTE	_SCL
+		.BYTE	_DLY,_END
+
+_msg5_copyrights:
+		.BYTE	 _, _, _, _, _, _, _, _, _,_R,_O,_B,_O,_C,_O,_P,_TM, _,_3,_SCL
+		.BYTE	_SCL
+		.BYTE	 _, _, _, _,_T,_M, _,_A,_N,_D, _,_C,_O,_P,_Y,_R,_I,_G,_H,_T, _,_1,_9,_9,_2,_SCL
+		.BYTE	 _,_O,_R,_I,_O,_N, _,_P,_I,_C,_T,_U,_R,_E,_S, _,_C,_O,_R,_P,_O,_R,_A,_T,_I,_O,_N,_SCL
+		.BYTE	 _, _, _, _, _,_A,_L,_L, _,_R,_I,_G,_H,_T,_S, _,_R,_E,_S,_E,_R,_V,_E,_D,_SCL
+		.BYTE	_T,_M, _,_D,_E,_S,_I,_G,_N,_A,_T,_E,_S, _,_A, _,_T,_R,_A,_D,_E,_M,_A,_R,_K, _,_O,_F,_SCL
+		.BYTE	 _,_O,_R,_I,_O,_N, _,_P,_I,_C,_T,_U,_R,_E,_S, _,_C,_O,_R,_P,_O,_R,_A,_T,_I,_O,_N,_SCL
+		.BYTE	_SCL
+		.BYTE	 _, _, _, _, _, _, _,_C,_O,_P,_Y,_R,_I,_G,_H,_T, _,_1,_9, _9,_2,_SCL
+		.BYTE	 _, _, _, _,_O,_C,_E,_A,_N, _,_O,_F, _,_A,_M,_E,_R,_I,_C,_A,_CO,_I,_N,_C,_DT,_SCL
+		.BYTE	 _, _, _, _,_L,_I,_C,_E,_N,_S,_E,_D, _,_B,_Y, _,_N,_I,_N, _T,_E,_N,_D,_O,_DT,_SCL
+		.BYTE	 _, _, _, _,_C,_A,_H,_4,_E,_3, _,_B,_F,_S, _,_G,_M,_B,_H, _,_2,_O,_1,_6,_END
+
+_msg6_prepare_to_repair:
+		.BYTE	_W,_E,_L,_L,_,_D,_O,_N,_E,_CO,_,_O,_F,_F,_I,_C,_E,_R,_DT,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_P,_R,_E,_P,_A,_R,_E,_,_T,_O,_,_E,_N,_T,_E,_R,_SCL
+		.BYTE	_R,_E,_P,_A,_I,_R,_,_L,_A,_B,_O,_R,_A,_T,_O,_R,_Y,_DT,_DT,_DT,_SCL
+		.BYTE	_DLY,_END
+_msg7_confirm_repair:
+		.BYTE	_MUT
+		.BYTE	_P,_L,_E,_A,_S,_E,_,_C,_O,_N,_F,_I,_R,_M,_,_R,_E,_P,_A,_I,_R,_S,_DT,_DT,_DT,_SCL
+		.BYTE	_DLY,_SCL
+		.BYTE	_P,_R,_E,_S,_S,_,_A,_,_T,_O,_,_A,_C,_C,_E,_P,_T,_SCL
+		.BYTE	_P,_R,_E,_S,_S,_,_B,_,_T,_O,_,_R,_E,_A,_L,_L,_O,_C,_A,_T,_E,_SCL
+		.BYTE	_ASK,_CLR
+		.BYTE	_C,_O,_N,_F,_I,_R,_M,_E,_D,_DT,_SCL
+		.BYTE	_DLY,_END
 
 		ECHO "bank 5 free space", [SAFE_STUB_ORG-.]
 

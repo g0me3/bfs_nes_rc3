@@ -33,8 +33,8 @@ loc_60044:
 		BPL		loc_60044
 		JSR		_all_player_vars_init
 		LDA		#1
-		STA		_apu_sound_enable
 		STA		_apu_music_enable
+		STA		_apu_sound_enable
 		LDY		#5
 		JSR		_mmc1_prg
 		JSR		_ppu_reinit
@@ -481,28 +481,32 @@ loc_603FB:
 loc_60402:
 		LDA		#0
 		STA		_snd_idx
-		JSR		_apu_snd_load
+		JSR		_far_apu_mus_load_unsafe				; mute all current sounds
 		CLC
-		LDA		_cur_lvl_idx
+		LDA		_cur_lvl_idx							; calc level bg music index
 		ADC		#$22
 		STA		_snd_idx
-		JSR		_apu_snd_load
+		JSR		_far_apu_mus_load_unsafe				; load level bg music
 		JSR		_ppu_reinit
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_apu_mus_start:
+; used only from bank 5 routines, changes bank to 6 and restores it back to 5
+;
+_far_apu_mus_load_prg5_safe:
 		STA		_snd_idx
-		JSR		_apu_snd_load
+		JSR		_far_apu_mus_load_unsafe
 		LDY		#5
 		JSR		_mmc1_prg
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_far_apu_play:
+; used only from bank 5 routines, changes bank to 6 and restores it back to 5
+; 
+_far_apu_play_prg5_safe:
 		LDY		#6
 		JSR		_mmc1_prg
-		JSR		_apu_play_prg_safe
+		JSR		_apu_play
 		LDY		#5
 		JSR		_mmc1_prg
 		RTS
@@ -1978,12 +1982,12 @@ loc_611CB:
 		JSR		_obj_obj_collision_tests
 		JSR		_lvl_bg_chr_switch
 		JSR		_player_damage_blink
-		JSR		_apu_snd_reload
+		JSR		_far_apu_snd_load_unsafe
 		JSR		_lvl_complete_test
 		JSR		_bg_pal_blink_handler
 loc_611FD:
-		JSR		_apu_play_prg_safe
-		LDX		_cur_lvl_idx
+		JSR		_apu_play								; jump directly to bank 6, it is already set here
+		LDX		_cur_lvl_idx							; restore back current level data bank
 		LDY		_lvl_prg_bank_list,X
 		JSR		_mmc1_prg
 		RTS
@@ -4944,9 +4948,9 @@ _obj_ehndl0A_ninja:
 		BEQ		loc_626CC
 		STA		_lvl_cur_spr_chr_bank_up
 		STA		_lvl_cur_spr_chr_bank_down
-		LDA		#$26
+		LDA		#$26									; special case, music change if Ninja on the screen
 		STA		_snd_idx
-		JSR		_apu_snd_load
+		JSR		_far_apu_mus_load_unsafe
 loc_626CC:
 		LDA		_tmp3C3,X
 		BNE		loc_6271B
@@ -4964,11 +4968,11 @@ loc_626D9:
 		STA		_lvl_cur_spr_chr_bank_up
 		LDA		_lvl_cur_spr_chr_bank_down_backup
 		STA		_lvl_cur_spr_chr_bank_down
-		LDA		#0
-		STA		_obj_flags,X
-		LDA		#$23
+		LDA		#0										; hacky-hacky!
+		STA		_obj_flags,X							; if ninja is dead, restore music for level 2
+		LDA		#$23									; if set ninjas in other levels, will cause problems
 		STA		_snd_idx
-		JSR		_apu_snd_load
+		JSR		_far_apu_mus_load_unsafe
 loc_626F8:
 		JSR		_enemy_bullet_get_free_slot_idx
 		BCC		loc_62700
@@ -7239,20 +7243,20 @@ loc_63779:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_apu_snd_load:
+_far_apu_mus_load_unsafe:
 		LDA		_snd_idx
-		BEQ		_apu_load
+		BEQ		_far_apu_load
+		LDA		_apu_music_enable
+		BNE		_far_apu_load
+		RTS
+
+; =============== S U B	R O U T	I N E =======================================
+_far_apu_snd_load_unsafe:
 		LDA		_apu_sound_enable
 		BEQ		locret_637CC
-		JMP		_apu_load
 
 ; =============== S U B	R O U T	I N E =======================================
-_apu_snd_reload:
-		LDA		_apu_music_enable
-		BEQ		locret_637CC
-
-; =============== S U B	R O U T	I N E =======================================
-_apu_load:
+_far_apu_load:
 		LDA		_snd_idx
 		BMI		locret_637CC
 		LDY		#6
@@ -7368,21 +7372,6 @@ _snd25_lvl3_mus:
 		.BYTE	  1,$39,$FF,$FF,$FF,$FF,$FF,$FF
 _snd26_lvl4_mus:
 		.BYTE	  1,$3A,$FF,$FF,$FF,$FF,$FF,$FF
-
-; =============== S U B	R O U T	I N E =======================================
-_apu_play_prg_safe:
-		LDX		#0
-		JSR		_apu_play_chnl
-		LDX		#1
-		JSR		_apu_play_chnl
-		LDX		#2
-		JSR		_apu_play_chnl
-		LDX		#3
-		JSR		_apu_play_chnl
-		LDX		_cur_lvl_idx
-		LDY		_lvl_prg_bank_list,X
-		JSR		_mmc1_prg
-		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
 _mmc1_chr0:
