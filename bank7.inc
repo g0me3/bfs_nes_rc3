@@ -406,13 +406,13 @@ _lvl_vars_init:
 		STX		_player_sit_jump_flag
 		STX		_special_boss_flood_object_flag
 		STX		_lvl_rooms_walked_count_unused
-		STX		byte_69D
-		STX		_lvl3_tank_weapon_disable_flag
+		STX		_lvl2_tank_weapon_position_switch
+		STX		_lvl2_tank_weapon_disable_flag
 		LDA		#3
 		STA		_nmi_hndl_idx
-		STA		byte_69C
+		STA		_lvl2_tank_shot_delay
 		LDA		#3
-		STA		_lvl3_jetpack_fuel_tanks
+		STA		_lvl2_jetpack_fuel_tanks
 		LDY		_cur_lvl_state_idx
 		LDA		_lvl_room_start_ptr_list_lo,Y
 		STA		_lvl_room_data_ptr
@@ -585,7 +585,7 @@ _nmi5:
 		BIT		_PPU_STATUS
 		LDX		#0
 		STX		_PPU_MASK
-		STX		_ppu_mask_shadow
+;		STX		_ppu_mask_shadow
 		STX		_PPU_CTRL
 		STX		_PPU_OAM_ADDR
 		LDA		#2
@@ -594,11 +594,12 @@ _nmi5:
 		AND		#$78
 		STA		_PPU_CTRL
 		STA		_ppu_ctrl_shadow
-		LDA		_ppu_mask_shadow
-		AND		#0
-		ORA		#$18
-		STA		_ppu_mask_shadow
+;		LDA		_ppu_mask_shadow						; redundant
+;		AND		#0
+;		ORA		#$18
+		LDA		#$18
 		STA		_PPU_MASK
+		STA		_ppu_mask_shadow
 		JSR		_ingame_pal_update
 		JSR		_hud_ppu_data_send
 		JSR		_lvl_ppu_data_dequeue
@@ -610,9 +611,9 @@ _nmi5:
 		JSR		_mmc1_chr1
 		LDA		#0
 		JSR		_mmc1_chr0
-		JSR		_delay256
-		LDA		_lvl_cur_bg_chr_bank
-		JSR		_mmc1_chr0
+		JSR		_delay256								; timing based HUD back switch delay!
+		LDA		_lvl_cur_bg_chr_bank					; just wait for particular number of ticks
+		JSR		_mmc1_chr0								; and set the game bg bank!
 		LDA		_ppu_mask_shadow
 		ORA		#$18
 		AND		_ppu_mask_shadow_mask
@@ -735,10 +736,10 @@ loc_605AB:
 		ORA		#$D0
 		STA		_PPU_ADDR
 		STA		_tptr1
-		LDA		_ppu_ctrl_shadow
-		AND		#$FB
-		STA		_ppu_ctrl_shadow
-		STA		_PPU_CTRL
+;		LDA		_ppu_ctrl_shadow
+;		AND		#$FB
+;		STA		_ppu_ctrl_shadow
+;		STA		_PPU_CTRL
 		LDX		#0
 loc_605E3:
 		LDA		_tmp_buf1,X
@@ -750,13 +751,13 @@ loc_605E3:
 		ADC		#8
 		STA		_tptr1
 		STA		_PPU_ADDR
+		INX
+		CPX		#6
+		BCC		loc_605E3
 		LDA		_ppu_ctrl_shadow
 		AND		#$FB
 		STA		_ppu_ctrl_shadow
 		STA		_PPU_CTRL
-		INX
-		CPX		#6
-		BCC		loc_605E3
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -1455,7 +1456,7 @@ loc_60CF5:
 		CMP		#$50
 		BCC		locret_60D49
 loc_60D30:
-		INC		_lvl3_tank_weapon_disable_flag
+		INC		_lvl2_tank_weapon_disable_flag
 		CLC
 		LDA		_cur_score_hex
 		ADC		#$F4
@@ -1973,7 +1974,7 @@ loc_611CB:
 		JSR		_obj_enemy_ai_manager
 		JSR		_obj_position_adjust
 		JSR		_player_bullets_animate
-		JSR		_enemy_bullet_animate
+		JSR		_enemy_bullet_explosion_anim
 		JSR		_obj_obj_collision_tests
 		JSR		_lvl_bg_chr_switch
 		JSR		_player_damage_blink
@@ -2702,7 +2703,7 @@ loc_616DA:
 		LDA		_rand_seed
 		AND		#$10
 		BEQ		loc_6171B
-		JSR		_enemy_proj1_explode_start
+		JSR		_enemy_proj_explode1_start
 loc_6171B:
 		LDA		_rand_seed+1
 		AND		#3
@@ -2776,13 +2777,13 @@ loc_61794:
 		AND		#$80
 		STA		_tptr1+1
 		BEQ		loc_617CB
-		LDA		_lvl3_jetpack_fuel_tanks
+		LDA		_lvl2_jetpack_fuel_tanks
 		BEQ		loc_617CB
-		DEC		_lvl3_jetpack_fuel_count
+		DEC		_lvl2_jetpack_fuel_count
 		BNE		loc_617AB
-		DEC		_lvl3_jetpack_fuel_tanks
+		DEC		_lvl2_jetpack_fuel_tanks
 loc_617AB:
-		LDA		_lvl3_jetpack_fuel_tanks
+		LDA		_lvl2_jetpack_fuel_tanks
 		CMP		#2
 		BCS		loc_617BB
 		LDA		#$13
@@ -3636,54 +3637,6 @@ loc_61D90:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_player_bullets_animate:
-		LDA		_player_fire_delay_timer
-		BEQ		loc_61DAD
-		DEC		_player_fire_delay_timer
-loc_61DAD:
-		LDX		#4
-loc_61DAF:
-		LDA		_obj_flags,X
-		BEQ		_player_next_bullet
-		LDA		_obj_y,X
-		CMP		#$D8
-		BCS		loc_61DE7
-		CMP		#$3C
-		BCS		loc_61DC6
-		JSR		_player_bullet_remove
-		LDA		#0
-		STA		_obj_flags,X
-		BEQ		_player_next_bullet
-loc_61DC6:
-		LDY		_obj_hndl_idx,X
-		BMI		_player_next_bullet
-		BEQ		loc_61E05
-		DEY
-		BEQ		loc_61E08
-		DEY
-		BEQ		loc_61E0B
-		DEY
-		BEQ		loc_61E0E
-		DEY
-		BEQ		_player_bullet_anim_hit_test
-		DEY
-		BEQ		loc_61E14
-		DEY
-		BEQ		loc_61E17
-loc_61DDE:
-		JSR		_player_death_anim_timers
-_player_next_bullet:
-		INX
-		CPX		#7
-		BNE		loc_61DAF
-		RTS
-loc_61DE7:
-		LDA		_obj_hndl_idx,X
-		CMP		#7
-		BEQ		loc_61DC6
-		JSR		_player_bullet_remove
-		JSR		_enemy_proj0_explode_start
-		JMP		loc_61DDE
 _player_bullet_remove:
 		LDA		_obj_hndl_idx,X
 		CMP		#3
@@ -3694,20 +3647,63 @@ _player_bullet_remove:
 		STA		_obj_flags._pbullet+1
 locret_61E04:
 		RTS
-loc_61E05:
-		JMP		_player_next_bullet
-loc_61E08:
-		JMP		_player_next_bullet
-loc_61E0B:
-		JMP		_player_next_bullet
-loc_61E0E:
+
+; =============== S U B	R O U T	I N E =======================================
+_player_bullets_animate:
+		LDA		_player_fire_delay_timer				; bullet animation delay
+		BEQ		.pbullet_do_work
+		DEC		_player_fire_delay_timer
+.pbullet_do_work:
+		LDX		#4
+.pbullet_do_loop:
+		LDA		_obj_flags,X							; check if bullet object active
+		BEQ		.skip_to_next_pbullet
+		LDA		_obj_y,X								; if positive, check for max Y position
+		CMP		#$D8									; on the ground
+		BCS		.pbullet_turn_explosion					; if positive, switch the explosion animation
+		CMP		#$3C
+		BCS		.pbullet_regular_animate				; between 3C and D8 pos Y do regular animate
+		JSR		_player_bullet_remove					; remove silently if reach upper side of the screen
+		LDA		#0
+		STA		_obj_flags,X							; disable object, skip to the next one
+		BEQ		.skip_to_next_pbullet
+.pbullet_regular_animate:
+		LDY		_obj_hndl_idx,X
+		BMI		.skip_to_next_pbullet					; do regular anim handlers
+		BEQ		.skip_to_next_pbullet					; 0,1,2 gun bullets, has no special animations
+		DEY												; FF - handler for jet of the missile
+		BEQ		.skip_to_next_pbullet
+		DEY
+		BEQ		.skip_to_next_pbullet
+		DEY
+		BEQ		.pbullet_regular_missile_animate		; 3 - regular missile animation
+		DEY
+		BEQ		.pbullet_homing_missile_animate			; 4 - homing missile animation
+		DEY
+		BEQ		.skip_to_next_pbullet					; 5,6 has no special handlers (and no bullets?)
+		DEY
+		BEQ		.skip_to_next_pbullet
+.pbullet_handler7_animate:
+		JSR		_explosion_spr_anim						; 7 is an explosion animation
+.skip_to_next_pbullet:
+		INX
+		CPX		#7
+		BNE		.pbullet_do_loop
+		RTS
+; --------------------------------
+.pbullet_turn_explosion:
+		LDA		_obj_hndl_idx,X							; check if active object is not explosion already
+		CMP		#7
+		BEQ		.pbullet_regular_animate				; if positive, just jump to animation
+		JSR		_player_bullet_remove					; otherwise remove bullet, start explode
+		JSR		_enemy_proj_explode0_start				; skip to the next one
+		JMP		.pbullet_handler7_animate
+; --------------------------------
+.pbullet_regular_missile_animate:
 		LDY		 _obj_var6._pbullet
-		JMP		loc_61E99
-loc_61E14:
-		JMP		_player_next_bullet
-loc_61E17:
-		JMP		_player_next_bullet
-_player_bullet_anim_hit_test:
+		JMP		.pbullet_common_missile_animate
+; --------------------------------
+.pbullet_homing_missile_animate:
 		LDY		 _obj_var6._pbullet
 		BEQ		loc_61E29
 		LDA		_obj_flags,Y
@@ -3778,12 +3774,13 @@ loc_61E8D:
 		CLC
 		ADC		_tptr1
 		TAY
-loc_61E99:
-		LDA		byte_61EF8,Y
+; --------------------------------
+.pbullet_common_missile_animate:
+		LDA		_pmissile_spr_list,Y
 		STA		_obj_spr_idx._pbullet
-		LDA		byte_61F0A,Y
+		LDA		_pmissile_flags_list,Y
 		STA		_obj_flags._pbullet
-		LDA		byte_61F1C,Y
+		LDA		_pmissile_x_delta_list,Y
 		BMI		loc_61EB6
 		CLC
 		ADC		_obj_x_lo._pbullet
@@ -3806,7 +3803,7 @@ loc_61EB6:
 		STA		_obj_x_hi._pbullet+1
 loc_61ECA:
 		CLC
-		LDA		byte_61F2E,Y
+		LDA		_pmissile_y_delta_list,Y
 		ADC		_obj_y._pbullet
 		STA		_obj_y._pbullet+1
 		DEC		_obj_var7._pbullet
@@ -3827,19 +3824,16 @@ loc_61ECA:
 		STA		_obj_x_velocity._pbullet+1
 		LDA		#3
 		STA		_obj_pal_idx._pbullet
-		JMP		_player_next_bullet
-byte_61EF8:
-		.BYTE	 $B, $C, $D, $E, $F, $E, $D, $C, $B, $B, $C, $D, $E, $F, $E, $D
-		.BYTE	 $C, $B
-byte_61F0A:
-		.BYTE	  1,  1,  1,  1,  1,$81,$81,$81,$81,  1,$41,$41,$41,$C1,$C1,$C1
-		.BYTE	$81,$81
-byte_61F1C:
-		.BYTE	  0,$FE,$FC,$FB,$FA,$FB,$FC,$FE,  0,  0,  2,  4,  5,  6,  5,  4
-		.BYTE	  2,  0
-byte_61F2E:
-		.BYTE	  6,  5,  4,  2,  0,$FE,$FC,$FB,$FA,  6,  5,  4,  2,  0,$FE,$FC
-		.BYTE	$FB,$FA
+		JMP		.skip_to_next_pbullet
+		
+_pmissile_spr_list:
+		.BYTE	 $B, $C, $D, $E, $F, $E, $D, $C, $B, $B, $C, $D, $E, $F, $E, $D, $C, $B
+_pmissile_flags_list:
+		.BYTE	  1,  1,  1,  1,  1,$81,$81,$81,$81,  1,$41,$41,$41,$C1,$C1,$C1,$81,$81
+_pmissile_x_delta_list:
+		.BYTE	  0,$FE,$FC,$FB,$FA,$FB,$FC,$FE,  0,  0,  2,  4,  5,  6,  5,  4,  2,  0
+_pmissile_y_delta_list:
+		.BYTE	  6,  5,  4,  2,  0,$FE,$FC,$FB,$FA,  6,  5,  4,  2,  0,$FE,$FC,$FB,$FA
 byte_61F40:
 		.BYTE	  2,  4,  6, $B, $D, $F
 
@@ -3931,7 +3925,7 @@ _obj_add:
 		LDY		#1
 		LDA		(_lvl_obj_list_ptr),Y					; test for a special object for transition
 		BMI		.special_transition_objects				; between different parts of the level
-		LDA		_obj_x_lo._player					; x position is relative to player's pos
+		LDA		_obj_x_lo._player						; x position is relative to player's pos
 		STA		_tmpE6
 		LDA		_obj_x_hi._player
 		STA		_tmpE7
@@ -4983,7 +4977,7 @@ loc_62700:
 		PHA
 		TYA
 		TAX
-		JSR		_enemy_proj0_explode_start
+		JSR		_enemy_proj_explode0_start
 		PLA
 		TAX
 		JMP		loc_628D6
@@ -5259,9 +5253,9 @@ loc_62908:
 		LDA		#1
 		STA		_obj_x_hi._ebullet+1
 		LDX		#7
-		JSR		_enemy_proj0_explode_start
+		JSR		_enemy_proj_explode0_start
 		LDX		#8
-		JSR		_enemy_proj0_explode_start
+		JSR		_enemy_proj_explode0_start
 loc_62939:
 		LDA		_ingame_sync_counter
 		BNE		locret_62946
@@ -5372,7 +5366,7 @@ _obj_ehndl_ninja_bullte_hit:
 		TXA
 		PHA
 		LDX		#4
-		JSR		_enemy_proj0_explode_start
+		JSR		_enemy_proj_explode0_start
 		PLA
 		TAX
 		LDA		#$A
@@ -5576,7 +5570,7 @@ loc_62B56:
 		PHA
 		TYA
 		TAX
-		JSR		_enemy_proj0_explode_start
+		JSR		_enemy_proj_explode0_start
 		PLA
 		TAX
 loc_62B7C:
@@ -5674,13 +5668,13 @@ loc_62C25:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_enemy_proj0_explode_start:
+_enemy_proj_explode0_start:
 		LDA		#5
 		STA		_snd_idx
 		JMP		_enemy_projectile_explode_start
 
 ; =============== S U B	R O U T	I N E =======================================
-_enemy_proj1_explode_start:
+_enemy_proj_explode1_start:
 		LDA		#6
 		STA		_snd_idx
 
@@ -5696,7 +5690,7 @@ _enemy_projectile_explode_start:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_player_death_anim_timers:
+_explosion_spr_anim:
 		LDA		#0
 		STA		_obj_var2,X
 		STA		_obj_var0,X
@@ -5779,34 +5773,38 @@ loc_62CC1:
 		RTS
 
 ; =============== S U B	R O U T	I N E =======================================
-_enemy_bullet_animate:
+; enemy bullets explosion simple animation manager. check if bullet is out of
+; range. bullets going up should just disappear, bullets goind down shold explode
+; above the ground
+;
+_enemy_bullet_explosion_anim:
 		LDX		#9
 loc_62CD7:
-		LDA		_obj_y,X
-		CMP		#$D4
-		BCS		loc_62CF7
-		CMP		#$3C
-		BCS		loc_62CE7
-		LDA		#0
+		LDA		_obj_y,X								; all the same explosion animate for enemy bullets
+		CMP		#$D4									; but this time they don't check for the active flag
+		BCS		.ebullet_explode_start					; at all, so the animation and explosions do a lot
+		CMP		#$3C									; of trash calculations
+		BCS		.ebullet_explode_anim
+		LDA		#0										; remove object out of the screen (Y is less than 3C)
 		STA		_obj_flags,X
-		BEQ		loc_62CF1
-loc_62CE7:
+		BEQ		.ebullet_skip_to_next
+.ebullet_explode_anim:
 		LDA		_obj_hndl_idx,X
 		CMP		#7
-		BNE		loc_62CF1
+		BNE		.ebullet_skip_to_next					; here check for only the explosion to animate
 		TXA
-		JSR		_player_death_anim_timers
-loc_62CF1:
+		JSR		_explosion_spr_anim						; do animate
+.ebullet_skip_to_next:
 		DEX
 		CPX		#6
 		BNE		loc_62CD7
 		RTS
-loc_62CF7:
-		LDA		_obj_hndl_idx,X
+.ebullet_explode_start:
+		LDA		_obj_hndl_idx,X							; for objects lower than Y=D4 check if it is already explode
 		CMP		#7
-		BEQ		loc_62CE7
-		JSR		_enemy_proj0_explode_start
-		JMP		loc_62CE7
+		BEQ		.ebullet_explode_anim					; and do the regular anim roll
+		JSR		_enemy_proj_explode0_start				; or start the anim 
+		JMP		.ebullet_explode_anim
 
 ; =============== S U B	R O U T	I N E =======================================
 _obj_tank_weapon_handler:
@@ -5816,101 +5814,101 @@ _obj_tank_weapon_handler:
 locret_62D09:
 		RTS
 loc_62D0A:
-		LDA		_lvl3_tank_weapon_disable_flag
+		LDA		_lvl2_tank_weapon_disable_flag
 		BNE		locret_62D09
 		LDA		_obj_x_hi._player
 		CMP		#$E
-		BCS		loc_62D18
-		JMP		loc_62D94
-loc_62D18:
+		BCS		.do_lvl2_tank_boss_fire
+		JMP		.do_lvl2_shot_delay
+.do_lvl2_tank_boss_fire:
 		LDA		_special_boss_flood_object_flag
-		BEQ		loc_62D3B
+		BEQ		.do_lvl2_tank_boss_shot
 		LDY		#3
 loc_62D1F:
-		LDA		_obj_flags,Y
-		BEQ		loc_62D33
+		LDA		_obj_flags,Y							; shot from tank while there are three people in it
+		BEQ		loc_62D33								; when all pilots are shot, cease tank fire
 		LDA		_obj_hndl_idx,Y
 		CMP		#4
-		BEQ		loc_62D3B
+		BEQ		.do_lvl2_tank_boss_shot
 		CMP		#6
-		BEQ		loc_62D3B
+		BEQ		.do_lvl2_tank_boss_shot
 		CMP		#9
-		BEQ		loc_62D3B
+		BEQ		.do_lvl2_tank_boss_shot
 loc_62D33:
 		DEY
 		BPL		loc_62D1F
 		LDA		#1
-		STA		_lvl3_tank_weapon_disable_flag
-loc_62D3B:
+		STA		_lvl2_tank_weapon_disable_flag			; force tank disable flag
+.do_lvl2_tank_boss_shot:
 		LDA		#$C
-		STA		_lvl_cur_spr_chr_bank_down
+		STA		_lvl_cur_spr_chr_bank_down				; select the fire shot bank
 		JSR		_enemy_bullet_get_free_slot_idx
-		BCC		loc_62D45
+		BCC		loc_62D45								; get shot if any bullets slots available
 		RTS
 loc_62D45:
-		LDA		_rand_seed
+		LDA		_rand_seed								; randomly select bullet type to shoot
 		AND		#$F
 		TAX
-		LDA		byte_62E2D,X
+		LDA		_lvl2_tank_boss_fire_x_lo_list,X
 		STA		_obj_x_lo,Y
 		LDA		#$F
 		STA		_obj_x_hi,Y
-		LDA		byte_62E3D,X
+		LDA		_lvl2_tank_boss_fire_y_list,X
 		STA		_obj_y,Y
-		LDA		byte_62E8D,X
+		LDA		_lvl2_tank_boss_fire_pal_list,X
 		STA		_obj_pal_idx,Y
-		LDA		byte_62E5D,X
+		LDA		_lvl2_tank_boss_fire_vel_list,X
 		STA		_obj_var0,Y
 		STA		_obj_x_velocity,Y
-		LDA		byte_62E7D,X
+		LDA		_lvl2_tank_boss_fire_var2_list,X
 		STA		_obj_var2,Y
-		LDA		byte_62E6D,X
+		LDA		_lvl2_tank_boss_fire_var1_list,X
 		STA		_obj_var1,Y
 		LDA		#2
 		STA		_obj_hndl_idx,Y
 		LDA		#1
 		STA		_obj_flags,Y
-		LDA		byte_62E4D,X
+		LDA		_lvl2_tank_boss_fire_spr_list,X
 		STA		_obj_spr_idx,Y
 		CMP		#5
-		BEQ		loc_62D8F
+		BEQ		loc_62D8F								; additional blink only if main cannon shot (!=5)
 		LDA		#2
 		STA		_pal_blink_flag
 loc_62D8F:
 		LDA		#7
 		STA		_snd_idx
 		RTS
-loc_62D94:
-		LDA		byte_69C
-		BEQ		loc_62DB3
-		DEC		byte_69C
-		BEQ		loc_62DA1
+.do_lvl2_shot_delay:
+		LDA		_lvl2_tank_shot_delay					; do delay between shots
+		BEQ		.do_lvl2_tank_shot_counter				; when delay is over, jump to bullet counters
+		DEC		_lvl2_tank_shot_delay
+		BEQ		.do_lvl2_shot_sound						; the moment of timer is out, do shot sound
 		JMP		locret_62E28
-loc_62DA1:
-		SEC
+.do_lvl2_shot_sound:
+		SEC												; shot fired, wait for bullet to appear
 		LDA		#$E
 		SBC		_obj_x_hi._player
-		STA		byte_69B
+		STA		_lvl2_tank_shot_timer_hi				; the closer to the end of level, the faster appears
 		LDA		#3
-		STA		_pal_blink_flag
+		STA		_pal_blink_flag							; do sound and blink
 		LDA		#7
 		STA		_snd_idx
 		RTS
-loc_62DB3:
-		LDA		byte_69A
-		ORA		byte_69B
-		BEQ		loc_62DCA
-		DEC		byte_69A
+.do_lvl2_tank_shot_counter:
+		LDA		_lvl2_tank_shot_timer_lo				; set small delay (not initialized causes random small delays)
+		ORA		_lvl2_tank_shot_timer_hi				; total telay between shot is fired and appears
+		BEQ		.do_lvl2_tank_shot						; on the screen 14 times number of rooms
+		DEC		_lvl2_tank_shot_timer_lo
 		BNE		locret_62E28
 		LDA		#$14
-		STA		byte_69A
-		DEC		byte_69B
+		STA		_lvl2_tank_shot_timer_lo
+		DEC		_lvl2_tank_shot_timer_hi
 		BNE		locret_62E28
-loc_62DCA:
-		JSR		_enemy_bullet_get_free_slot_idx
+.do_lvl2_tank_shot:
+		JSR		_enemy_bullet_get_free_slot_idx			; get free enemy bullet shot
 		BCS		locret_62E28
-		LDX		byte_69D
-		SEC
+		LDX		_lvl2_tank_weapon_position_switch		; get the cur bullet position (0-3)
+		SEC												; calc x position of the projectile
 		LDA		_obj_x_lo._player
 		SBC		_player_wnd_scroll_counter
 		STA		_tptr1
@@ -5920,50 +5918,50 @@ loc_62DCA:
 		CLC
 		LDA		_tptr1
 		ADC		#$FA
-		STA		_obj_x_lo,Y
+		STA		_obj_x_lo,Y								; adjust x pos
 		LDA		_tptr1+1
 		ADC		#0
 		STA		_obj_x_hi,Y
-		LDA		byte_62E29,X
+		LDA		_lvl2_tank_y_pos_list,X					; initialize the object
 		STA		_obj_y,Y
 		LDA		#0
 		STA		_obj_var2,Y
 		STA		_obj_var1,Y
 		LDA		#$FA
 		STA		_obj_var0,Y
-		STA		_obj_x_velocity,Y
+		STA		_obj_x_velocity,Y						; velicity
 		LDA		#$AB
-		STA		_obj_spr_idx,Y
+		STA		_obj_spr_idx,Y							; sprite
 		LDA		#3
-		STA		_obj_hndl_idx,Y
+		STA		_obj_hndl_idx,Y							; handler, etc.
 		STA		_obj_pal_idx,Y
 		LDA		#1
-		STA		_obj_flags,Y
-		INC		byte_69D
-		LDA		byte_69D
+		STA		_obj_flags,Y							; enable object
+		INC		_lvl2_tank_weapon_position_switch		; advanse to the next position
+		LDA		_lvl2_tank_weapon_position_switch
 		AND		#3
-		STA		byte_69D
-		LDA		_rand_seed
+		STA		_lvl2_tank_weapon_position_switch		; wrap around 3
+		LDA		_rand_seed								; get the random delay to appear next time
 		ORA		#$40
-		STA		byte_69C
+		STA		_lvl2_tank_shot_delay					; but no less than 40 iterations
 locret_62E28:
 		RTS
 
-byte_62E29:
+_lvl2_tank_y_pos_list:
 		.BYTE	$50,$78,$A0,$C8
-byte_62E2D:
+_lvl2_tank_boss_fire_x_lo_list:
 		.BYTE	$4E,$AE,$AD,$B0,$B7,$E3,$E7,$EB,$4E,$AE,$AD,$B0,$B7,$E3,$E7,$EB
-byte_62E3D:
+_lvl2_tank_boss_fire_y_list:
 		.BYTE	$A0,$A6,$A0,$9C,$99,$9C,$9A,$98,$A0,$A6,$A0,$9C,$99,$9C,$9A,$98
-byte_62E4D:
+_lvl2_tank_boss_fire_spr_list:
 		.BYTE	$AB,  5,  5,  5,  5,  5,  5,  5,$AB,  5,  5,  5,  5,  5,  5,  5
-byte_62E5D:
+_lvl2_tank_boss_fire_vel_list:
 		.BYTE	$FA,$FA,$FA,$FB,$FE,$FE,$FE,$FE,$FA,$FA,$FA,$FB,$FE,$FE,$FE,$FE
-byte_62E6D:
+_lvl2_tank_boss_fire_var1_list:
 		.BYTE	  0,  0,$FE,$FD,$FA,$FC,$FC,$FC,  0,  0,$FE,$FD,$FA,$FC,$FC,$FC
-byte_62E7D:
+_lvl2_tank_boss_fire_var2_list:
 		.BYTE	  0,  0,$FE,$FD,$FA,$FC,$FC,$FC,  0,  0,  6,  6,  6,  6,  6,  6
-byte_62E8D:
+_lvl2_tank_boss_fire_pal_list:
 		.BYTE	  3,  0,  0,  0,  0,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0
 
 ; =============== S U B	R O U T	I N E =======================================
@@ -6231,7 +6229,7 @@ _get_smart_bomb_item:
 		RTS
 _get_jetpack_fuel_item:
 		LDA		#3
-		STA		_lvl3_jetpack_fuel_tanks
+		STA		_lvl2_jetpack_fuel_tanks
 		LDA		#0
 		STA		_obj_flags._bonus
 		LDA		#$14
@@ -6274,7 +6272,7 @@ loc_6307F:
 		STA		_obj_flags,X
 		BEQ		loc_6309F
 loc_6309C:
-		JSR		_enemy_proj0_explode_start
+		JSR		_enemy_proj_explode0_start
 loc_6309F:
 		LDA		_obj_hndl_idx,Y
 		CMP		#$A
@@ -6363,7 +6361,7 @@ loc_63122:
 loc_6313D:
 		CMP		#7
 		BEQ		loc_63155
-		JSR		_enemy_proj1_explode_start
+		JSR		_enemy_proj_explode1_start
 loc_63144:
 		LDY		_enemy_bullet_body_target_select_arg
 		LDA		_body_targets_list,Y
@@ -6418,7 +6416,7 @@ loc_63197:
 ; --
 ; debug invulnerability
 ;
-		SBC		_tptr1
+;		SBC		_tptr1
 ; --
 		BCS		loc_631A1
 		LDA		#0

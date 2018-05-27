@@ -247,9 +247,9 @@ _cur_score_hex:
 _cur_overal_armor_sum:
 		.BYTE	0
 		.BYTE	0
-_lvl3_jetpack_fuel_tanks:
+_lvl2_jetpack_fuel_tanks:
 		.BYTE	0
-_lvl3_jetpack_fuel_count:
+_lvl2_jetpack_fuel_count:
 		.BYTE	0
 _collision_test_idx:
 		.BYTE	0
@@ -334,15 +334,15 @@ byte_698:
 		.BYTE	0
 _body_target_idx:
 		.BYTE	0
-byte_69A:
+_lvl2_tank_shot_timer_lo:
 		.BYTE	0
-byte_69B:
+_lvl2_tank_shot_timer_hi:
 		.BYTE	0
-byte_69C:
+_lvl2_tank_shot_delay:
 		.BYTE	0
-byte_69D:
+_lvl2_tank_weapon_position_switch:
 		.BYTE	0
-_lvl3_tank_weapon_disable_flag:
+_lvl2_tank_weapon_disable_flag:
 		.BYTE	0
 		.BYTE	0
 _cur_head_percent:

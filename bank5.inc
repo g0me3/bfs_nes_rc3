@@ -46,7 +46,7 @@ _attract_display:
 		BNE		.copyright_screen_dealy
 		LDA		#0
 		STA		_event_idx
-		STA		_delay_counter
+		STA		_delay_counter							; init delay counters
 		STA		_delay_counter+1
 		STA		_screen_idx
 		LDA		#2
@@ -218,8 +218,7 @@ _event_exec:
 		TAX
 		LDA		_events_lib,X
 		STA		_tptr0
-		INX
-		LDA		_events_lib,X
+		LDA		_events_lib+1,X
 		STA		_tptr0+1
 		LDA		#0
 		STA		_event_idx
@@ -237,43 +236,38 @@ _events_lib:
 
 ; =============== S U B	R O U T	I N E =======================================
 _event2_title:
-		LDX		_screen_idx
-		LDA		_delays_list_lo,X
+		LDX		_screen_idx								; this idx is always +1 of the current screen here,
+		LDA		_delays_list_hi,X						; so we can ckek next timer value
 		CMP		_delay_counter+1
-		BNE		loc_4439A
-		LDA		_delays_list_hi,X
+		BNE		.do_title_generic_handlers				; and then switch to next screen
+		LDA		#0
 		CMP		_delay_counter
-		BEQ		_title_screen_change
-loc_4439A:
-		JMP		.do_title_generic_handlers
-_title_screen_change:
-		LDX		_screen_idx
+		BNE		.do_title_generic_handlers
+		LDX		_screen_idx								; yep, reached. check for title loop or skip
 		CPX		#4
 		BCC		loc_443B5
+		DEX												; if jumped over hi-score (3 + 1), jump back to title (2)
 		DEX
-		DEX
-		STX		_screen_idx
-		LDA		_delays_list_lo,X
-		STA		_delay_counter+1
+		STX		_screen_idx								; reload timers
 		LDA		_delays_list_hi,X
+		STA		_delay_counter+1
+		LDA		#0
 		STA		_delay_counter
 loc_443B5:
-		LDA		_screen_idx
+		LDA		_screen_idx								; redisplay a new screen by index
 		JSR		_screen_display_ex
-		LDA		_screen_idx
-loc_44445:
 		LDA		_screen_idx
 		CMP		#3
 		BNE		loc_4444F
-		JSR		_star_field_init
+		JSR		_star_field_init						; special case fot hi-score screen
 		JSR		_draw_hiscore_table
 loc_4444F:
-		LDA		#$81
+		LDA		#$81									; re-enable ppu again
 		STA		_PPU_CTRL
-		JSR		_read_pad
-		INC		_screen_idx
+		JSR		_read_pad								; read-pads for unknown weird reason once when switching the screens
+		INC		_screen_idx								; set ptr to next value in delays list to wait for
 .do_title_generic_handlers:
-		LDA		_delay_counter
+		LDA		_delay_counter							; do idle timers roll on every screen
 		CLC
 		ADC		#1
 		STA		_delay_counter
@@ -282,58 +276,60 @@ loc_4444F:
 		STA		_delay_counter+1
 		LDA		_screen_idx
 		CMP		#4
-		BNE		loc_44491
+		BNE		loc_44491								; check for special case, a hi-score screen
 		JSR		_star_field_animate
-		LDA		_pad
-		BEQ		loc_4448B
-		LDX		#4
-		STX		_screen_idx
-		LDA		_delays_list_lo,X
-		STA		_delay_counter+1
+		LDA		_pad									; at hi-score screen do check for input lol
+		BEQ		loc_4448B								; while no one ever read the pads here, this only
+		LDX		#4										; works when any button is held at the title
+		STX		_screen_idx								; while it switching to the next screen
 		LDA		_delays_list_hi,X
+		STA		_delay_counter+1						; do skip to the title screen
+		LDA		#0
 		STA		_delay_counter
 loc_4448B:
 		JMP		_event_exec
 loc_44491:
 		LDA		_disp_spr0hit_use
-		BNE		loc_444AD
-		LDX		#3
-		JSR		_delay
-		JSR		_read_pad
+		BNE		loc_444AD								; there is special title input flag, but here
+		LDX		#3										; is used the spr-hit flag for some reason
+		JSR		_delay									; in any case, it reads the input, but DOESn't
+		JSR		_read_pad								; check for skip lol
 		LDA		#1
-		STA		_logo_skip_forbid_flag
-		JMP		_event_exec
+		STA		_logo_skip_forbid_flag					; the input logic is BAD, to prevent the title to
+		JMP		_event_exec								; get input after show up and skip immediately after the intro
+														; set this lock var, BUT this does not work when switching
+														; after game over or ending! so we get this shitty skip anyway!
 loc_444AD:
-		LDX		#1
+		LDX		#1										; only title screen goes here
 		JSR		_delay
 		JSR		_read_pad
-		LDY		_title_menu_idx
+		LDY		_title_menu_idx							; select menu item for blink
 		LDX		_title_menu_spr_ofs_list,Y
 		LDA		_title_menu_spr_num_list,Y
 		STA		_title_menu_spr_num_tmp
-		LDA		_generic_nmi_over_counter
+		LDA		_generic_nmi_over_counter				; check nmi counter, first 20 frames do show all menu items
 		AND		#$1F
 		CMP		#$15
-		BCC		loc_444DA
-		LDA		#$F0
-		BNE		loc_44543
+		BCC		loc_444DA								; from 21th to 31 frames do menu hide. this code is called
+		LDA		#$F0									; continuosly on every frame after 20th
+		BNE		.title_menu_update_ex					; item visible time is longer than not visible
 loc_444DA:
-		LDA		_logo_skip_forbid_flag
-		BEQ		loc_444EA
-		LDA		_pad
+		LDA		_logo_skip_forbid_flag					; if we jumped here from logos and we have any button pressed
+		BEQ		loc_444EA								; or held there, should do nothing, BUT, wait for middle screen
+		LDA		_pad									; branch do check for title skip! it jumps immediately to game
 		BEQ		loc_444E6
 		JMP		.wait_for_midscreen_change
 loc_444E6:
-		LDA		#0
-		STA		_logo_skip_forbid_flag
+		LDA		#0										; if we reach title screen with no button pressed, disable this
+		STA		_logo_skip_forbid_flag					; weird skip and do the regular input check
 loc_444EA:
 		LDA		_pad
 		CMP		_pad_prev0
 		BNE		loc_444FC
 		STA		_pad_prev0
 		LDA		_generic_nmi_over_counter
-		AND		#$1F
-		BNE		.title_menu_update
+		AND		#$1F									; accept menu change input only at 32th frame,
+		BNE		.title_menu_update						; only two times per second
 loc_444FC:
 		LDA		_pad
 		AND		#4
@@ -344,7 +340,7 @@ loc_444FC:
 		AND		#$20
 		BEQ		loc_44526
 loc_44510:
-		LDA		_title_menu_idx
+		LDA		_title_menu_idx							; select or down pressed here
 		CLC
 		ADC		#1
 		JMP		loc_445260
@@ -362,15 +358,15 @@ loc_445260:
 		LDA		#0
 		STA		_generic_nmi_over_counter
 .title_menu_update:
-		LDA		_title_menu_pos_list,Y					; get the selected menu item
-loc_44543:
+		LDA		_title_menu_pos_list,Y					; get the menu Y value to restore
+.title_menu_update_ex:
 		STA		_spr_buf,X								; force it to the screen
 		INX
 		INX
 		INX
 		INX
 		DEC		_title_menu_spr_num_tmp								; previously saved size of menu item in sprites
-		BNE		loc_44543
+		BNE		.title_menu_update_ex
 		LDA		_apu_sound_enable
 		BEQ		.menu_sound_off							; if SOUND is on
 		LDA		#$4F									; draw "N " sprite
@@ -511,18 +507,16 @@ _reload_delay_counter_2:
 		TXA
 		PHA
 		LDX		#2
-		LDA		_delays_list_lo,X
-		STA		_delay_counter+1
 		LDA		_delays_list_hi,X
+		STA		_delay_counter+1
+		LDA		#0
 		STA		_delay_counter
 		PLA
 		TAX
 		RTS
 
-_delays_list_lo:
-		.BYTE	  0,  1,  2,  6, $A, $A, $B, $C,$11
 _delays_list_hi:
-		.BYTE	  0,  0,  0,  0,  0,  0,  0,  0,  0
+		.BYTE	  0,  1,  2,  6, $A
 
 ; =============== S U B	R O U T	I N E =======================================
 _event3_intro:
@@ -719,10 +713,7 @@ _title_screen_display:
 		LDA		#1
 		STA		_pad_prev0
 		STA		_pad_prev1
-		LDA		_delays_list_lo+2
-		STA		_delay_counter+1
-		LDA		_delays_list_hi+2
-		STA		_delay_counter
+		JSR		_reload_delay_counter_2
 		LDA		#$1D
 		JSR		_far_apu_mus_load_prg5_safe
 		LDA		#2
