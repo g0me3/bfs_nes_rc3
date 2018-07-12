@@ -2573,23 +2573,23 @@ _atr8_repair:
 		.BYTE	$AF,$2F,$A0, $D,$AF,$8F,$AF,$8F
 
 _tlm0_ocean:
-		INCBIN	"tlm\tlm0.pak"
+		INCBIN	"../tlm/tlm0.pak"
 _tlm1_probe:
-		INCBIN	"tlm\tlm1_a.pak"
+		INCBIN	"../tlm/tlm1_a.pak"
 _tlm2_title:
-		INCBIN	"tlm\tlm2.pak"
+		INCBIN	"../tlm/tlm2.pak"
 ;_tlm3_hiscore:
-;		INCBIN	"tlm\tlm3.pak"							; actual tilemap unused, used regular frame instead
+;		INCBIN	"../tlm/tlm3.pak"							; actual tilemap unused, used regular frame instead
 _tlm4_frame:
-		INCBIN	"tlm\tlm4.pak"
+		INCBIN	"../tlm/tlm4.pak"
 _tlm5_lewis:
-		INCBIN	"tlm\tlm5.pak"
+		INCBIN	"../tlm/tlm5.pak"
 _tlm6_robocop:
-		INCBIN	"tlm\tlm6.pak"
+		INCBIN	"../tlm/tlm6.pak"
 _tlm7_ending:
-		INCBIN	"tlm\tlm7.pak"
+		INCBIN	"../tlm/tlm7.pak"
 _tlm8_repair:
-		INCBIN	"tlm\tlm8.pak"
+		INCBIN	"../tlm/tlm8.pak"
 
 _spr2_title:
 		.BYTE	$65,$FF,$FF,$BD,$4F,$01,$01,$A8,$4F,$03,$01,$B0,$4F,$05,$01,$B8
