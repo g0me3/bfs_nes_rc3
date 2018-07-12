@@ -21,11 +21,11 @@ int encode(char *in_buf, char *out_buf, int buf_size)
 		{
 			_count--;
 			_count &= 0x7F;
-			(unsigned char)out_buf[out_buf_size] = _count | 0x80;
+			*(unsigned char*)&out_buf[out_buf_size] = _count | 0x80;
 			out_buf_size++;
 			for (_pos = 0; _pos<_count; _pos++)
 			{
-				(unsigned char)out_buf[out_buf_size] = (unsigned char)in_buf[_pos];
+				*(unsigned char*)&out_buf[out_buf_size] = (unsigned char)in_buf[_pos];
 				out_buf_size++;
 			}
 		}
@@ -36,18 +36,18 @@ int encode(char *in_buf, char *out_buf, int buf_size)
 				in_char = (unsigned char)in_buf[_count];
 				_count++;
 			}
-			(unsigned char)out_buf[out_buf_size] = _count;
+			*(unsigned char*)&out_buf[out_buf_size] = _count;
 			out_buf_size++;
-			(unsigned char)out_buf[out_buf_size] = in_char;
+			*(unsigned char*)&out_buf[out_buf_size] = in_char;
 			out_buf_size++;
 		}
 		in_buf += _count;
 		in_buf_size += _count;
 		_count = 1;
 	}
-	(unsigned char)out_buf[out_buf_size] = 0xFF;
+	*(unsigned char*)&out_buf[out_buf_size] = 0xFF;
 	out_buf_size++;
-	(unsigned char)out_buf[out_buf_size] = 0xFF;
+	*(unsigned char*)&out_buf[out_buf_size] = 0xFF;
 	out_buf_size++;
 	return out_buf_size;
 }
